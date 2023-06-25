@@ -1,6 +1,6 @@
-# Baikal
+# Baikal - 
 
-## Baikal's subprojects
+## System Overview 
 
 1. [C Compiler targeted at RISC-V](compiler/README.md)
 
