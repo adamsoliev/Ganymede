@@ -1,4 +1,4 @@
-name: baikal-c test
+name: baikalc test
 
 on:
   push:
@@ -14,7 +14,9 @@ jobs:
         run: |
           sudo apt-get -y update
           sudo apt-get -y install make gcc-riscv64-linux-gnu qemu-user-static
-      - name: build baikal-c 
-        run: ./compiler/make
+      - name: build baikalc 
+        working-directory: ./compiler
+        run: make
       - name: run test
-        run: ./compiler/make test
+        working-directory: ./compiler
+        run: make test
