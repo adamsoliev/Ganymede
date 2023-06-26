@@ -1,4 +1,4 @@
-# Baikal - 
+# Baikal
 
 ## System Overview 
 
