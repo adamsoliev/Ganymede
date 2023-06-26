@@ -1,6 +1,9 @@
 #include "baikalc.h"
 
-int main() {
+int main(int argc, char **argv) {
+    struct Token *token = b_scan(argv[1]);
+    print(token);
+
     FILE *out = stdout;
 
     fprintf(out, "  .globl main\n");
