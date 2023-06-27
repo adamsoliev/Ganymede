@@ -1,8 +1,8 @@
 #include "baikalc.h"
 
-const int MAX_IDENT_LEN = 20;
-const int MAX_INT_LEN = 10;
-const int MAX_PUNCT_LEN = 2;
+static const int MAX_IDENT_LEN = 20;
+static const int MAX_INT_LEN = 10;
+static const int MAX_PUNCT_LEN = 2;
 static struct Token *currentToken;
 
 static struct Token *new_token(enum TokenKind kind, char *buffer, int len) {
