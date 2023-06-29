@@ -1,4 +1,4 @@
-# Baikal COMPILER
+# Baikal Compiler
 
 ## Design
 

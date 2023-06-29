@@ -82,3 +82,31 @@ void print(struct Token *token) {
         token = token->next;
     }
 }
+
+bool equal(struct Token *token, char *str) {
+    return strncmp(token->buffer, str, token->len) == 0;
+}
+
+bool consume(struct Token **rest, struct Token *token, char *str) {
+    if (equal(token, str)) {
+        *rest = token->next;
+        return true;
+    }
+    *rest = token;
+    return false;
+}
+
+struct Token *skip(struct Token *token, char *str) {
+    if (equal(token, str)) {
+        return token->next;
+    }
+    error("expected %s, but got %.*s\n", str, token->len, token->buffer);
+}
+
+void error(char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    vfprintf(stderr, fmt, args);
+    fprintf(stderr, "\n");
+    exit(1);
+}

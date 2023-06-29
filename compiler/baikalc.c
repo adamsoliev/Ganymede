@@ -2,7 +2,9 @@
 
 int main(int argc, char **argv) {
     struct Token *token = b_scan(argv[1]);
-    print(token);
+    // print(token);
+    struct decl *program = parse(token);
+    print_decl(program, 0);
 
     FILE *out = stdout;
 
