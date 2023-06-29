@@ -30,7 +30,14 @@ Token {
 ```
 
 ## Parser 
-It is a hand-coded simple recursive descent parser
+It is a hand-coded simple recursive descent parser. It generates an AST using 5 types of nodes: decl, stmt, expr, type and param_list. Take a look at [baikalc.h](./baikalc.h) for more details.
+```
+int main() {
+  return 0;
+}
+```
+For the above code, the parser will generate the following AST:
+![First Example](./assets/first_example.png)
 
 ## Semantic Routines
 Here we do things like type checking
