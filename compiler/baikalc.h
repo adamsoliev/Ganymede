@@ -4,6 +4,7 @@
 #include <fcntl.h>
 #include <stdarg.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -118,3 +119,46 @@ void print_decl(struct decl *decl, int level);
 void print_stmt(struct stmt *stmt, int level);
 void print_expr(struct expr *expr, int level);
 void print_type(struct type *type, int level);
+
+// semantic.c
+
+struct symbol {
+    enum symbol_t kind;  // local, param, global
+    struct type *type;
+    char *name;
+    int which;
+};
+
+enum symbol_t { SYMBOL_LOCAL, SYMBOL_PARAM, SYMBOL_GLOBAL };
+
+void scope_enter(void);
+void scope_exit();
+int scope_level(void);
+
+void scope_bind(const char *name, struct symbol *sym);
+struct symbol *scope_lookup(const char *name);
+struct symbol *scope_lookup_current(const char *name);
+
+//
+// hashmap.c
+//
+
+typedef struct {
+    char *key;
+    int keylen;
+    void *val;
+} HashEntry;
+
+typedef struct {
+    HashEntry *buckets;
+    int capacity;
+    int used;
+} HashMap;
+
+void *hashmap_get(HashMap *map, char *key);
+void *hashmap_get2(HashMap *map, char *key, int keylen);
+void hashmap_put(HashMap *map, char *key, void *val);
+void hashmap_put2(HashMap *map, char *key, int keylen, void *val);
+void hashmap_delete(HashMap *map, char *key);
+void hashmap_delete2(HashMap *map, char *key, int keylen);
+void hashmap_test(void);
