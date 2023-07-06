@@ -1,5 +1,14 @@
 #include "baikalc.h"
 
+/*
+    Traverse the AST and perform semantic analysis.
+*/
+
+struct scope {
+    struct scope *next;
+    struct HashMap *vars;
+};
+
 struct symbol *symbol_create(enum symbol_t kind, struct type *type,
                              char *name) {
     struct symbol *s = calloc(sizeof(*s), 1);
@@ -9,6 +18,14 @@ struct symbol *symbol_create(enum symbol_t kind, struct type *type,
     s->which = 0;
     return s;
 }
+
+void scope_enter(void) {}
+void scope_exit() {}
+int scope_level(void) {}
+
+void scope_bind(const char *name, struct symbol *sym) {}
+struct symbol *scope_lookup(const char *name) {}
+struct symbol *scope_lookup_current(const char *name) {}
 
 // detect duplicate symbols & variable without a declaration
 void decl_resolve(struct decl *d) {
@@ -156,8 +173,11 @@ struct type *stmt_typecheck(struct stmt *s) {
 // );
 
 void semantic_analysis(struct decl *d) {
-    scope_enter();
-    decl_resolve(d);
-    decl_typecheck(d);
-    scope_exit();
+    // prog is a set of declarations
+    for (struct decl *decl = d; decl; decl = decl->next) {
+        scope_enter();
+        decl_resolve(d);
+        decl_typecheck(d);
+        scope_exit();
+    }
 };
