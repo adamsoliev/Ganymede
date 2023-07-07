@@ -42,6 +42,7 @@ struct decl {
     struct expr *value;
     struct stmt *code;
     struct decl *next;
+    struct symbol *symbol;
 };
 
 // 2. Statement (if, for, while, do-while, switch, goto, break, continue, return)
@@ -86,6 +87,7 @@ struct expr {
     const char *name;
     int integer_value;
     const char *string_literal;
+    struct symbol *symbol;
 };
 
 // 4. Types
@@ -121,6 +123,7 @@ void print_expr(struct expr *expr, int level);
 void print_type(struct type *type, int level);
 
 // semantic.c
+enum symbol_t { SYMBOL_LOCAL, SYMBOL_PARAM, SYMBOL_GLOBAL };
 
 struct symbol {
     enum symbol_t kind;  // local, param, global
@@ -129,11 +132,11 @@ struct symbol {
     int which;
 };
 
-enum symbol_t { SYMBOL_LOCAL, SYMBOL_PARAM, SYMBOL_GLOBAL };
-
 void scope_enter(void);
 void scope_exit();
 int scope_level(void);
+
+void semantic_analysis(struct decl *d);
 
 void scope_bind(const char *name, struct symbol *sym);
 struct symbol *scope_lookup(const char *name);
