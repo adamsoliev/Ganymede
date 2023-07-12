@@ -1,0 +1,178 @@
+https://github.com/rswier/swieros
+
+Compilers
+https://github.com/robertmuth/Cwerg/tree/master
+
+Testing
+https://github.com/nlsandler/write_a_c_compiler
+
+## Notes
+
+In some important sense, the compiler is all about representing
+programs and analyzing and transforming them with the goal of improving
+some metric (e.g. performance)
+
+- REPRESENTING PROGRAMS
+
+  - Conrete Syntax
+  - Abstract Syntax (AST)
+  - Instructions (and higher-level data structures built from them)
+
+  – Control Flow Graph (may contain RTL instructions)
+  – Dataflow Graph
+  – Static Single Assignment (SSA)
+  – Control Dependence Graph (CDG)
+  – Program Dependence Graph (PDG)
+  – Call Graph
+
+  - Components of representation
+
+    - Control dependencies (CFG, CDG)
+    - Data dependencies (def/use chains, SSA)
+    - PDG: super-impose dataflow graph (in SSA form or not) on top of CDG
+
+  - Input, output, analysis and transformation issues
+
+- ANALYZING AND TRANSFORMING PROGRAMS
+
+  - Dataflow Analysis
+    - Reaching definitions
+
+  - Interprocedural analysis 
+    - Do inlining, devirtualization and tail call optimizations first
+    - Interprocedural analysis using CF super graph (call graph + CFGs of procedures) or summaries
+      - context sensitive
+      - context insensitive
+    - Specialization
+
+  - Pointer analysis
+
+  - Intraprocedural Optimizations
+    - Local (single block) analysis and optzs
+    - Global (single function) analysis and optzs
+  - Interprocedural Optimizations (program level)
+    - Alias Analysis
+  
+
+two subsets of CFGs known as LL(1) and LR(1) grammars
+
+LL(1) grammars are CFGs that can be evaluated by considering only
+the current rule and next token in the input stream. This property makes
+it easy to write a hand-coded parser known as a recursive descent parser.
+
+LR(1) grammars are more general and more powerful than LL(1).
+
+A RECURSIVE DESCENT PARSER
+There is one simple function for each non-terminal in the grammar. 
+The body of the function follows the right-hand sides of the 
+corresponding rules: nonterminals result in a call to another 
+parse function, while terminals result in considering the next token.
+
+• scan token() returns the next token on the input stream.
+• putback token(t) puts an unexpected token back on the input
+stream, where it will be read again by the next call to scan token.
+• expect token(t) calls scan token to retrieve the next token. It
+returns true if the token matches the expected type. If not, it puts the
+token back on the input stream and returns false.
+
+
+IR
+------------------
+- Easy to process, such as create, read, write, traverse, or transfer.
+- Easy to optimize, for example, allowing target-independent low-level optimizations
+
+Graphical IRs: Parse trees, ASTs, and directed acyclic graphs (DAGs) 
+Linear IRs: Stack machines, three address code (3AC)
+Hybrid IRs: CFGs, 
+
+Local optimizations
+  Constant folding 
+  Algebraic simplifications 
+  Dead code elimination (DCE) 
+
+Global optimizations
+  Function inlining 
+  Common-subexpression elimination (CSE) 
+  Constant propagation (CP) 
+
+Structural Organization
+  leads to passes organized as some form of tree-walk
+Level of Abstraction
+  implicit (abstract) things in an IR are hard to optimize/work with
+Mode of Use
+  Definitive (main) vs derivative (temp and for a spec purpose)
+
+GRAPHICAL IRs
+    Syntax-Related Trees: 
+        Parse tree
+            most used in parsing discussions :)
+        AST
+            good for optimizations that rearrange expressions, tree-height balancing and tree-pattern matching
+        DAG
+            good for memory-sensitive systems and for exposing redundancies. usually derivative
+    Graphs
+        CFG
+            consists of a graph of basic blocks (which could be expression-level AST, a DAG, or a linear IR)
+            many parts (program analysis, instruction schedulers, register allocation) of compiler rely on them 
+        Dependence Graph
+            usually derivative IR built for a spec purpose
+            important in instruction scheduling and parallelization optimizations
+        Call Graph
+            always a derivative IR built to support interprocedural analysis and optimization
+LINEAR IRs
+    Stack-machine code 
+        often used as a definitive IR to transmit code between systems and environments
+        compact programs and a simple scheme to port the language to new machines
+    Three-address code
+        often used as a definitive IR
+        with its explicit name space and its L-S memory model, is well suited to optimization for R-to-R, L-S machines
+        level of abstraction varies from low to high (if hardware supports exsotic operations)
+    * Representing Linear Codes
+        SIMPLE ARRAY vs ARRAY OF POINTERS vs LINKED LIST (of quadruples)
+        may use different implementations to represent the IR at different points
+    * Building the CFG from Linear Code
+        find the first (leaders) and last instruction of each basic block and add edges between them
+  
+NAME SPACES (created in the IR) [meaning, giving names to definitions, expressions, etc]
+    Use explicit names for things you want to optimize
+    SSA: 
+        (1) each definition has a unique name
+        (2) each use refers to exactly one definition
+        IR -> SSA form: 
+            Insert φ-functions at points where CF paths merge and rename variables so that the SA property holds
+            It works by selecting the value that corresponds to the edge along which control entered the block
+
+PLACEMENT OF VALUES IN MEMORY
+
+
+Appendix A: IR
+ILOC
+
+A Survey of Compiler Testing
+https://sci-hub.ru/https://dl.acm.org/doi/fullHtml/10.1145/3363562
+
+Previous interesting compilers
+https://en.wikipedia.org/wiki/PL/8
+
+COMPILER TESTING
+https://stackoverflow.com/questions/1104922/compiler-test-cases-or-how-to-test-a-compiler
+https://gcc.gnu.org/onlinedocs//gccint/C-Tests.html
+https://software-dl.ti.com/ccs/esd/documents/sdto_cgt_compiler_validations.html
+https://users.cs.utah.edu/~regehr/papers/pldi11-preprint.pdf
+
+https://github.com/c-testsuite/c-testsuite/tree/master
+https://github.com/nlsandler/write_a_c_compiler
+https://github.com/llvm/llvm-test-suite/tree/main/SingleSource/UnitTests
+https://github.com/csmith-project/creduce [reduce large C/C++ programs into small ones that have the same behavior]
+https://github.com/csmith-project/csmith [random generator of C programs]
+
+Challenges
+1. One challenge is the lack of a formal specification of what exactly a compiler is supposed to do
+2. Another challenge for testing is the semantic richness of the input and output languages that compilers deal with
+3. A third important challenge is that compilers have various options and features
+
+Properties that simplify the problem of validating their correctness
+1. One such property is that the inputs to compilers are written in a programming language, i.e., the space of possible inputs is clearly defined by the language grammar
+2. Another property that eases compiler testing is that the semantics of the source language are usually specified
+3. The fact that for most popular programming languages, there are multiple supposedly equivalent implementations, which compiler testing can exploit as an oracle for differential testing 
+
