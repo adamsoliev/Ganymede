@@ -1,1 +1,6 @@
+
+/compiler/build/
 .vscode
+**/*.o
+
+

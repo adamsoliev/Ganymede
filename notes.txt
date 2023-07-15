@@ -148,6 +148,16 @@ PLACEMENT OF VALUES IN MEMORY
 Appendix A: IR
 ILOC
 
+LLVM IR
+https://mukulrathi.com/create-your-own-programming-language/llvm-ir-cpp-api-tutorial/
+https://www.cs.cmu.edu/afs/cs/academic/class/15745-s13/public/lectures/L6-LLVM-Detail-1up.pdf
+
+LLVM IR stack allo => virtual registers
+https://stackoverflow.com/questions/46513801/llvm-opt-mem2reg-has-no-effect
+
+High level constructs to LLVM IR 
+https://buildmedia.readthedocs.org/media/pdf/mapping-high-level-constructs-to-llvm-ir/latest/mapping-high-level-constructs-to-llvm-ir.pdf
+
 A Survey of Compiler Testing
 https://sci-hub.ru/https://dl.acm.org/doi/fullHtml/10.1145/3363562
 
