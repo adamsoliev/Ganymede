@@ -4,10 +4,10 @@ assert() {
     expected="$1"
     input="$2"
 
-    ./baikalc "$input" > tmp.s || exit
+    ./build/baikalc "$input" > ./build/tmp.s || exit
 
-    riscv64-linux-gnu-gcc -static -o tmp tmp.s
-    qemu-riscv64-static ./tmp
+    riscv64-linux-gnu-gcc -static -o ./build/tmp ./build/tmp.s
+    qemu-riscv64-static ./build/tmp
 
     actual="$?"
 

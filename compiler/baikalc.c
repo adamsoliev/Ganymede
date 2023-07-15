@@ -7,6 +7,7 @@ int main(int argc, char **argv) {
     // print_decl(program, 0);
 
     semantic_analysis(program);
+    // generateIR(program);
 
     FILE *out = stdout;
 

@@ -40,7 +40,8 @@ For the above code, the parser will generate the following AST:
 ![First Example](./assets/first_example.png)
 
 ## Semantic Routines
-Here we do things like type checking
+- Name resolution 
+- Type checking
 
 ## Intermediate Representation
 
