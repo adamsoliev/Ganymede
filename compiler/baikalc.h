@@ -168,4 +168,8 @@ void hashmap_test(void);
 
 // ir.c
 
-void generateIR(struct decl *d);
+void irgen(struct decl *d);
+
+// codegen.c
+
+void codegen(struct decl *program);

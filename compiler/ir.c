@@ -1,6 +1,6 @@
 #include "baikalc.h"
 
-FILE *out;
+static FILE *out;
 
 static void type_ir(struct type *t) {
     if (!t) return;
@@ -47,7 +47,7 @@ static void decl_ir(struct decl *d) {
     }
 }
 
-void generateIR(struct decl *d) {
+void irgen(struct decl *d) {
     //
     out = stdout;
     decl_ir(d);
