@@ -172,4 +172,4 @@ void irgen(struct decl *d);
 
 // codegen.c
 
-void codegen(struct decl *program);
+void codegen();

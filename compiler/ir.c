@@ -25,7 +25,7 @@ static void expr_ir(struct expr *e) {
 static void stmt_ir(struct stmt *s) {
     if (!s) return;
     if (s->kind == STMT_RETURN) {
-        fprintf(out, " return");
+        fprintf(out, " ret");
         expr_ir(s->expr);
     }
 }
@@ -49,7 +49,15 @@ static void decl_ir(struct decl *d) {
 
 void irgen(struct decl *d) {
     //
-    out = stdout;
+    out = fopen("ir.ll", "w+");
+    if (out == NULL) {
+        printf("Error: cannot open file\n");
+        exit(1);
+    }
+    fprintf(out, "target triple = \"riscv64-unknown-unknown\"\n");
+
     decl_ir(d);
     fprintf(out, "\n");
+
+    fclose(out);
 }
