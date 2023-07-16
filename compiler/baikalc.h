@@ -165,3 +165,7 @@ void hashmap_put2(struct HashMap *map, char *key, int keylen, void *val);
 void hashmap_delete(struct HashMap *map, char *key);
 void hashmap_delete2(struct HashMap *map, char *key, int keylen);
 void hashmap_test(void);
+
+// ir.c
+
+void generateIR(struct decl *d);

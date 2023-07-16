@@ -5,7 +5,7 @@ FILE *out;
 static void type_ir(struct type *t) {
     if (!t) return;
     if (t->kind == TYPE_FUNCTION) {
-        fprintf(out, "function");
+        fprintf(out, "define");
         type_ir(t->subtype);
         // param_list_ir(t->params);
         return;
@@ -33,7 +33,7 @@ static void stmt_ir(struct stmt *s) {
 static void decl_ir(struct decl *d) {
     for (struct decl *decl = d; decl; decl = decl->next) {
         type_ir(decl->type);
-        fprintf(out, " %s()", decl->name);  // name_ir(decl->name);
+        fprintf(out, " @%s()", decl->name);  // name_ir(decl->name);
         if (decl->value) {
             fprintf(out, " =");
             expr_ir(decl->value);
