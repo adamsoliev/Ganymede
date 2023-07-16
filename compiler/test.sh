@@ -4,8 +4,10 @@ assert() {
     expected="$1"
     input="$2"
 
-    ./build/baikalc "$input" > ./build/tmp.s || exit
+    # ./build/baikalc "$input" > ./build/tmp.s || exit
+    ./build/baikalc "$input" || exit
 
+    # riscv64-linux-gnu-gcc -static -o ./build/tmp ./build/tmp.s
     riscv64-linux-gnu-gcc -static -o ./build/tmp ./build/tmp.s
     qemu-riscv64-static ./build/tmp
 
@@ -20,5 +22,6 @@ assert() {
 }
 
 assert 0 "int main() { return 0; }"
+assert 2 "int main() { return 2; }"
 
 echo OK

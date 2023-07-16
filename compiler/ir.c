@@ -49,7 +49,7 @@ static void decl_ir(struct decl *d) {
 
 void irgen(struct decl *d) {
     //
-    out = fopen("ir.ll", "w+");
+    out = fopen("./build/ir.ll", "w+");
     if (out == NULL) {
         printf("Error: cannot open file\n");
         exit(1);
