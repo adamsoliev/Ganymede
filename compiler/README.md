@@ -44,7 +44,7 @@ For the above code, the parser will generate the following AST:
 - Type checking
 
 ## Intermediate Representation
-[LLVM IR](https://llvm.org/docs/LangRef.html). LLVM IR is a SSA based language that can represent 'all' modern high-level language constructs cleanly. It follows 'three address code' form and, hence, maps nicely to RISC-V assembly. 
+[LLVM IR](https://llvm.org/docs/LangRef.html). It is a SSA based language that can represent 'all' modern high-level language constructs cleanly. It follows 'three address code' form and, hence, maps nicely to RISC-V assembly. 
 
 ## Optimizers
 Each optimization pass takes in IR and returns optimized IR
@@ -54,6 +54,7 @@ Ideally, I would like this part to consist of 3 stages:
 - instruction selection
 - register allocation
 - sequencing
+
 Currently, however, the compiler directly maps IR to RISC-V assembly, essentially generating template-like code.
 
 
