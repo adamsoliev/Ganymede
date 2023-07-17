@@ -17,6 +17,6 @@ jobs:
       - name: build baikalc 
         working-directory: ./compiler
         run: make
-      - name: run test
+      - name: run test # assumes python3 is installed. will fix if needed
         working-directory: ./compiler
         run: make test

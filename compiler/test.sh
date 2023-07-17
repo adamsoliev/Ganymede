@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 1
-echo "TESTSUITE #1"
+echo "TESTSUITE #1 - ensure generated .s file is runnable and returns expected value"
 assert() {
     expected="$(( ($1 % 256 + 256) % 256 ))"
     input="$2"
@@ -28,16 +28,12 @@ assert 2 "int main() { return 2; }"
 assert -2 "int main() { return -2; }"
 
 # 2
-echo 
-echo "TESTSUITE #2"
-
+echo -e "\nTESTSUITE #2 - ensure generated .ll and .s files match expected files"
 python3 tests.py
 exit_code=$?
-if [[ $exit_code -eq 0 ]]; then
-    echo "Script succeeded"
-else
+if [[ $exit_code -ne 0 ]]; then
     echo "Script failed"
     exit 1
 fi
 
-echo OK
+echo -e "\nOK"

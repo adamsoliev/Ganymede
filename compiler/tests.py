@@ -43,6 +43,7 @@ def compare_files(name):
 def main():
     names = ["0001"]
     for name in names:
+        print(f"{name}.c")
         execute_command(name)
         compare_files(name)
     return int(not all_tests_pass)
