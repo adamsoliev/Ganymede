@@ -1,3 +1,3 @@
 int main() {
-  return 4 - 3;
+  return 2 + 3;
 }

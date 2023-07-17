@@ -1,6 +1,6 @@
 target triple = "riscv64-unknown-unknown"
 
 define i32 @main() {
-  ret i32 6
+  ret i32 1
 }
 
