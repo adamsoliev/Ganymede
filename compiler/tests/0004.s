@@ -1,4 +1,3 @@
-	.file	"0004.c"
 	.globl	main
 	.type	main,@function
 main:

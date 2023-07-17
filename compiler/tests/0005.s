@@ -1,4 +1,3 @@
-	.file	"0005.c"
 	.globl	main
 	.type	main,@function
 main:

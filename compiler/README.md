@@ -52,8 +52,8 @@ Each optimization pass takes in IR and returns optimized IR
 ## Code Generator
 Ideally, I would like this part to consist of 3 stages: 
 - instruction selection
-- register allocation
 - sequencing
+- register allocation
 
 Currently, however, the compiler directly maps IR to RISC-V assembly, essentially generating template-like code.
 

@@ -17,16 +17,12 @@ static void type_ir(struct type *t) {
 
 static void expr_ir(struct expr *e) {
     if (!e) return;
-    if (e->kind == EXPR_INTEGER_LITERAL) {
-        fprintf(out, " i32 %d", e->integer_value);
-    }
-    switch(e->kind) {
+    switch (e->kind) {
         case EXPR_INTEGER_LITERAL:
             fprintf(out, " i32 %d", e->integer_value);
             break;
-        case EXPR_SUB:
-        {
-            if (e->left->integer_value == 0)  {
+        case EXPR_SUB: {
+            if (e->left->integer_value == 0) {
                 fprintf(out, " i32 -%d", e->right->integer_value);
             }
             break;
