@@ -1,7 +1,7 @@
 #!/bin/bash
 
 assert() {
-    expected="$1"
+    expected="$(( ($1 % 256 + 256) % 256 ))"
     input="$2"
 
     # ./build/baikalc "$input" > ./build/tmp.s || exit
@@ -23,5 +23,6 @@ assert() {
 
 assert 0 "int main() { return 0; }"
 assert 2 "int main() { return 2; }"
+assert -2 "int main() { return -2; }"
 
 echo OK

@@ -468,6 +468,15 @@ static struct expr *cast_expression(struct Token **rest, struct Token *token) {
 //                  | '_Alignof', '(', type-name, ')';
 static struct expr *unary_expression(struct Token **rest, struct Token *token) {
     //
+    if (token->kind == TK_PUNCT) {
+        if (equal(token, "-")) {
+            token = token->next;
+            struct expr *left =
+                create_expr(EXPR_INTEGER_LITERAL, NULL, NULL, NULL, 0, NULL);
+            struct expr *right = cast_expression(rest, token);
+            return create_expr(EXPR_SUB, left, right, NULL, 0, NULL);
+        }
+    }
     return postfix_expression(rest, token);
 };
 

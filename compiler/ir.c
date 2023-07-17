@@ -20,6 +20,18 @@ static void expr_ir(struct expr *e) {
     if (e->kind == EXPR_INTEGER_LITERAL) {
         fprintf(out, " i32 %d", e->integer_value);
     }
+    switch(e->kind) {
+        case EXPR_INTEGER_LITERAL:
+            fprintf(out, " i32 %d", e->integer_value);
+            break;
+        case EXPR_SUB:
+        {
+            if (e->left->integer_value == 0)  {
+                fprintf(out, " i32 -%d", e->right->integer_value);
+            }
+            break;
+        }
+    }
 }
 
 static void stmt_ir(struct stmt *s) {

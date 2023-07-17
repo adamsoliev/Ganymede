@@ -168,13 +168,14 @@ struct type *expr_typecheck(struct expr *e) {
             // case EXPR_STRING_LITERAL:
             //     result = type_create(TYPE_STRING, 0, 0);
             //     break;
-            // case EXPR_ADD:
-            //     if (lt->kind != TYPE_INTEGER || rt->kind != TYPE_INTEGER) {
-            //         printf("type error: add requires integer operands\n");
-            //         exit(1);
-            //     }
-            //     result = type_create(TYPE_INTEGER, 0, 0);
-            //     break;
+            case EXPR_ADD:
+            case EXPR_SUB:
+                if (lt->kind != TYPE_INTEGER || rt->kind != TYPE_INTEGER) {
+                    printf("type error: add requires integer operands\n");
+                    exit(1);
+                }
+                result = type_create(TYPE_INTEGER, 0, 0);
+                break;
             // case EXPR_EQ:
             // case EXPR_NE:
             //     if (!type_equals(lt, rt)) {
