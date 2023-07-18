@@ -35,6 +35,8 @@ static struct stmt *declaration_or_statement(struct Token **rest,
 static struct type *type_specifier(struct Token **rest, struct Token *token);
 static char *direct_declarator(struct Token **rest, struct Token *token);
 static struct stmt *statement(struct Token **rest, struct Token *token);
+static struct stmt *expression_statement(struct Token **rest,
+                                         struct Token *token);
 static struct stmt *jump_statement(struct Token **rest, struct Token *token);
 
 static struct expr *expression(struct Token **rest, struct Token *token);
@@ -443,7 +445,16 @@ static struct expr *shift_expression(struct Token **rest, struct Token *token) {
 static struct expr *additive_expression(struct Token **rest,
                                         struct Token *token) {
     //
-    return multiplicative_expression(rest, token);
+    struct expr *expr = multiplicative_expression(&token, token);
+    if (token->kind == TK_PUNCT) {
+        if (equal(token, "+")) {
+            token = token->next;
+            struct expr *right = multiplicative_expression(rest, token);
+            return create_expr(EXPR_ADD, expr, right, NULL, 0, NULL);
+        }
+    }
+    *rest = token;
+    return expr;
 };
 
 // multiplicative-expression = cast-expression, {('*' | '/' | '%'), cast-expression};
@@ -489,7 +500,9 @@ static struct expr *unary_expression(struct Token **rest, struct Token *token) {
 static struct expr *postfix_expression(struct Token **rest,
                                        struct Token *token) {
     //
-    return primary_expression(rest, token);
+    struct expr *expr = primary_expression(&token, token);
+    *rest = token;
+    return expr;
 };
 
 // unary-operator = '&'
@@ -517,7 +530,7 @@ static struct expr *primary_expression(struct Token **rest,
                                                  NULL);
 
         token = token->next;
-        token = skip(token, ";");
+        // token = skip(token, ";");
         *rest = token;
         return constant_expr;
     }
@@ -560,7 +573,10 @@ static struct expr *primary_expression(struct Token **rest,
 //           | jump-statement;
 static struct stmt *statement(struct Token **rest, struct Token *token) {
     //
-    return jump_statement(rest, token);
+    if (token->kind == TK_IDENT && equal(token, "return")) {
+        return jump_statement(rest, token);
+    }
+    return expression_statement(rest, token);
 };
 
 // labeled-statement = identifier, ':', statement
@@ -568,6 +584,13 @@ static struct stmt *statement(struct Token **rest, struct Token *token) {
 //                   | 'default', ':', statement;
 
 // expression-statement = [expression], ';';
+static struct stmt *expression_statement(struct Token **rest,
+                                         struct Token *token) {
+    struct stmt *stmt = create_stmt(STMT_EXPR);
+    stmt->expr = expression(rest, token);
+    *rest = skip(token, ";");
+    return stmt;
+}
 
 // selection-statement = 'if', '(', expression, ')', statement, 'else', statement
 //                     | 'if', '(', expression, ')', statement
@@ -589,7 +612,7 @@ static struct stmt *jump_statement(struct Token **rest, struct Token *token) {
         struct expr *expr = expression(&token, token->next);
         stmt->expr = expr;
         *rest = token;
-        // *rest = skip(token, ";");
+        *rest = skip(token, ";");
         return stmt;
     }
 };
