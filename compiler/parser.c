@@ -452,7 +452,12 @@ static struct expr *additive_expression(struct Token **rest,
             struct expr *right = multiplicative_expression(rest, token);
             return create_expr(EXPR_ADD, expr, right, NULL, 0, NULL);
         }
-    }
+        else if (equal(token, "-")) {
+            token = token->next;
+            struct expr *right = multiplicative_expression(rest, token);
+            return create_expr(EXPR_SUB, expr, right, NULL, 0, NULL);
+        }
+    } 
     *rest = token;
     return expr;
 };
