@@ -470,6 +470,10 @@ static struct expr *multiplicative_expression(struct Token **rest,
             token = token->next;
             struct expr *right = cast_expression(rest, token);
             return create_expr(EXPR_MUL, expr, right, NULL, 0, NULL);
+        } else if (equal(token, "/")) {
+            token = token->next;
+            struct expr *right = cast_expression(rest, token);
+            return create_expr(EXPR_DIV, expr, right, NULL, 0, NULL);
         }
     }
     *rest = token;

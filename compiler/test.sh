@@ -29,6 +29,7 @@ assert -2 "int main() { return -2; }"
 assert 5 "int main() { return 2 + 3; }"
 assert 2 "int main() { return 4 - 2; }"
 assert 9 "int main() { return 3 * 3; }"
+assert 3 "int main() { return 9 / 3; }"
 
 # 2
 echo -e "\nTESTSUITE #2 - ensure generated .ll and .s files match expected files"
