@@ -26,6 +26,8 @@ assert() {
 assert 0 "int main() { return 0; }"
 assert 2 "int main() { return 2; }"
 assert -2 "int main() { return -2; }"
+assert 5 "int main() { return 2 + 3; }"
+assert 202 "int main() { return 200 + 2; }"
 
 # 2
 echo -e "\nTESTSUITE #2 - ensure generated .ll and .s files match expected files"

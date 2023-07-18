@@ -21,6 +21,17 @@ static void expr_ir(struct expr *e) {
         case EXPR_INTEGER_LITERAL:
             fprintf(out, " i32 %d", e->integer_value);
             break;
+        case EXPR_ADD: {
+            if (e->left->kind != EXPR_INTEGER_LITERAL ||
+                e->right->kind != EXPR_INTEGER_LITERAL) {
+                fprintf(stderr, "type error: add requires integer operands\n");
+                exit(1);
+            }
+            fprintf(out,
+                    " i32 %d",
+                    e->left->integer_value + e->right->integer_value);
+            break;
+        }
         case EXPR_SUB: {
             if (e->left->integer_value == 0) {
                 fprintf(out, " i32 -%d", e->right->integer_value);
