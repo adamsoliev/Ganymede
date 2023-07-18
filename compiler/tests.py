@@ -40,7 +40,7 @@ def compare_files(name):
         subprocess.run(f"diff -y {s_file} {tmp_s_file}", shell=True)
 
 def main():
-    names = ["0001", "0002", "0003", "0004"]
+    names = ["0001", "0002", "0003", "0004", "0005"]
     for name in names:
         print(f"{name}.c")
         execute_command(name)

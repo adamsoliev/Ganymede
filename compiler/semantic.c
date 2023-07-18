@@ -170,6 +170,8 @@ struct type *expr_typecheck(struct expr *e) {
             //     break;
             case EXPR_ADD:
             case EXPR_SUB:
+            case EXPR_MUL:
+            case EXPR_DIV:
                 if (lt->kind != TYPE_INTEGER || rt->kind != TYPE_INTEGER) {
                     printf("type error: add requires integer operands\n");
                     exit(1);

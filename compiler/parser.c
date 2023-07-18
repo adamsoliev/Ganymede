@@ -451,13 +451,12 @@ static struct expr *additive_expression(struct Token **rest,
             token = token->next;
             struct expr *right = multiplicative_expression(rest, token);
             return create_expr(EXPR_ADD, expr, right, NULL, 0, NULL);
-        }
-        else if (equal(token, "-")) {
+        } else if (equal(token, "-")) {
             token = token->next;
             struct expr *right = multiplicative_expression(rest, token);
             return create_expr(EXPR_SUB, expr, right, NULL, 0, NULL);
         }
-    } 
+    }
     *rest = token;
     return expr;
 };
@@ -465,8 +464,16 @@ static struct expr *additive_expression(struct Token **rest,
 // multiplicative-expression = cast-expression, {('*' | '/' | '%'), cast-expression};
 static struct expr *multiplicative_expression(struct Token **rest,
                                               struct Token *token) {
-    //
-    return cast_expression(rest, token);
+    struct expr *expr = cast_expression(&token, token);
+    if (token->kind == TK_PUNCT) {
+        if (equal(token, "*")) {
+            token = token->next;
+            struct expr *right = cast_expression(rest, token);
+            return create_expr(EXPR_MUL, expr, right, NULL, 0, NULL);
+        }
+    }
+    *rest = token;
+    return expr;
 };
 
 // cast-expression = unary-expression
@@ -544,6 +551,7 @@ static struct expr *primary_expression(struct Token **rest,
             create_expr(EXPR_NAME, NULL, NULL, token->buffer, 0, NULL);
     }
     error("Unknown primary_expression for token: %s\n", token->buffer);
+    exit(1);
 };
 
 // argument-expression-list = assignment-expression, {',', assignment-expression};
@@ -620,6 +628,8 @@ static struct stmt *jump_statement(struct Token **rest, struct Token *token) {
         *rest = skip(token, ";");
         return stmt;
     }
+    printf("Unknown jump_statement for token: %s\n", token->buffer);
+    exit(1);
 };
 
 struct decl *parse(struct Token *token) {
