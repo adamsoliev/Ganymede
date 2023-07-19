@@ -53,14 +53,12 @@ static void function(const char* definition) {
 void codegen() {
     in = fopen("./build/ir.ll", "r");
     if (in == NULL) {
-        printf("Error: cannot open file\n");
-        exit(1);
+        error(true, "cannot open file\n");
     }
 
     out = fopen("./build/tmp.s", "w+");
     if (out == NULL) {
-        printf("Error: cannot open file\n");
-        exit(1);
+        error(true, "cannot open file\n");
     }
 
     char line[MAX_LINE_LENGTH];

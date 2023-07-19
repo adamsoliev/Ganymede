@@ -165,19 +165,18 @@ struct type *expr_typecheck(struct expr *e) {
         case EXPR_INTEGER_LITERAL:
             result = type_create(TYPE_INTEGER, 0, 0);
             break;
-            // case EXPR_STRING_LITERAL:
-            //     result = type_create(TYPE_STRING, 0, 0);
-            //     break;
-            case EXPR_ADD:
-            case EXPR_SUB:
-            case EXPR_MUL:
-            case EXPR_DIV:
-                if (lt->kind != TYPE_INTEGER || rt->kind != TYPE_INTEGER) {
-                    printf("type error: add requires integer operands\n");
-                    exit(1);
-                }
-                result = type_create(TYPE_INTEGER, 0, 0);
-                break;
+        // case EXPR_STRING_LITERAL:
+        //     result = type_create(TYPE_STRING, 0, 0);
+        //     break;
+        case EXPR_ADD:
+        case EXPR_SUB:
+        case EXPR_MUL:
+        case EXPR_DIV:
+            if (lt->kind != TYPE_INTEGER || rt->kind != TYPE_INTEGER) {
+                error(true, "type error: add requires integer operands\n");
+            }
+            result = type_create(TYPE_INTEGER, 0, 0);
+            break;
             // case EXPR_EQ:
             // case EXPR_NE:
             //     if (!type_equals(lt, rt)) {
@@ -213,7 +212,11 @@ void decl_typecheck(struct decl *d) {
         struct type *t;
         t = expr_typecheck(d->value);
         if (!type_equals(t, d->symbol->type)) {
-            /* display an error */
+            /* display an error and continue */
+            error(false,
+                  "type mismatch: expected %d, got %d\n",
+                  d->symbol->type->kind,
+                  t->kind);
         }
     }
     if (d->code) {
@@ -242,8 +245,11 @@ void stmt_typecheck(struct stmt *s) {
         case STMT_RETURN:
             t = expr_typecheck(s->expr);
             if (!type_equals(t, cur_func->type->subtype)) {
-                /* display an error */
-                printf("type error: return type mismatch\n");
+                /* display an error and continue */
+                error(false,
+                      "return type mismatch: expected %d, got %d\n",
+                      cur_func->type->subtype->kind,
+                      t->kind);
             }
             type_delete(t);
             break;

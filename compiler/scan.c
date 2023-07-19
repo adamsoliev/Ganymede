@@ -55,8 +55,7 @@ struct Token *b_scan(char *stream) {
         } else if (ispunct(*stream)) {
             LexPunctContinue(&stream);
         } else {
-            fprintf(stderr, "cannot tokenize char: %s\n", stream);
-            exit(1);
+            error(true, "cannot tokenize char: %s\n", stream);
         }
         cur = cur->next = currentToken;
     }
@@ -100,13 +99,15 @@ struct Token *skip(struct Token *token, char *str) {
     if (equal(token, str)) {
         return token->next;
     }
-    error("expected %s, but got %.*s\n", str, token->len, token->buffer);
+    error(
+        true, "expected '%s', but got '%.*s'", str, token->len, token->buffer);
+    return NULL;  // satisfy the compiler
 }
 
-void error(char *fmt, ...) {
+void error(bool shouleExit, char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
     vfprintf(stderr, fmt, args);
-    fprintf(stderr, "\n");
-    exit(1);
+    fprintf(stderr, " in file %s, line %d\n", __FILE__, __LINE__);
+    if (shouleExit) exit(1);
 }

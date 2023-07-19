@@ -24,8 +24,7 @@ static void expr_ir(struct expr *e) {
         case EXPR_ADD: {
             if (e->left->kind != EXPR_INTEGER_LITERAL ||
                 e->right->kind != EXPR_INTEGER_LITERAL) {
-                fprintf(stderr, "type error: add requires integer operands\n");
-                exit(1);
+                error(true, "type error: ADD requires integer operands\n");
             }
             fprintf(out,
                     " i32 %d",
@@ -35,8 +34,7 @@ static void expr_ir(struct expr *e) {
         case EXPR_SUB: {
             if (e->left->kind != EXPR_INTEGER_LITERAL ||
                 e->right->kind != EXPR_INTEGER_LITERAL) {
-                fprintf(stderr, "type error: add requires integer operands\n");
-                exit(1);
+                error(true, "type error: SUB requires integer operands\n");
             }
             fprintf(out,
                     " i32 %d",
@@ -46,8 +44,7 @@ static void expr_ir(struct expr *e) {
         case EXPR_MUL: {
             if (e->left->kind != EXPR_INTEGER_LITERAL ||
                 e->right->kind != EXPR_INTEGER_LITERAL) {
-                fprintf(stderr, "type error: add requires integer operands\n");
-                exit(1);
+                error(true, "type error: MUL requires integer operands\n");
             }
             fprintf(out,
                     " i32 %d",
@@ -57,8 +54,7 @@ static void expr_ir(struct expr *e) {
         case EXPR_DIV: {
             if (e->left->kind != EXPR_INTEGER_LITERAL ||
                 e->right->kind != EXPR_INTEGER_LITERAL) {
-                fprintf(stderr, "type error: add requires integer operands\n");
-                exit(1);
+                error(true, "type error: DIV requires integer operands\n");
             }
             fprintf(out,
                     " i32 %d",
@@ -97,8 +93,7 @@ void irgen(struct decl *d) {
     //
     out = fopen("./build/ir.ll", "w+");
     if (out == NULL) {
-        printf("Error: cannot open file\n");
-        exit(1);
+        error(true, "cannot open file\n");
     }
     fprintf(out, "target triple = \"riscv64-unknown-unknown\"\n");
 

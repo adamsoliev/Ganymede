@@ -242,7 +242,8 @@ static struct type *type_specifier(struct Token **rest, struct Token *token) {
         struct type *type = create_type(TYPE_INTEGER, NULL, NULL);
         return type;
     }
-    error("Unknown or unimplemented type_specifier for token: %s\n", token);
+    error(
+        true, "Unknown or unimplemented type_specifier for token: %s\n", token);
 };
 
 // (* NOTE: Please define typedef-name as result of 'typedef'. *)
@@ -554,8 +555,7 @@ static struct expr *primary_expression(struct Token **rest,
         struct expr *ident_expr =
             create_expr(EXPR_NAME, NULL, NULL, token->buffer, 0, NULL);
     }
-    error("Unknown primary_expression for token: %s\n", token->buffer);
-    exit(1);
+    error(true, "Unknown primary_expression for token: %s\n", token->buffer);
 };
 
 // argument-expression-list = assignment-expression, {',', assignment-expression};
@@ -632,8 +632,7 @@ static struct stmt *jump_statement(struct Token **rest, struct Token *token) {
         *rest = skip(token, ";");
         return stmt;
     }
-    printf("Unknown jump_statement for token: %s\n", token->buffer);
-    exit(1);
+    error(true, "Unknown jump_statement for token: %s\n", token->buffer);
 };
 
 struct decl *parse(struct Token *token) {

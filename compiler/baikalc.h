@@ -29,7 +29,7 @@ void print(struct Token *token);
 bool equal(struct Token *token, char *str);
 bool consume(struct Token **rest, struct Token *token, char *str);
 struct Token *skip(struct Token *token, char *str);
-void error(char *fmt, ...);
+void error(bool shouldExit, char *fmt, ...);
 
 // parse.c
 
