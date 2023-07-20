@@ -51,9 +51,9 @@ Implemented optimization passes (each takes in IR and returns optimized IR):
 - Constant folding
 
 ## Code Generator
-Ideally, I would like this part to consist of 3 stages: 
+Ideally, I would like this part to consist of 3 separate stages: 
 - instruction selection
-- sequencing
+- instruction scheduling 
 - register allocation
 
 Currently, however, the compiler directly maps IR to RISC-V assembly, essentially generating template-like code.
