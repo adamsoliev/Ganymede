@@ -460,7 +460,6 @@ static struct expr *additive_expression(struct Token **rest,
             expr = create_expr(EXPR_SUB, expr, right, NULL, 0, NULL);
             continue;
         }
-
         *rest = token;
         return expr;
     }
@@ -470,19 +469,21 @@ static struct expr *additive_expression(struct Token **rest,
 static struct expr *multiplicative_expression(struct Token **rest,
                                               struct Token *token) {
     struct expr *expr = cast_expression(&token, token);
-    if (token->kind == TK_PUNCT) {
+    while (token->kind == TK_PUNCT) {
         if (equal(token, "*")) {
             token = token->next;
-            struct expr *right = cast_expression(rest, token);
-            return create_expr(EXPR_MUL, expr, right, NULL, 0, NULL);
+            struct expr *right = cast_expression(&token, token);
+            expr = create_expr(EXPR_MUL, expr, right, NULL, 0, NULL);
+            continue;
         } else if (equal(token, "/")) {
             token = token->next;
-            struct expr *right = cast_expression(rest, token);
-            return create_expr(EXPR_DIV, expr, right, NULL, 0, NULL);
+            struct expr *right = cast_expression(&token, token);
+            expr = create_expr(EXPR_DIV, expr, right, NULL, 0, NULL);
+            continue;
         }
+        *rest = token;
+        return expr;
     }
-    *rest = token;
-    return expr;
 };
 
 // cast-expression = unary-expression
