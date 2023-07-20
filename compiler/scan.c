@@ -108,6 +108,6 @@ void error(bool shouleExit, char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
     vfprintf(stderr, fmt, args);
-    fprintf(stderr, " in file %s, line %d\n", __FILE__, __LINE__);
+    fprintf(stderr, "\n");
     if (shouleExit) exit(1);
 }

@@ -15,51 +15,29 @@ static void type_ir(struct type *t) {
     }
 }
 
-static void expr_ir(struct expr *e) {
-    if (!e) return;
+static int expr_ir(struct expr *e) {
+    if (!e) return -1;
     switch (e->kind) {
-        case EXPR_INTEGER_LITERAL:
-            fprintf(out, " i32 %d", e->integer_value);
-            break;
+        case EXPR_INTEGER_LITERAL: return e->integer_value;
         case EXPR_ADD: {
-            if (e->left->kind != EXPR_INTEGER_LITERAL ||
-                e->right->kind != EXPR_INTEGER_LITERAL) {
-                error(true, "type error: ADD requires integer operands\n");
-            }
-            fprintf(out,
-                    " i32 %d",
-                    e->left->integer_value + e->right->integer_value);
-            break;
+            int left = expr_ir(e->left);
+            int right = expr_ir(e->right);
+            return left + right;
         }
         case EXPR_SUB: {
-            if (e->left->kind != EXPR_INTEGER_LITERAL ||
-                e->right->kind != EXPR_INTEGER_LITERAL) {
-                error(true, "type error: SUB requires integer operands\n");
-            }
-            fprintf(out,
-                    " i32 %d",
-                    e->left->integer_value - e->right->integer_value);
-            break;
+            int left = expr_ir(e->left);
+            int right = expr_ir(e->right);
+            return left - right;
         }
         case EXPR_MUL: {
-            if (e->left->kind != EXPR_INTEGER_LITERAL ||
-                e->right->kind != EXPR_INTEGER_LITERAL) {
-                error(true, "type error: MUL requires integer operands\n");
-            }
-            fprintf(out,
-                    " i32 %d",
-                    e->left->integer_value * e->right->integer_value);
-            break;
+            int left = expr_ir(e->left);
+            int right = expr_ir(e->right);
+            return left * right;
         }
         case EXPR_DIV: {
-            if (e->left->kind != EXPR_INTEGER_LITERAL ||
-                e->right->kind != EXPR_INTEGER_LITERAL) {
-                error(true, "type error: DIV requires integer operands\n");
-            }
-            fprintf(out,
-                    " i32 %d",
-                    e->left->integer_value / e->right->integer_value);
-            break;
+            int left = expr_ir(e->left);
+            int right = expr_ir(e->right);
+            return left / right;
         }
     }
 }
@@ -68,7 +46,8 @@ static void stmt_ir(struct stmt *s) {
     if (!s) return;
     if (s->kind == STMT_RETURN) {
         fprintf(out, " ret");
-        expr_ir(s->expr);
+        int value = expr_ir(s->expr);
+        fprintf(out, " i32 %d", value);
     }
 }
 
