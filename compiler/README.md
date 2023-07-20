@@ -47,7 +47,8 @@ For the above code, the parser will generate the following AST:
 [LLVM IR](https://llvm.org/docs/LangRef.html). It is a SSA based language that can represent 'all' modern high-level language constructs cleanly. It follows 'three address code' form and, hence, maps nicely to RISC-V assembly. 
 
 ## Optimizers
-Each optimization pass takes in IR and returns optimized IR
+Implemented optimization passes (each takes in IR and returns optimized IR):
+- Constant folding
 
 ## Code Generator
 Ideally, I would like this part to consist of 3 stages: 
