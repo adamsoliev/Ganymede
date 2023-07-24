@@ -1,8 +1,49 @@
 #include "baikalc.h"
 
+char *readFile(const char *filename) {
+    // Open the file in read mode
+    FILE *file = fopen(filename, "r");
+    if (file == NULL) {
+        fprintf(stderr, "Error opening the file.\n");
+        return NULL;
+    }
+
+    // Determine the size of the file
+    fseek(file, 0, SEEK_END);
+    long file_size = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    // Allocate memory for the char array
+    char *content = (char *)malloc(file_size + 1);  // +1 for null-terminator
+    if (content == NULL) {
+        fprintf(stderr, "Memory allocation error.\n");
+        fclose(file);
+        return NULL;
+    }
+
+    // Read the contents of the file
+    size_t bytes_read = fread(content, 1, file_size, file);
+    if (bytes_read != file_size) {
+        fprintf(stderr, "Error reading the file.\n");
+        free(content);
+        fclose(file);
+        return NULL;
+    }
+
+    // Null-terminate the content
+    content[bytes_read] = '\0';
+
+    // Close the file and clean up resources
+    fclose(file);
+
+    return content;
+}
+
 int main(int argc, char **argv) {
     int opt;
-    char *optstring = "hvf:";
+    char *optstring = "hvf:s:";
+    char *input;
+    FILE *infile;
 
     while ((opt = getopt(argc, argv, optstring)) != -1) {
         switch (opt) {
@@ -15,15 +56,21 @@ int main(int argc, char **argv) {
                 printf("  -s, --string      Specify the input string\n");
                 break;
             case 'v': printf("tc version 1.0\n"); break;
-            case 'f': printf("Input file: %s\n", optarg); break;
-            case 's': printf("String: %s\n", optarg); break;
-            default: printf("Unknown option: %c\n", optarg); break;
+            case 'f': {
+                input = readFile(optarg);
+                if (input == NULL) {
+                    exit(1);
+                }
+                break;
+            }
+            case 's': input = optarg; break;
+            default: printf("Unknown option: %s\n", optarg); break;
         }
     }
-    struct Token *token = b_scan(argv[1]);
-    // print(token);
-    struct decl *program = parse(token);
-    print_decl(program, 0);
+    struct Token *token = b_scan(input);
+    print(token);
+    // struct decl *program = parse(token);
+    // print_decl(program, 0);
 
     // semantic_analysis(program);
     // irgen(program);
