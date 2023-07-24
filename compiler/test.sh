@@ -1,7 +1,16 @@
 #!/bin/bash
 
-# echo -e "\nTESTSUITE #1 - Running scanner tests"
-echo -e "\nTESTSUITE #2 - Running parser tests"
+echo "Running scanner tests"
+cd ./tests/scanner # dump way to do this
+python3 runner.py
+exit_code=$?
+if [[ $exit_code -ne 0 ]]; then
+    echo "Script failed"
+    exit 1
+fi
+cd ../../
+
+# echo -e "\nTESTSUITE #2 - Running parser tests"
 
 # 1
 
