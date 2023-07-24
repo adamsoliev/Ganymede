@@ -44,10 +44,27 @@ static int expr_ir(struct expr *e) {
 
 static void stmt_ir(struct stmt *s) {
     if (!s) return;
-    if (s->kind == STMT_RETURN) {
-        fprintf(out, " ret");
-        int value = expr_ir(s->expr);
-        fprintf(out, " i32 %d", value);
+    while (s) {
+        switch (s->kind) {
+            case STMT_RETURN: {
+                fprintf(out, " ret");
+                int value = expr_ir(s->expr);
+                fprintf(out, " i32 %d", value);
+            } break;
+            case STMT_BLOCK: {
+                fprintf(out, " {\n");
+                stmt_ir(s->body);
+                fprintf(out, "\n}");
+            } break;
+            case STMT_DECL: {
+                fprintf(out, " @%s()", s->decl->name);
+                if (s->decl->value) {
+                    fprintf(out, " =");
+                    expr_ir(s->decl->value);
+                }
+            } break;
+        }
+        s = s->next;
     }
 }
 
@@ -60,9 +77,9 @@ static void decl_ir(struct decl *d) {
             expr_ir(decl->value);
         }
         if (decl->code) {
-            fprintf(out, " {\n");
+            // fprintf(out, " {\n");
             stmt_ir(decl->code);
-            fprintf(out, "\n}");
+            // fprintf(out, "\n}");
         }
         decl_ir(decl->next);
     }

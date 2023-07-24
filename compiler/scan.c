@@ -72,12 +72,12 @@ void print(struct Token *token) {
     };
     while (token->kind != TK_EOF) {
         // enum name
-        printf("%-10s", TokenKindNames[token->kind]);
+        fprintf(outfile, "%-10s", TokenKindNames[token->kind]);
         // token buffer
         for (int i = 0; i < token->len; i++) {
-            printf("%c", token->buffer[i]);
+            fprintf(outfile, "%c", token->buffer[i]);
         }
-        printf("\n");
+        fprintf(outfile, "\n");
         token = token->next;
     }
 }

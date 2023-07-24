@@ -1,5 +1,7 @@
 #include "baikalc.h"
 
+FILE *outfile = NULL;
+
 char *readFile(const char *filename) {
     // Open the file in read mode
     FILE *file = fopen(filename, "r");
@@ -41,7 +43,7 @@ char *readFile(const char *filename) {
 
 int main(int argc, char **argv) {
     int opt;
-    char *optstring = "hvf:s:";
+    char *optstring = "hvf:o:s:";
     char *input;
     FILE *infile;
 
@@ -53,6 +55,7 @@ int main(int argc, char **argv) {
                 printf("  -h, --help        Print this help message\n");
                 printf("  -v, --version     Print the version number\n");
                 printf("  -f, --file        Specify the input file\n");
+                printf("  -o, --file        Specify the output file\n");
                 printf("  -s, --string      Specify the input string\n");
                 break;
             case 'v': printf("tc version 1.0\n"); break;
@@ -63,9 +66,13 @@ int main(int argc, char **argv) {
                 }
                 break;
             }
+            case 'o': outfile = fopen(optarg, "w+"); break;
             case 's': input = optarg; break;
             default: printf("Unknown option: %s\n", optarg); break;
         }
+    }
+    if (outfile == NULL) {
+        outfile = stdout;
     }
     struct Token *token = b_scan(input);
     print(token);

@@ -22,7 +22,7 @@ static struct expr *create_expr();
 static struct type *create_type();
 static struct param_list *create_param_list();
 static struct decl *function_definition(struct Token *token);
-void declaration();
+static struct stmt *declaration(struct Token **rest, struct Token *token);
 static struct type *declaration_specifiers(struct Token **rest,
                                            struct Token *token);
 static struct type *declaration_specifier(struct Token **rest,
@@ -32,8 +32,12 @@ static struct stmt *compound_statement(struct Token **rest,
                                        struct Token *token);
 static struct stmt *declaration_or_statement(struct Token **rest,
                                              struct Token *token);
+static struct expr *init_declarator_list(struct Token **rest,
+                                         struct Token *token);
+static struct expr *init_declarator(struct Token **rest, struct Token *token);
 static struct type *type_specifier(struct Token **rest, struct Token *token);
 static char *direct_declarator(struct Token **rest, struct Token *token);
+static struct expr *initializer(struct Token **rest, struct Token *token);
 static struct stmt *statement(struct Token **rest, struct Token *token);
 static struct stmt *expression_statement(struct Token **rest,
                                          struct Token *token);
@@ -163,7 +167,23 @@ static struct decl *function_definition(struct Token *token) {
 // declaration = declaration-specifiers, [init-declarator-list], ';'
 //             | static-assert-declaration
 //             | ';';
-void declaration(){};
+static struct stmt *declaration(struct Token **rest, struct Token *token) {
+    struct decl *decl = create_decl();
+
+    // declaration-specifiers
+    struct type *decl_specs = declaration_specifiers(&token, token);
+    decl->type = decl_specs;
+
+    // init-declarator-list
+    struct expr *expr = init_declarator_list(&token, token);
+    decl->value = expr;
+
+    struct stmt *stmt = create_stmt(STMT_DECL);
+    stmt->decl = decl;
+
+    *rest = skip(token, ";");
+    return stmt;
+};
 
 // declaration-specifiers = declaration-specifier, {declaration-specifier};
 static struct type *declaration_specifiers(struct Token **rest,
@@ -194,22 +214,57 @@ static char *declarator(struct Token **rest, struct Token *token) {
 // compound-statement = '{', {declaration-or-statement}, '}';
 static struct stmt *compound_statement(struct Token **rest,
                                        struct Token *token) {
-    //
+    struct stmt *stmt = create_stmt(STMT_BLOCK);
+    struct stmt head = {};
+    struct stmt *cur = &head;
+
     token = skip(token, "{");
-    struct stmt *comp_stmt = declaration_or_statement(&token, token);
+    while (!equal(token, "}")) {
+        struct stmt *s = declaration_or_statement(&token, token);
+        cur = cur->next = s;
+    }
     *rest = skip(token, "}");
-    return comp_stmt;
+    stmt->body = head.next;
+    return stmt;
 };
 
 // declaration-or-statement = declaration | statement;
 static struct stmt *declaration_or_statement(struct Token **rest,
                                              struct Token *token) {
-    return statement(rest, token);
+    // FIXME: generalize for all types
+    if (equal(token, "int")) {
+        struct stmt *stmt = declaration(&token, token);
+        *rest = token;
+        return stmt;
+    }
+    struct stmt *stmt = statement(&token, token);
+    *rest = token;
+    return stmt;
 };
 
 // init-declarator-list = init-declarator, {',', init-declarator};
+static struct expr *init_declarator_list(struct Token **rest,
+                                         struct Token *token) {
+    //
+    return init_declarator(rest, token);
+};
 
 // init-declarator = declarator, ['=', initializer];
+static struct expr *init_declarator(struct Token **rest, struct Token *token) {
+    //
+    char *name = declarator(&token, token);
+    if (token->kind == TK_PUNCT && equal(token, "=")) {
+        token = token->next;
+        struct expr *expr = initializer(&token, token);
+        expr->name = name;
+        *rest = token;
+        return expr;
+    }
+    struct expr *expr = create_expr(EXPR_NAME, NULL, NULL, NULL, 0, NULL);
+    expr->name = name;
+    *rest = token;
+    return expr;
+};
 
 // static-assert-declaration = '_Static_assert', '(', constant-expression, ',', string-literal, ')', ';';
 
@@ -277,8 +332,12 @@ static char *direct_declarator(struct Token **rest, struct Token *token) {
     memcpy(name, token->buffer, token->len);
     token = token->next;
 
-    token = skip(token, "(");
-    token = skip(token, ")");
+    if (token->kind == TK_PUNCT && equal(token, "(")) {
+        token = skip(token, "(");
+    }
+    if (token->kind == TK_PUNCT && equal(token, ")")) {
+        token = skip(token, ")");
+    }
 
     *rest = token;
     return name;
@@ -292,6 +351,10 @@ static char *direct_declarator(struct Token **rest, struct Token *token) {
 
 // initializer = '{', initializer-list, [','], '}'
 //             | assignment-expression;
+static struct expr *initializer(struct Token **rest, struct Token *token) {
+    //
+    return assignment_expression(rest, token);
+};
 
 // constant-expression = conditional-expression;  (* with constraints *)
 
@@ -551,14 +614,16 @@ static struct expr *primary_expression(struct Token **rest,
                                                  strtol(constant, NULL, 10),
                                                  NULL);
 
-        token = token->next;
-        // token = skip(token, ";");
-        *rest = token;
+        *rest = token->next;
         return constant_expr;
     }
     if (token->kind == TK_IDENT) {
+        char *ident = calloc(sizeof(char), token->len + 1);
+        memcpy(ident, token->buffer, token->len);
         struct expr *ident_expr =
-            create_expr(EXPR_NAME, NULL, NULL, token->buffer, 0, NULL);
+            create_expr(EXPR_NAME, NULL, NULL, ident, 0, NULL);
+        *rest = token->next;
+        return ident_expr;
     }
     error(true, "Unknown primary_expression for token: %s\n", token->buffer);
 };
@@ -633,7 +698,6 @@ static struct stmt *jump_statement(struct Token **rest, struct Token *token) {
         if (consume(rest, token->next, ";")) return stmt;
         struct expr *expr = expression(&token, token->next);
         stmt->expr = expr;
-        *rest = token;
         *rest = skip(token, ";");
         return stmt;
     }

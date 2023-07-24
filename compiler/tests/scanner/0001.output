@@ -1,0 +1,9 @@
+TK_IDENT  int
+TK_IDENT  main
+TK_PUNCT  (
+TK_PUNCT  )
+TK_PUNCT  {
+TK_IDENT  return
+TK_NUM    0
+TK_PUNCT  ;
+TK_PUNCT  }

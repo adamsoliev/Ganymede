@@ -10,6 +10,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+//
+extern FILE *outfile;
+
 // scan.c
 enum TokenKind {
     TK_IDENT,  // identifier or keyword
