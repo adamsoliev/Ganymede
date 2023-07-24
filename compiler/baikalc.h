@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include <fcntl.h>
+#include <getopt.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
