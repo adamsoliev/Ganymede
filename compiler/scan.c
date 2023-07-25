@@ -13,11 +13,64 @@ static struct Token *new_token(enum TokenKind kind, char *buffer, int len) {
     return token;
 }
 
+static void skip_line_comment(char **stream) {
+    // Skip characters until the end of line or end of input
+    while (**stream && **stream != '\n') {
+        (*stream)++;
+    }
+    if (**stream == '\n') {
+        (*stream)++;
+    }
+}
+
+static void skip_block_comment(char **stream) {
+    // Skip characters until the end of block comment (*/)
+    while (**stream && !(**stream == '*' && *(*stream + 1) == '/')) {
+        (*stream)++;
+    }
+    if (**stream == '*') {
+        (*stream)++;
+    }
+    if (**stream == '/') {
+        (*stream)++;
+    }
+    if (**stream == '\n') {
+        (*stream)++;
+    }
+}
+
 static bool LexIdentContinue(char **stream) {
     char *start = *stream;
     while (isalnum(**stream) || **stream == '_') {
         (*stream)++;
     }
+    // keywords
+    static char *kw[] = {
+        "return",    "if",         "else",
+        "for",       "while",      "int",
+        "sizeof",    "char",       "struct",
+        "union",     "short",      "long",
+        "void",      "typedef",    "_Bool",
+        "enum",      "static",     "goto",
+        "break",     "continue",   "switch",
+        "case",      "default",    "extern",
+        "_Alignof",  "_Alignas",   "do",
+        "signed",    "unsigned",   "const",
+        "volatile",  "auto",       "register",
+        "restrict",  "__restrict", "__restrict__",
+        "_Noreturn", "float",      "double",
+        "typeof",    "asm",        "_Thread_local",
+        "__thread",  "_Atomic",    "__attribute__",
+    };
+    int num_keywords = sizeof(kw) / sizeof(kw[0]);
+    for (int i = 0; i < num_keywords; i++) {
+        if (strncmp(start, kw[i], *stream - start) == 0 &&
+            strlen(kw[i]) == (*stream - start)) {
+            currentToken = new_token(TK_KEYWORD, start, *stream - start);
+            return true;
+        }
+    }
+    // identifers
     currentToken = new_token(TK_IDENT, start, *stream - start);
     return true;
 }
@@ -32,12 +85,54 @@ static bool LexNumContinue(char **stream) {
 }
 
 static bool LexPunctContinue(char **stream) {
+    // Ignore comments
+    if (**stream == '/') {
+        if (*(*stream + 1) == '/') {
+            (*stream) += 2;
+            skip_line_comment(stream);
+            return false;
+        } else if (*(*stream + 1) == '*') {
+            (*stream) += 2;
+            skip_block_comment(stream);
+            return false;
+        }
+    }
+
     char *start = *stream;
+    char c = *start;
     (*stream)++;
-    // while (ispunct(**stream)) {
-    //     (*stream)++;
-    // }
-    currentToken = new_token(TK_PUNCT, start, *stream - start);
+
+    switch (c) {
+        case '"':
+            // String literal
+            while (**stream && **stream != '"') {
+                (*stream)++;
+            }
+            if (**stream == '"') {
+                (*stream)++;
+                currentToken = new_token(TK_STR, start, *stream - start);
+            } else {
+                currentToken = new_token(TK_ERROR, start, *stream - start);
+            }
+            break;
+        case '\'':
+            // Character literal
+            while (**stream && **stream != '\'') {
+                (*stream)++;
+            }
+            if (**stream == '\'') {
+                (*stream)++;
+                currentToken = new_token(TK_CHAR, start, *stream - start);
+            } else {
+                currentToken = new_token(TK_ERROR, start, *stream - start);
+            }
+            break;
+        default:
+            // Other punctuation
+            currentToken = new_token(TK_PUNCT, start, *stream - start);
+            break;
+    }
+    // return currentToken->kind != TK_ERROR;
     return true;
 }
 
@@ -53,7 +148,7 @@ struct Token *b_scan(char *stream) {
         } else if (isdigit(*stream)) {
             LexNumContinue(&stream);
         } else if (ispunct(*stream)) {
-            LexPunctContinue(&stream);
+            if (!LexPunctContinue(&stream)) continue;
         } else {
             error(true, "cannot tokenize char: %s\n", stream);
         }
@@ -64,15 +159,17 @@ struct Token *b_scan(char *stream) {
 }
 
 void print(struct Token *token) {
-    const char *TokenKindNames[] = {
-        "TK_IDENT",
-        "TK_NUM",
-        "TK_PUNCT",
-        "TK_EOF",
-    };
+    const char *TokenKindNames[] = {"TK_IDENT",
+                                    "TK_NUM",
+                                    "TK_KEYWORD",
+                                    "TK_STR",
+                                    "TK_CHAR",
+                                    "TK_PUNCT",
+                                    "TK_ERROR",
+                                    "TK_EOF"};
     while (token->kind != TK_EOF) {
         // enum name
-        fprintf(outfile, "%-10s", TokenKindNames[token->kind]);
+        fprintf(outfile, "%-13s", TokenKindNames[token->kind]);
         // token buffer
         for (int i = 0; i < token->len; i++) {
             fprintf(outfile, "%c", token->buffer[i]);

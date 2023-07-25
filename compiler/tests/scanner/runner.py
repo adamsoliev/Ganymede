@@ -14,6 +14,7 @@ def cleanup(name):
     subprocess.run(command, shell=True)
 
 def compare_files(name):
+    global all_tests_pass
     cf = f"./{name}.c"
     outputf = f"./{name}.output"
     tempoutputf = f"./{name}.temp.output"
@@ -26,21 +27,23 @@ def compare_files(name):
     
     if not tempoutputf_content or not outputf_content: 
         print("Empty file(s)")
+        all_tests_pass = False
         return
 
     # Compare the stripped contents of the files
     if outputf_content != tempoutputf_content:
         print(f"--------------------- {cf} ---------------------")
         all_tests_pass = False
-        subprocess.run(f"diff -y {outputf_content} {tempoutputf_content}", shell=True)
+        subprocess.run(f"diff -y {outputf} {tempoutputf}", shell=True)
 
 def main():
-    names = ["0001"]
+    names = ["0001", "0002"]
     for name in names:
         execute_command(name)
         compare_files(name)
         cleanup(name)
-        print(f"{name}.c                        [OK]")
+        if all_tests_pass: 
+            print(f"{name}.c                        [OK]")
 
     return int(not all_tests_pass)
 
