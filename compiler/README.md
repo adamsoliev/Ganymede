@@ -4,6 +4,10 @@
 
 ![Compiler Design](./assets/compiler_stages.png)
 
+Design principles
+  1. Simplicity
+  2. Testability
+
 ## Build
 ```bash
 $ git clone https://github.com/adamsoliev/Baikal.git
@@ -12,25 +16,24 @@ $ make
 ```
 
 ## Scanner
-
+It is a hand-coded scanner that generates the following types of tokens:
 ```
 enum TokenKind {
-  KEYWORDS,
-  IDENTIFIERS,
-  NUMBERS,
-  STRINGS,
-  CHAR
-}
+    TK_IDENT,    
+    TK_NUM,      
+    TK_KEYWORD,  
+    TK_STR,      // string literal 
+    TK_CHAR,     // character literal
+    TK_PUNCT,    
+    TK_ERROR,    
+    TK_EOF,      
+};
 ```
-
-```
-Token {
-    enum TokenKind kind;
-}
-```
+See [baikalc.h](./baikalc.h) and [scanner tests](./tests/scanner/) for more details.
 
 ## Parser 
-It is a hand-coded recursive descent parser. It generates an AST using 5 types of nodes: decl, stmt, expr, type and param_list. Take a look at [baikalc.h](./baikalc.h) for more details.
+It is a hand-coded recursive descent parser. It generates an AST using 5 types of nodes: decl, stmt, expr, type and param_list. 
+See [baikalc.h](./baikalc.h) for more details.
 ```
 int main() {
   return 0;
