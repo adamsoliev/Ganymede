@@ -186,3 +186,116 @@ Properties that simplify the problem of validating their correctness
 2. Another property that eases compiler testing is that the semantics of the source language are usually specified
 3. The fact that for most popular programming languages, there are multiple supposedly equivalent implementations, which compiler testing can exploit as an oracle for differential testing 
 
+
+
+Notes on existing compilers
+(llvm)[https://github.com/llvm/llvm-project]
+  ---------------
+  scanner
+  ---------------
+  switch(char) scanning while collecting meta info
+
+  ---------------
+  parser 
+  ---------------
+  ClangAST
+  LLVM IR (SSN-form)
+    Module 
+      GlobalVariable 
+      Function  (decl & def)
+        BasicBlock
+          Instructions
+            CmpInst
+          ...
+  SelectionDAG
+
+  ---------------
+  semantic routines 
+  ---------------
+
+  ---------------
+  optimizations 
+  ---------------
+  LLVM MIR
+
+  ---------------
+  code generation 
+  ---------------
+    Instruction Selection (SelectionDAG, FastlSel, GlobalISel)
+    Register Allocation (RegAllocFast or RegAllocGreedy)
+    Instruction Scheduling
+    Machine IR
+    Machine Optimizations
+    Machine Specific Features
+
+(TCC)[https://bellard.org/tcc/tcc-doc.html]
+  --------
+  scanner
+  --------
+  BufferedFile  
+  tcc_open(), tcc_close()
+  inp() => next char
+  next() => next token | next_nomacro() => next token without macro expansion
+    switch(char) scanning while hashing it and putting it into symbol table
+  TOK_xxx 
+
+  --------
+  parser
+  --------
+  hardcoded
+
+  -------------
+  symbol table
+  -------------
+  hashed symbol stacks
+  sym_push(), sym_pop(st,b), sym_find(v)
+
+  ---------------
+  optimazations
+  ---------------
+  optimazations are done only at the expression level
+  constant propagation; mult & div => shift ops
+  other minor optimizations that doesn't require storing the code in a abstract form
+
+  ---------------
+  code generation
+  ---------------
+  register-based
+  directly generates linked binary code instead of having IR in the middle-end
+
+
+(chibicc)[https://github.com/rui314/chibicc]
+  ---------------
+  scanner
+  ---------------
+  given a char, tokenizes a particular type
+  linked list of tokens
+  very short and clean; modern
+
+  ---------------
+  parser 
+  ---------------
+  recursive descent parser
+  similar looking functions
+
+  ---------------
+  semantic routines 
+  ---------------
+
+  ---------------
+  optimizations 
+  ---------------
+
+  ---------------
+  code generation 
+  ---------------
+
+(shecc)[https://github.com/jserv/shecc]
+(lcc)[https://github.com/drh/lcc]
+(lacc)[https://github.com/larmel/lacc]
+(cproc)[https://github.com/michaelforney/cproc]
+(scc)[http://www.simple-cc.org/]
+(SmallerC)[https://github.com/alexfru/SmallerC]
+(kefir)[https://github.com/protopopov1122/kefir]
+
+

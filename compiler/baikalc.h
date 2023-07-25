@@ -15,10 +15,14 @@ extern FILE *outfile;
 
 // scan.c
 enum TokenKind {
-    TK_IDENT,  // identifier or keyword
-    TK_NUM,    // integer token
-    TK_PUNCT,  // punctuation
-    TK_EOF,    // end of file
+    TK_IDENT,    // identifier or keyword
+    TK_NUM,      // integer token
+    TK_KEYWORD,  // keyword
+    TK_STR,      // string literal
+    TK_CHAR,     // character literal
+    TK_PUNCT,    // punctuation
+    TK_ERROR,    // error token
+    TK_EOF,      // end of file
 };
 
 struct Token {
