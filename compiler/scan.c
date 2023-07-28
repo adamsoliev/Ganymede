@@ -154,6 +154,9 @@ static bool LexPunctContinue(char **stream) {
         case '"':
             // String literal
             while (**stream && **stream != '"') {
+                if (**stream == '\\') {  // escape sequence
+                    (*stream)++;
+                }
                 (*stream)++;
             }
             if (**stream == '"') {

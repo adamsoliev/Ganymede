@@ -1,3 +1,4 @@
+// source: https://github.com/drh/lcc/blob/master/tst/8q.c
 int up[15], down[15], rows[8], x[8];
 int queens(), print();
 
