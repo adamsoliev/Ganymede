@@ -6,7 +6,7 @@ import subprocess
 all_tests_pass = True
 
 def execute_command(name):
-    command = f"./../../build/baikalc -f ./{name}.c -o ./{name}.temp.output"
+    command = f"./../../build/ganymede -f ./{name}.c -o ./{name}.temp.output"
     subprocess.run(command, shell=True)
 
 def cleanup(name):

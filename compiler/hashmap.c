@@ -1,7 +1,7 @@
 // https://github.com/rui314/chibicc/blob/main/hashmap.c
 // This is an implementation of the open-addressing hash table.
 
-#include "baikalc.h"
+#include "ganymede.h"
 
 // Initial hash bucket size
 #define INIT_SIZE 16

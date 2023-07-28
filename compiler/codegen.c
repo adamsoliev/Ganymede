@@ -1,5 +1,5 @@
 
-#include "baikalc.h"
+#include "ganymede.h"
 
 static FILE* in;
 static FILE* out;

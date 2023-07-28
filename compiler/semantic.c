@@ -1,4 +1,4 @@
-#include "baikalc.h"
+#include "ganymede.h"
 
 /*
     Traverse the AST and perform semantic analysis.

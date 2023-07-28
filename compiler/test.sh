@@ -19,8 +19,8 @@ assert() {
     expected="$(( ($1 % 256 + 256) % 256 ))"
     input="$2"
 
-    # ./build/baikalc "$input" > ./build/tmp.s || exit
-    ./build/baikalc "$input" || exit
+    # ./build/ganymede "$input" > ./build/tmp.s || exit
+    ./build/ganymede "$input" || exit
 
     # riscv64-linux-gnu-gcc -static -o ./build/tmp ./build/tmp.s
     riscv64-linux-gnu-gcc -static -o ./build/tmp ./build/tmp.s

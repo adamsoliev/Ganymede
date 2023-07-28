@@ -1,7 +1,7 @@
 CFLAGS=-std=c11 -g -fno-common
 SRCS=$(wildcard *.c)
 OBJS=$(addprefix build/,$(notdir $(SRCS:.c=.o)))
-EXECUTABLE=build/baikalc
+EXECUTABLE=build/ganymede
 
 all: $(EXECUTABLE)
 
@@ -11,7 +11,7 @@ $(EXECUTABLE): $(OBJS)
 build/%.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(OBJS): baikalc.h | build
+$(OBJS): ganymede.h | build
 
 build:
 	mkdir -p build

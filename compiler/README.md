@@ -1,4 +1,4 @@
-# Baikal Compiler
+# Ganymede Compiler
 
 ## Design
 
@@ -6,12 +6,13 @@
 
 Design principles
   1. Simplicity
-  2. Testability
+  2. Modularity
+  3. Testability
 
 ## Build
 ```bash
-$ git clone https://github.com/adamsoliev/Baikal.git
-$ cd Baikal/compiler 
+$ git clone https://github.com/adamsoliev/Ganymede.git
+$ cd Ganymede/compiler 
 $ make
 ```
 
@@ -29,11 +30,11 @@ enum TokenKind {
     TK_EOF,      
 };
 ```
-See [baikalc.h](./baikalc.h) and [scanner tests](./tests/scanner/) for more details.
+See [ganymede.h](./ganymede.h) and [scanner tests](./tests/scanner/) for more details.
 
 ## Parser 
 It is a hand-coded recursive descent parser. It generates an AST using 5 types of nodes: decl, stmt, expr, type and param_list. 
-See [baikalc.h](./baikalc.h) for more details.
+See [ganymede.h](./ganymede.h) for more details.
 ```
 int main() {
   return 0;
