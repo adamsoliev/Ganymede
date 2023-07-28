@@ -43,6 +43,67 @@ int main() {
 For the above code, the parser will generate the following AST:
 ![First Example](./assets/first_example.png)
 
+AST is defined in terms of five C structures representing declarations, statements, expressions, types, and parameters.
+- Declartion represents constants, variables, and functions. A complete program consists of a sequence of declarations. 
+```
+struct decl {
+  char *name;
+  struct type *type;
+  struct expr *value; // value of expression
+  struct stmt *code;  // body of function
+  struct decl *next;
+};
+```
+
+- Statement represents action items (computation, loop or branch) and a declaration of a local variable. A body of a function consists of a sequence of statements. 
+```
+struct stmt {
+  stmt_t kind; // DECL, EXPR, IF, FOR, PRINT, RETURN, BLOCK
+  struct decl *decl;
+  struct expr *init_expr;
+  struct expr *expr;
+  struct expr *next_expr;
+  struct stmt *body;
+  struct stmt *else_body;
+  struct stmt *next;
+};
+```
+
+- Expression represents a computation that yields a value such as int, float or string. 
+Special cases: 
+  - Unary operators (like logical-not) have their sole argument in the left field. 
+  - Fcall is constructed by creating an EXPR_CALL node, where the left field is the function name and the right is unbalanced tree of EXPR_ARGS nodes.
+  - Array subscripting is treated like a binary operator, where the left field of the EXPR_SUBSCRIPT is the name of the array and the right field is the integer expression.
+```
+struct expr {
+  expr_t kind; // UNOP, BINOP, FCALL, LITERAL, IDENT, SUBSCRIPT, DEREF, ADDR
+  struct expr *left;
+  struct expr *right;
+  const char *name;
+  int integer_value; // int, boolean and char
+  const char *
+  string_literal;
+};
+```
+
+- Type represents the type of a variable or a function. Primitive types (int, boolean, etc) are expressed by simply setting the kind field. Compound types (array, function, etc) are built by connecting multiple type nodes together.
+```
+struct type {
+  type_t kind;
+  struct type *subtype; 
+  struct param_list *params; 
+};
+```
+
+- Parameter list represents the list of parameters of a function. 
+```
+struct param_list {
+  char *name;
+  struct type *type;
+  struct param_list *next;
+};
+```
+
 ## Semantic Routines
 - Name resolution 
 - Type checking
