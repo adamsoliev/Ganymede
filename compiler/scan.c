@@ -77,7 +77,55 @@ static bool LexIdentContinue(char **stream) {
 
 static bool LexNumContinue(char **stream) {
     char *start = *stream;
-    while (isdigit(**stream)) {
+    (*stream)++;
+    if (*start == '0') {
+        if (**stream == 'x' || **stream == 'X') {
+            // hexadecimal
+            (*stream)++;
+            while (isxdigit(**stream)) {
+                (*stream)++;
+            }
+            if (**stream == 'l' || **stream == 'L') {
+                (*stream)++;
+            }
+            currentToken = new_token(TK_NUM, start, *stream - start);
+            return true;
+        } else if (isdigit(**stream)) {
+            // octal
+            // FIXME: check for **stream != '8' && **stream != '9'
+            while (isdigit(**stream)) {
+                (*stream)++;
+            }
+            if (**stream == 'l' || **stream == 'L') {
+                (*stream)++;
+            }
+            currentToken = new_token(TK_NUM, start, *stream - start);
+            return true;
+        } else if (**stream == 'b' || **stream == 'B') {
+            // binary
+            (*stream)++;
+            while (**stream == '0' || **stream == '1') {
+                (*stream)++;
+            }
+            if (**stream == 'l' || **stream == 'L') {
+                (*stream)++;
+            }
+            currentToken = new_token(TK_NUM, start, *stream - start);
+            return true;
+        }
+    }
+    while (isdigit(**stream) || strchr(".eE+-", **stream)) {
+        // floating point
+        if (**stream && *(*stream + 1) && strchr("eE", **stream) &&
+            strchr("+-", *(*stream + 1))) {
+            (*stream) += 2;
+        }
+        if (**stream == '.' || strchr("eE", **stream)) {
+            (*stream)++;
+        }
+        (*stream)++;
+    }
+    if (**stream == 'l' || **stream == 'L') {
         (*stream)++;
     }
     currentToken = new_token(TK_NUM, start, *stream - start);
@@ -146,9 +194,10 @@ struct Token *b_scan(char *stream) {
         if (isspace(*stream)) {
             stream++;
             continue;
-        } else if (isalpha(*stream)) {
+        } else if (isalpha(*stream) || *stream == '_') {
             LexIdentContinue(&stream);
-        } else if (isdigit(*stream)) {
+        } else if (isdigit(*stream) ||
+                   (*stream == '.' && isdigit(*(stream + 1)))) {
             LexNumContinue(&stream);
         } else if (ispunct(*stream)) {
             if (!LexPunctContinue(&stream)) continue;
