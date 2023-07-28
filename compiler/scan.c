@@ -118,6 +118,9 @@ static bool LexPunctContinue(char **stream) {
         case '\'':
             // Character literal
             while (**stream && **stream != '\'') {
+                if (**stream == '\\') {  // escape sequence
+                    (*stream)++;
+                }
                 (*stream)++;
             }
             if (**stream == '\'') {
