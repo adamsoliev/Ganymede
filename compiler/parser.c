@@ -72,6 +72,7 @@ static struct expr *postfix_expression(struct Token **rest,
                                        struct Token *token);
 static struct expr *primary_expression(struct Token **rest,
                                        struct Token *token);
+const char *type2str(struct type *type);
 
 // utils
 static struct decl *create_decl(
@@ -660,7 +661,7 @@ static struct expr *primary_expression(struct Token **rest,
 //           | jump-statement;
 static struct stmt *statement(struct Token **rest, struct Token *token) {
     //
-    if (token->kind == TK_IDENT && equal(token, "return")) {
+    if (token->kind == TK_KEYWORD && equal(token, "return")) {
         return jump_statement(rest, token);
     }
     return expression_statement(rest, token);
@@ -711,29 +712,79 @@ struct decl *parse(struct Token *token) {
 
 void print_decl(struct decl *decl, int level) {
     if (decl == NULL) return;
-    //
-    if (decl->type->kind == TYPE_FUNCTION) {
-        printf("%*sFunctionDecl %s\n", level * 2, "", decl->name);
+    switch (decl->type->kind) {
+        case TYPE_FUNCTION: {
+            char *subtypeName = type2str(decl->type->subtype);
+            fprintf(outfile,
+                    "%*sFunctionDecl %s %s\n",
+                    level * 2,
+                    "",
+                    subtypeName,
+                    decl->name);
+            print_stmt(decl->code, level + 1);
+            break;
+        }
     }
-    print_stmt(decl->code, level + 1);
-
     print_decl(decl->next, level);
 }
 
 void print_stmt(struct stmt *stmt, int level) {
     if (stmt == NULL) return;
-    //
-    if (stmt->kind == STMT_RETURN) {
-        printf("%*sReturnStmt\n", level * 2, "");
+    switch (stmt->kind) {
+        case STMT_RETURN:
+            fprintf(outfile, "%*sReturnStmt\n", level * 2, "");
+            print_expr(stmt->expr, level + 1);
+            break;
+        case STMT_BLOCK:
+            fprintf(outfile, "%*sBlockStmt\n", level * 2, "");
+            print_stmt(stmt->body, level + 1);
+            break;
     }
-    print_expr(stmt->expr, level + 1);
-
     print_stmt(stmt->next, level);
 }
 
 void print_expr(struct expr *expr, int level) {
     if (expr == NULL) return;
-    if (expr->kind == EXPR_INTEGER_LITERAL) {
-        printf("%*sIntegerLiteral %d\n", level * 2, "", expr->integer_value);
+    switch (expr->kind) {
+        case EXPR_INTEGER_LITERAL:
+            fprintf(outfile,
+                    "%*sIntegerLiteral %d\n",
+                    level * 2,
+                    "",
+                    expr->integer_value);
+            break;
+        case EXPR_ADD:
+            fprintf(outfile, "%*sAddExpr\n", level * 2, "");
+            print_expr(expr->left, level + 1);
+            print_expr(expr->right, level + 1);
+            break;
+        case EXPR_SUB:
+            fprintf(outfile, "%*sSubExpr\n", level * 2, "");
+            print_expr(expr->left, level + 1);
+            print_expr(expr->right, level + 1);
+            break;
+        case EXPR_MUL:
+            fprintf(outfile, "%*sMulExpr\n", level * 2, "");
+            print_expr(expr->left, level + 1);
+            print_expr(expr->right, level + 1);
+            break;
+        case EXPR_DIV:
+            fprintf(outfile, "%*sDivExpr\n", level * 2, "");
+            print_expr(expr->left, level + 1);
+            print_expr(expr->right, level + 1);
+            break;
     }
+}
+
+const char *type2str(struct type *type) {
+    switch (type->kind) {
+        case TYPE_VOID: return "void";
+        case TYPE_BOOLEAN: return "bool";
+        case TYPE_CHARACTER: return "char";
+        case TYPE_INTEGER: return "int";
+        case TYPE_STRING: return "string";
+        case TYPE_ARRAY: return "array";
+        case TYPE_FUNCTION: return "function";
+    }
+    return "unknown";
 }

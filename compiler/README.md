@@ -44,7 +44,7 @@ For the above code, the parser will generate the following AST:
 ![First Example](./assets/first_example.png)
 
 AST is defined in terms of five C structures representing declarations, statements, expressions, types, and parameters.
-- Declartion represents constants, variables, and functions. A complete program consists of a sequence of declarations. 
+- Declaration represents constants, variables, and functions. A complete program consists of a sequence of declarations. 
 ```
 struct decl {
   char *name;
@@ -72,7 +72,7 @@ struct stmt {
 - Expression represents a computation that yields a value such as int, float or string. 
 Special cases: 
   - Unary operators (like logical-not) have their sole argument in the left field. 
-  - Fcall is constructed by creating an EXPR_CALL node, where the left field is the function name and the right is unbalanced tree of EXPR_ARGS nodes.
+  - Funccall is constructed by creating an EXPR_CALL node, where the left field is the function name and the right is unbalanced tree of EXPR_ARGS nodes.
   - Array subscripting is treated like a binary operator, where the left field of the EXPR_SUBSCRIPT is the name of the array and the right field is the integer expression.
 ```
 struct expr {

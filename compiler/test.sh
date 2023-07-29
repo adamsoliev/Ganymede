@@ -1,7 +1,21 @@
 #!/bin/bash
 
-echo "Running scanner tests"
-cd ./tests/scanner # dump way to do this
+# echo "-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*"
+# echo "             RUNNING SCANNER TESTS              "
+# echo "-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*"
+# cd ./tests/scanner # dump way to do this
+# python3 runner.py
+# exit_code=$?
+# if [[ $exit_code -ne 0 ]]; then
+#     echo "Script failed"
+#     exit 1
+# fi
+# cd ../../
+
+echo "-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*"
+echo "             RUNNING PARSER TESTS               "
+echo "-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*"
+cd ./tests/parser # dump way to do this
 python3 runner.py
 exit_code=$?
 if [[ $exit_code -ne 0 ]]; then
@@ -10,9 +24,6 @@ if [[ $exit_code -ne 0 ]]; then
 fi
 cd ../../
 
-# echo -e "\nTESTSUITE #2 - Running parser tests"
-
-# 1
 
 # echo "TESTSUITE #1 - ensure generated .s file is runnable and returns expected value"
 assert() {

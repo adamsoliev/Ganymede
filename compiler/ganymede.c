@@ -75,9 +75,9 @@ int main(int argc, char **argv) {
         outfile = stdout;
     }
     struct Token *token = b_scan(input);
-    print(token);
-    // struct decl *program = parse(token);
-    // print_decl(program, 0);
+    // print(token);
+    struct decl *program = parse(token);
+    print_decl(program, 0);
 
     // semantic_analysis(program);
     // irgen(program);
