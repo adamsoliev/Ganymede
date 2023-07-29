@@ -41,6 +41,8 @@ static struct expr *initializer(struct Token **rest, struct Token *token);
 static struct stmt *statement(struct Token **rest, struct Token *token);
 static struct stmt *expression_statement(struct Token **rest,
                                          struct Token *token);
+static struct stmt *selection_statement(struct Token **rest,
+                                        struct Token *token);
 static struct stmt *jump_statement(struct Token **rest, struct Token *token);
 
 static struct expr *expression(struct Token **rest, struct Token *token);
@@ -702,6 +704,9 @@ static struct stmt *statement(struct Token **rest, struct Token *token) {
     if (token->kind == TK_KEYWORD && equal(token, "return")) {
         return jump_statement(rest, token);
     }
+    if (token->kind == TK_KEYWORD && equal(token, "if")) {
+        return selection_statement(rest, token);
+    }
     return expression_statement(rest, token);
 };
 
@@ -721,6 +726,24 @@ static struct stmt *expression_statement(struct Token **rest,
 // selection-statement = 'if', '(', expression, ')', statement, 'else', statement
 //                     | 'if', '(', expression, ')', statement
 //                     | 'switch', '(', expression, ')', statement;
+static struct stmt *selection_statement(struct Token **rest,
+                                        struct Token *token) {
+    if (equal(token, "if")) {
+        token = token->next;
+        struct stmt *stmt = create_stmt(STMT_IF_ELSE);
+        token = skip(token, "(");
+        stmt->expr = expression(&token, token);
+        token = skip(token, ")");
+        stmt->body = statement(&token, token);
+        if (equal(token, "else")) {
+            token = token->next;
+            stmt->else_body = statement(&token, token);
+        }
+        *rest = token;
+        return stmt;
+    }
+    error(true, "Unknown selection_statement for token: %s\n", token->buffer);
+};
 
 //  iteration-statement = 'while', '(', expression, ')', statement
 //                      | 'do', statement, 'while', '(', expression, ')', ';'
@@ -733,9 +756,10 @@ static struct stmt *expression_statement(struct Token **rest,
 //                | 'return', [expression], ';';
 static struct stmt *jump_statement(struct Token **rest, struct Token *token) {
     if (equal(token, "return")) {
+        token = token->next;
         struct stmt *stmt = create_stmt(STMT_RETURN);
-        if (consume(rest, token->next, ";")) return stmt;
-        struct expr *expr = expression(&token, token->next);
+        if (consume(rest, token, ";")) return stmt;
+        struct expr *expr = expression(&token, token);
         stmt->expr = expr;
         *rest = skip(token, ";");
         return stmt;
@@ -790,6 +814,12 @@ void print_stmt(struct stmt *stmt, int level) {
         case STMT_DECL:
             fprintf(outfile, "%*sDeclStmt\n", level * 2, "");
             print_decl(stmt->decl, level + 1);
+            break;
+        case STMT_IF_ELSE:
+            fprintf(outfile, "%*sIfElseStmt\n", level * 2, "");
+            print_expr(stmt->expr, level + 1);
+            print_stmt(stmt->body, level + 1);
+            print_stmt(stmt->else_body, level + 1);
             break;
     }
     print_stmt(stmt->next, level);
