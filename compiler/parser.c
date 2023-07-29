@@ -490,7 +490,25 @@ static struct expr *and_expression(struct Token **rest, struct Token *token) {
 static struct expr *equality_expression(struct Token **rest,
                                         struct Token *token) {
     //
-    return relational_expression(rest, token);
+    struct expr *expr = relational_expression(&token, token);
+    if (token->kind == TK_PUNCT) {
+        if (equal(token, "==")) {
+            token = token->next;
+            struct expr *right = relational_expression(&token, token);
+            expr = create_expr(EXPR_EQ, expr, right, NULL, 0, NULL);
+            *rest = token;
+            return expr;
+        }
+        if (equal(token, "!=")) {
+            token = token->next;
+            struct expr *right = relational_expression(&token, token);
+            expr = create_expr(EXPR_NE, expr, right, NULL, 0, NULL);
+            *rest = token;
+            return expr;
+        }
+    }
+    *rest = token;
+    return expr;
 };
 
 // relational-expression = shift-expression, {('<' | '>' | '<=' | '>='), shift-expression};
@@ -770,6 +788,16 @@ void print_expr(struct expr *expr, int level) {
             break;
         case EXPR_DIV:
             fprintf(outfile, "%*sDivExpr\n", level * 2, "");
+            print_expr(expr->left, level + 1);
+            print_expr(expr->right, level + 1);
+            break;
+        case EXPR_EQ:
+            fprintf(outfile, "%*sEqExpr\n", level * 2, "");
+            print_expr(expr->left, level + 1);
+            print_expr(expr->right, level + 1);
+            break;
+        case EXPR_NE:
+            fprintf(outfile, "%*sNeExpr\n", level * 2, "");
             print_expr(expr->left, level + 1);
             print_expr(expr->right, level + 1);
             break;

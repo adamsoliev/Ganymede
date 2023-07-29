@@ -37,7 +37,7 @@ def compare_files(name):
         subprocess.run(f"diff -y {outputf} {tempoutputf}", shell=True)
 
 def main():
-    names = ["0001", "0002", "0003", "0004", "0005"]
+    names = ["0001", "0002", "0003", "0004", "0005", "0006", "0007", "0008"]
     for name in names:
         execute_command(name)
         compare_files(name)
