@@ -83,9 +83,10 @@ enum expr_t {
     EXPR_SUB,
     EXPR_MUL,
     EXPR_DIV,
-    EXPR_EQ,
-    EXPR_NE,
-    EXPR_LT,
+    EXPR_EQ,  // ==
+    EXPR_NE,  // !=
+    EXPR_LT,  // <
+    EXPR_LE,  // <=
     EXPR_NAME,
     EXPR_INTEGER_LITERAL,
     EXPR_STRING_LITERAL
