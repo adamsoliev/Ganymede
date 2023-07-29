@@ -1,0 +1,6 @@
+FunctionDecl int main
+  BlockStmt
+    ReturnStmt
+      DivExpr
+        IntegerLiteral 2
+        IntegerLiteral 2
