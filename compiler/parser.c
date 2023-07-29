@@ -519,7 +519,16 @@ static struct expr *equality_expression(struct Token **rest,
 static struct expr *relational_expression(struct Token **rest,
                                           struct Token *token) {
     //
-    return shift_expression(rest, token);
+    struct expr *expr = shift_expression(&token, token);
+    if (equal(token, "<")) {
+        token = token->next;
+        struct expr *right = shift_expression(&token, token);
+        expr = create_expr(EXPR_LT, expr, right, NULL, 0, NULL);
+        *rest = token;
+        return expr;
+    }
+    *rest = token;
+    return expr;
 };
 
 // shift-expression = additive-expression, {('<<' | '>>'), additive-expression};
@@ -821,6 +830,11 @@ void print_expr(struct expr *expr, int level) {
             break;
         case EXPR_NAME:
             fprintf(outfile, "%*sNameExpr %s\n", level * 2, "", expr->name);
+            break;
+        case EXPR_LT:
+            fprintf(outfile, "%*sLtExpr\n", level * 2, "");
+            print_expr(expr->left, level + 1);
+            print_expr(expr->right, level + 1);
             break;
     }
 }

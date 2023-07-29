@@ -85,6 +85,7 @@ enum expr_t {
     EXPR_DIV,
     EXPR_EQ,
     EXPR_NE,
+    EXPR_LT,
     EXPR_NAME,
     EXPR_INTEGER_LITERAL,
     EXPR_STRING_LITERAL
