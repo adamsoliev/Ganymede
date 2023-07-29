@@ -183,6 +183,10 @@ static bool LexPunctContinue(char **stream) {
             break;
         default:
             // Other punctuation
+            while (**stream && ispunct(**stream) &&
+                   *stream - start <= MAX_PUNCT_LEN && **stream == '=') {
+                (*stream)++;
+            }
             currentToken = new_token(TK_PUNCT, start, *stream - start);
             break;
     }
