@@ -177,6 +177,10 @@ static struct stmt *declaration(struct Token **rest, struct Token *token) {
 
     // init-declarator-list
     struct expr *expr = init_declarator_list(&token, token);
+
+    decl->name = calloc(sizeof(char), sizeof(expr->name));
+    strcpy(decl->name, expr->name);
+
     decl->value = expr;
 
     struct stmt *stmt = create_stmt(STMT_DECL);
@@ -742,6 +746,16 @@ void print_decl(struct decl *decl, int level) {
             print_stmt(decl->code, level + 1);
             break;
         }
+        case TYPE_INTEGER: {
+            fprintf(outfile,
+                    "%*sVarDecl %s %s\n",
+                    level * 2,
+                    "",
+                    type2str(decl->type),
+                    decl->name);
+            print_expr(decl->value, level + 1);
+            break;
+        }
     }
     print_decl(decl->next, level);
 }
@@ -756,6 +770,10 @@ void print_stmt(struct stmt *stmt, int level) {
         case STMT_BLOCK:
             fprintf(outfile, "%*sBlockStmt\n", level * 2, "");
             print_stmt(stmt->body, level + 1);
+            break;
+        case STMT_DECL:
+            fprintf(outfile, "%*sDeclStmt\n", level * 2, "");
+            print_decl(stmt->decl, level + 1);
             break;
     }
     print_stmt(stmt->next, level);
@@ -800,6 +818,9 @@ void print_expr(struct expr *expr, int level) {
             fprintf(outfile, "%*sNeExpr\n", level * 2, "");
             print_expr(expr->left, level + 1);
             print_expr(expr->right, level + 1);
+            break;
+        case EXPR_NAME:
+            fprintf(outfile, "%*sNameExpr %s\n", level * 2, "", expr->name);
             break;
     }
 }
