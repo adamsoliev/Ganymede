@@ -450,7 +450,16 @@ static struct expr *expression(struct Token **rest, struct Token *token) {
 static struct expr *assignment_expression(struct Token **rest,
                                           struct Token *token) {
     //
-    return conditional_expression(rest, token);
+    struct expr *expr = conditional_expression(&token, token);
+    if (equal(token, "=")) {
+        token = token->next;
+        struct expr *right = assignment_expression(&token, token);
+        expr = create_expr(EXPR_ASSIGN, expr, right, NULL, 0, NULL);
+        *rest = token;
+        return expr;
+    }
+    *rest = token;
+    return expr;
 };
 
 // conditional-expression = logical-or-expression, ['?', expression, ':', conditional-expression];
@@ -646,12 +655,8 @@ static struct expr *postfix_expression(struct Token **rest,
     if (token->kind == TK_PUNCT) {
         if (equal(token, "+") && equal(token->next, "+")) {
             token = token->next->next;
-            struct expr *right = create_expr(EXPR_INTEGER_LITERAL,
-                                             NULL,
-                                             NULL,
-                                             NULL,
-                                             1,
-                                             NULL);
+            struct expr *right =
+                create_expr(EXPR_INTEGER_LITERAL, NULL, NULL, NULL, 1, NULL);
             expr = create_expr(EXPR_ADD, expr, right, NULL, 0, NULL);
             *rest = token;
             return expr;
@@ -754,7 +759,7 @@ static struct stmt *statement(struct Token **rest, struct Token *token) {
 static struct stmt *expression_statement(struct Token **rest,
                                          struct Token *token) {
     struct stmt *stmt = create_stmt(STMT_EXPR);
-    stmt->expr = expression(rest, token);
+    stmt->expr = expression(&token, token);
     *rest = skip(token, ";");
     return stmt;
 }
@@ -794,11 +799,15 @@ static struct stmt *iteration_statement(struct Token **rest,
         if (equal(token, ";")) {
             token = token->next;
         } else {
-            if (equal(token, "int")) { // FIXME: should be decl
-                token = token->next;
-            }   
-            stmt->init_expr = expression(&token, token);
-            token = skip(token, ";");
+            if (equal(token, "int")) {
+                struct expr *expr =
+                    create_expr(EXPR_DECL, NULL, NULL, NULL, 0, NULL);
+                expr->decl = declaration(&token, token)->decl; // FIXME: buggy?
+                stmt->init_expr = expr;
+            } else {
+                stmt->init_expr = expression(&token, token);
+                token = skip(token, ";");
+            }
         }
         if (equal(token, ";")) {
             token = token->next;
@@ -897,6 +906,10 @@ void print_stmt(struct stmt *stmt, int level) {
             print_expr(stmt->next_expr, level + 1);
             print_stmt(stmt->body, level + 1);
             break;
+        case STMT_EXPR:
+            fprintf(outfile, "%*sExprStmt\n", level * 2, "");
+            print_expr(stmt->expr, level + 1);
+            break;
     }
     print_stmt(stmt->next, level);
 }
@@ -931,6 +944,10 @@ void print_expr(struct expr *expr, int level) {
             print_expr(expr->left, level + 1);
             print_expr(expr->right, level + 1);
             break;
+        case EXPR_DECL:
+            fprintf(outfile, "%*sDeclExpr\n", level * 2, "");
+            print_decl(expr->decl, level + 1);
+            break;
         case EXPR_EQ:
             fprintf(outfile, "%*sEqExpr\n", level * 2, "");
             print_expr(expr->left, level + 1);
@@ -951,6 +968,11 @@ void print_expr(struct expr *expr, int level) {
             break;
         case EXPR_LE:
             fprintf(outfile, "%*sLeExpr\n", level * 2, "");
+            print_expr(expr->left, level + 1);
+            print_expr(expr->right, level + 1);
+            break;
+        case EXPR_ASSIGN:
+            fprintf(outfile, "%*sAssignExpr\n", level * 2, "");
             print_expr(expr->left, level + 1);
             print_expr(expr->right, level + 1);
             break;

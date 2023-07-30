@@ -239,7 +239,9 @@ void print(struct Token *token) {
 }
 
 bool equal(struct Token *token, char *str) {
-    return strncmp(token->buffer, str, token->len) == 0;
+    // return strncmp(token->buffer, str, token->len) == 0;
+    return memcmp(token->buffer, str, token->len) == 0 &&
+           str[token->len] == '\0';
 }
 
 bool consume(struct Token **rest, struct Token *token, char *str) {

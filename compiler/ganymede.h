@@ -83,10 +83,12 @@ enum expr_t {
     EXPR_SUB,
     EXPR_MUL,
     EXPR_DIV,
-    EXPR_EQ,  // ==
-    EXPR_NE,  // !=
-    EXPR_LT,  // <
-    EXPR_LE,  // <=
+    EXPR_DECL,
+    EXPR_EQ,      // ==
+    EXPR_NE,      // !=
+    EXPR_LT,      // <
+    EXPR_LE,      // <=
+    EXPR_ASSIGN,  // =
     EXPR_NAME,
     EXPR_INTEGER_LITERAL,
     EXPR_STRING_LITERAL
@@ -100,6 +102,7 @@ struct expr {
     int integer_value;
     const char *string_literal;
     struct symbol *symbol;
+    struct decl *decl;  // for ('int i = 0'; i < 10; i++)
 };
 
 // 4. Types
