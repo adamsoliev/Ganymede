@@ -659,12 +659,29 @@ static struct expr *cast_expression(struct Token **rest, struct Token *token) {
 static struct expr *unary_expression(struct Token **rest, struct Token *token) {
     //
     if (token->kind == TK_PUNCT) {
+        if (equal(token, "+")) {
+            token = token->next;
+            struct expr *left =
+                create_expr(EXPR_INTEGER_LITERAL, NULL, NULL, NULL, 0, NULL);
+            struct expr *right = cast_expression(rest, token);
+            return create_expr(EXPR_ADD, left, right, NULL, 0, NULL);
+        }
         if (equal(token, "-")) {
             token = token->next;
             struct expr *left =
                 create_expr(EXPR_INTEGER_LITERAL, NULL, NULL, NULL, 0, NULL);
             struct expr *right = cast_expression(rest, token);
             return create_expr(EXPR_SUB, left, right, NULL, 0, NULL);
+        }
+        if (equal(token, "~")) {
+            token = token->next;
+            struct expr *left = cast_expression(rest, token);
+            return create_expr(EXPR_BITNOT, left, NULL, NULL, 0, NULL);
+        }
+        if (equal(token, "!")) {
+            token = token->next;
+            struct expr *left = cast_expression(rest, token);
+            return create_expr(EXPR_NOT, left, NULL, NULL, 0, NULL);
         }
     }
     return postfix_expression(rest, token);
@@ -1022,6 +1039,14 @@ void print_expr(struct expr *expr, int level) {
             fprintf(outfile, "%*sAssignExpr\n", level * 2, "");
             print_expr(expr->left, level + 1);
             print_expr(expr->right, level + 1);
+            break;
+        case EXPR_NOT:
+            fprintf(outfile, "%*sNotExpr\n", level * 2, "");
+            print_expr(expr->left, level + 1);
+            break;
+        case EXPR_BITNOT:
+            fprintf(outfile, "%*sBitNotExpr\n", level * 2, "");
+            print_expr(expr->left, level + 1);
             break;
     }
 }

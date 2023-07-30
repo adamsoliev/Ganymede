@@ -1,0 +1,28 @@
+FunctionDecl int main
+  BlockStmt
+    DeclStmt
+      VarDecl int a
+        IntegerLiteral 10
+    DeclStmt
+      VarDecl int b
+        IntegerLiteral 5
+    DeclStmt
+      VarDecl int positive
+        AddExpr
+          IntegerLiteral 0
+          NameExpr a
+    DeclStmt
+      VarDecl int negation
+        SubExpr
+          IntegerLiteral 0
+          NameExpr b
+    DeclStmt
+      VarDecl int bitwise_not
+        BitNotExpr
+          NameExpr a
+    DeclStmt
+      VarDecl int logical_not
+        NotExpr
+          NameExpr a
+    ReturnStmt
+      IntegerLiteral 0

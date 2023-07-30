@@ -89,6 +89,8 @@ enum expr_t {
     EXPR_LT,      // <
     EXPR_LE,      // <=
     EXPR_ASSIGN,  // =
+    EXPR_BITNOT,  // ~
+    EXPR_NOT,     // !
     EXPR_NAME,
     EXPR_INTEGER_LITERAL,
     EXPR_STRING_LITERAL
