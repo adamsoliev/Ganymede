@@ -75,6 +75,8 @@ static struct expr *postfix_expression(struct Token **rest,
 static struct expr *primary_expression(struct Token **rest,
                                        struct Token *token);
 const char *type2str(struct type *type);
+static struct stmt *iteration_statement(struct Token **rest,
+                                        struct Token *token);
 
 // utils
 static struct decl *create_decl(
@@ -641,6 +643,20 @@ static struct expr *postfix_expression(struct Token **rest,
                                        struct Token *token) {
     //
     struct expr *expr = primary_expression(&token, token);
+    if (token->kind == TK_PUNCT) {
+        if (equal(token, "+") && equal(token->next, "+")) {
+            token = token->next->next;
+            struct expr *right = create_expr(EXPR_INTEGER_LITERAL,
+                                             NULL,
+                                             NULL,
+                                             NULL,
+                                             1,
+                                             NULL);
+            expr = create_expr(EXPR_ADD, expr, right, NULL, 0, NULL);
+            *rest = token;
+            return expr;
+        }
+    }
     *rest = token;
     return expr;
 };
@@ -715,11 +731,17 @@ static struct expr *primary_expression(struct Token **rest,
 //           | jump-statement;
 static struct stmt *statement(struct Token **rest, struct Token *token) {
     //
-    if (token->kind == TK_KEYWORD && equal(token, "return")) {
-        return jump_statement(rest, token);
+    if (token->kind == TK_PUNCT && equal(token, "{")) {
+        return compound_statement(rest, token);
     }
     if (token->kind == TK_KEYWORD && equal(token, "if")) {
         return selection_statement(rest, token);
+    }
+    if (token->kind == TK_KEYWORD && equal(token, "for")) {
+        return iteration_statement(rest, token);
+    }
+    if (token->kind == TK_KEYWORD && equal(token, "return")) {
+        return jump_statement(rest, token);
     }
     return expression_statement(rest, token);
 };
@@ -763,6 +785,39 @@ static struct stmt *selection_statement(struct Token **rest,
 //                      | 'do', statement, 'while', '(', expression, ')', ';'
 //                      | 'for', '(', [expression], ';', [expression], ';', [expression], ')', statement
 //                      | 'for', '(', declaration, [expression], ';', [expression], ')', statement;
+static struct stmt *iteration_statement(struct Token **rest,
+                                        struct Token *token) {
+    if (equal(token, "for")) {
+        token = token->next;
+        struct stmt *stmt = create_stmt(STMT_FOR);
+        token = skip(token, "(");
+        if (equal(token, ";")) {
+            token = token->next;
+        } else {
+            if (equal(token, "int")) { // FIXME: should be decl
+                token = token->next;
+            }   
+            stmt->init_expr = expression(&token, token);
+            token = skip(token, ";");
+        }
+        if (equal(token, ";")) {
+            token = token->next;
+        } else {
+            stmt->expr = expression(&token, token);
+            token = skip(token, ";");
+        }
+        if (equal(token, ")")) {
+            token = token->next;
+        } else {
+            stmt->next_expr = expression(&token, token);
+            token = skip(token, ")");
+        }
+        stmt->body = statement(&token, token);
+        *rest = token;
+        return stmt;
+    }
+    error(true, "Unknown iteration_statement for token: %s\n", token->buffer);
+};
 
 // jump-statement = 'goto', identifier, ';'
 //                | 'continue', ';'
@@ -834,6 +889,13 @@ void print_stmt(struct stmt *stmt, int level) {
             print_expr(stmt->expr, level + 1);
             print_stmt(stmt->body, level + 1);
             print_stmt(stmt->else_body, level + 1);
+            break;
+        case STMT_FOR:
+            fprintf(outfile, "%*sForStmt\n", level * 2, "");
+            print_expr(stmt->init_expr, level + 1);
+            print_expr(stmt->expr, level + 1);
+            print_expr(stmt->next_expr, level + 1);
+            print_stmt(stmt->body, level + 1);
             break;
     }
     print_stmt(stmt->next, level);
