@@ -770,7 +770,8 @@ static struct stmt *statement(struct Token **rest, struct Token *token) {
     if (token->kind == TK_KEYWORD && equal(token, "if")) {
         return selection_statement(rest, token);
     }
-    if (token->kind == TK_KEYWORD && equal(token, "for")) {
+    if (token->kind == TK_KEYWORD &&
+        (equal(token, "for") || equal(token, "while"))) {
         return iteration_statement(rest, token);
     }
     if (token->kind == TK_KEYWORD && equal(token, "return")) {
@@ -820,6 +821,16 @@ static struct stmt *selection_statement(struct Token **rest,
 //                      | 'for', '(', declaration, [expression], ';', [expression], ')', statement;
 static struct stmt *iteration_statement(struct Token **rest,
                                         struct Token *token) {
+    if (equal(token, "while")) {
+        token = token->next;
+        struct stmt *stmt = create_stmt(STMT_FOR);
+        token = skip(token, "(");
+        stmt->expr = expression(&token, token);
+        token = skip(token, ")");
+        stmt->body = statement(&token, token);
+        *rest = token;
+        return stmt;
+    }
     if (equal(token, "for")) {
         token = token->next;
         struct stmt *stmt = create_stmt(STMT_FOR);
@@ -830,7 +841,7 @@ static struct stmt *iteration_statement(struct Token **rest,
             if (equal(token, "int")) {
                 struct expr *expr =
                     create_expr(EXPR_DECL, NULL, NULL, NULL, 0, NULL);
-                expr->decl = declaration(&token, token)->decl; // FIXME: buggy?
+                expr->decl = declaration(&token, token)->decl;  // FIXME: buggy?
                 stmt->init_expr = expr;
             } else {
                 stmt->init_expr = expression(&token, token);
