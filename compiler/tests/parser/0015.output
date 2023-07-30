@@ -14,8 +14,11 @@ FunctionDecl int main
         NameExpr i
         IntegerLiteral 1
       BlockStmt
-        DeclStmt
-          VarDecl int b
-            IntegerLiteral 23
+        ExprStmt
+          AssignExpr
+            NameExpr a
+            AddExpr
+              NameExpr a
+              IntegerLiteral 9
     ReturnStmt
       NameExpr a
