@@ -6,5 +6,8 @@ int main() {
     a *= 4;
     a /= 2;
   }
+  for (;;) {
+    return 23;
+  }
   return a;
 }
