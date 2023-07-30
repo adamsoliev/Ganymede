@@ -1,0 +1,34 @@
+FunctionDecl int main
+  BlockStmt
+    DeclStmt
+      VarDecl int a
+        IntegerLiteral 23
+    ForStmt
+      DeclExpr
+        VarDecl int i
+          IntegerLiteral 0
+      LtExpr
+        NameExpr i
+        IntegerLiteral 10
+      AddExpr
+        NameExpr i
+        IntegerLiteral 1
+      BlockStmt
+        ExprStmt
+          AddExpr
+            NameExpr a
+            IntegerLiteral 9
+        ExprStmt
+          SubExpr
+            NameExpr a
+            IntegerLiteral 3
+        ExprStmt
+          MulExpr
+            NameExpr a
+            IntegerLiteral 4
+        ExprStmt
+          DivExpr
+            NameExpr a
+            IntegerLiteral 2
+    ReturnStmt
+      NameExpr a

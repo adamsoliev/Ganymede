@@ -458,6 +458,34 @@ static struct expr *assignment_expression(struct Token **rest,
         *rest = token;
         return expr;
     }
+    if (equal(token, "+=")) {
+        token = token->next;
+        struct expr *right = assignment_expression(&token, token);
+        expr = create_expr(EXPR_ADD, expr, right, NULL, 0, NULL);
+        *rest = token;
+        return expr;
+    }
+    if (equal(token, "-=")) {
+        token = token->next;
+        struct expr *right = assignment_expression(&token, token);
+        expr = create_expr(EXPR_SUB, expr, right, NULL, 0, NULL);
+        *rest = token;
+        return expr;
+    }
+    if (equal(token, "*=")) {
+        token = token->next;
+        struct expr *right = assignment_expression(&token, token);
+        expr = create_expr(EXPR_MUL, expr, right, NULL, 0, NULL);
+        *rest = token;
+        return expr;
+    }
+    if (equal(token, "/=")) {
+        token = token->next;
+        struct expr *right = assignment_expression(&token, token);
+        expr = create_expr(EXPR_DIV, expr, right, NULL, 0, NULL);
+        *rest = token;
+        return expr;
+    }
     *rest = token;
     return expr;
 };
