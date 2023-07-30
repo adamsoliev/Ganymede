@@ -20,5 +20,22 @@ FunctionDecl int main
             AddExpr
               NameExpr a
               IntegerLiteral 9
+    ForStmt
+      DeclExpr
+        VarDecl int i
+          IntegerLiteral 10
+      LtExpr
+        IntegerLiteral 0
+        NameExpr i
+      SubExpr
+        NameExpr i
+        IntegerLiteral 1
+      BlockStmt
+        ExprStmt
+          AssignExpr
+            NameExpr a
+            MulExpr
+              NameExpr a
+              IntegerLiteral 2
     ReturnStmt
       NameExpr a

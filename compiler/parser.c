@@ -689,6 +689,14 @@ static struct expr *postfix_expression(struct Token **rest,
             *rest = token;
             return expr;
         }
+        if (equal(token, "-") && equal(token->next, "-")) {
+            token = token->next->next;
+            struct expr *right =
+                create_expr(EXPR_INTEGER_LITERAL, NULL, NULL, NULL, 1, NULL);
+            expr = create_expr(EXPR_SUB, expr, right, NULL, 0, NULL);
+            *rest = token;
+            return expr;
+        }
     }
     *rest = token;
     return expr;
