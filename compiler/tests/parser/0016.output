@@ -1,38 +1,38 @@
-FunctionDecl int main
+FunctionDecl int 'main'
   BlockStmt
     DeclStmt
-      VarDecl int a
+      VarDecl int 'a'
         IntegerLiteral 23
     ForStmt
       DeclExpr
-        VarDecl int i
+        VarDecl int 'i'
           IntegerLiteral 0
       LtExpr
-        NameExpr i
+        NameExpr 'i'
         IntegerLiteral 10
       AddExpr
-        NameExpr i
+        NameExpr 'i'
         IntegerLiteral 1
       BlockStmt
         ExprStmt
           AddExpr
-            NameExpr a
+            NameExpr 'a'
             IntegerLiteral 9
         ExprStmt
           SubExpr
-            NameExpr a
+            NameExpr'a'
             IntegerLiteral 3
         ExprStmt
           MulExpr
-            NameExpr a
+            NameExpr 'a'
             IntegerLiteral 4
         ExprStmt
           DivExpr
-            NameExpr a
+            NameExpr 'a'
             IntegerLiteral 2
     ForStmt
       BlockStmt
         ReturnStmt
           IntegerLiteral 23
     ReturnStmt
-      NameExpr a
+      NameExpr 'a'

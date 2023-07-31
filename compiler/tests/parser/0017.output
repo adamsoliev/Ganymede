@@ -1,21 +1,21 @@
-FunctionDecl int main
+FunctionDecl int 'main'
   BlockStmt
     DeclStmt
-      VarDecl int a
+      VarDecl int 'a'
         IntegerLiteral 23
     DeclStmt
-      VarDecl int b
+      VarDecl int 'b'
         IntegerLiteral 32
     ForStmt
       LtExpr
         IntegerLiteral 10
-        NameExpr a
+        NameExpr 'a'
       BlockStmt
         ExprStmt
           AssignExpr
-            NameExpr a
+            NameExpr 'a'
             AddExpr
-              NameExpr a
-              NameExpr b
+              NameExpr 'a'
+              NameExpr 'b'
     ReturnStmt
-      NameExpr a
+      NameExpr 'a'

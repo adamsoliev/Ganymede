@@ -1,7 +1,7 @@
-FunctionDecl int main
+FunctionDecl int 'main'
   BlockStmt
     DeclStmt
-      VarDecl int a
+      VarDecl int 'a'
         IntegerLiteral 23
     ReturnStmt
-      NameExpr a
+      NameExpr 'a'
