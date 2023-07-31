@@ -169,7 +169,7 @@ static struct decl *function_definition(struct Token *token) {
     return decl;
 };
 
-// declaration = declaration-specifiers, [init-declarator-list], ';'
+// declaration = declaration-specifiers [pointer] [init-declarator-list] ';'
 //             | static-assert-declaration
 //             | ';';
 static struct stmt *declaration(struct Token **rest, struct Token *token) {
@@ -178,6 +178,13 @@ static struct stmt *declaration(struct Token **rest, struct Token *token) {
     // declaration-specifiers
     struct type *decl_specs = declaration_specifiers(&token, token);
     decl->type = decl_specs;
+
+    // pointer
+    if (token->kind == TK_PUNCT && equal(token, "*")) {
+        token = token->next;
+        struct type *type = create_type(TYPE_POINTER, decl_specs, NULL);
+        decl->type = type;
+    }
 
     // init-declarator-list
     struct expr *expr = init_declarator_list(&token, token);
@@ -211,9 +218,8 @@ static struct type *declaration_specifier(struct Token **rest,
     return type_specifier(rest, token);
 };
 
-// declarator = [pointer], direct-declarator;
+// declarator = direct-declarator;
 static char *declarator(struct Token **rest, struct Token *token) {
-    // [pointer]
     char *name = direct_declarator(rest, token);
     return name;
 };
@@ -325,6 +331,7 @@ static struct type *type_specifier(struct Token **rest, struct Token *token) {
 //                     | '_Alignas', '(', constant-expression, ')';
 
 // pointer = '*', [type-qualifier-list], [pointer];
+//
 
 // direct-declarator = identifier
 //                   | '(', declarator, ')'
@@ -683,6 +690,16 @@ static struct expr *unary_expression(struct Token **rest, struct Token *token) {
             struct expr *left = cast_expression(rest, token);
             return create_expr(EXPR_NOT, left, NULL, NULL, 0, NULL);
         }
+        if (equal(token, "*")) {
+            token = token->next;
+            struct expr *left = cast_expression(rest, token);
+            return create_expr(EXPR_DEREF, left, NULL, NULL, 0, NULL);
+        }
+        if (equal(token, "&")) {
+            token = token->next;
+            struct expr *left = cast_expression(rest, token);
+            return create_expr(EXPR_ADDR, left, NULL, NULL, 0, NULL);
+        }
     }
     return postfix_expression(rest, token);
 };
@@ -920,7 +937,7 @@ void print_decl(struct decl *decl, int level) {
         case TYPE_FUNCTION: {
             char *subtypeName = type2str(decl->type->subtype);
             fprintf(outfile,
-                    "%*sFunctionDecl %s %s\n",
+                    "%*sFunctionDecl %s '%s'\n",
                     level * 2,
                     "",
                     subtypeName,
@@ -930,10 +947,21 @@ void print_decl(struct decl *decl, int level) {
         }
         case TYPE_INTEGER: {
             fprintf(outfile,
-                    "%*sVarDecl %s %s\n",
+                    "%*sVarDecl %s '%s'\n",
                     level * 2,
                     "",
                     type2str(decl->type),
+                    decl->name);
+            print_expr(decl->value, level + 1);
+            break;
+        }
+        case TYPE_POINTER: {
+            fprintf(outfile,
+                    "%*sVarDecl %s %s '%s'\n",
+                    level * 2,
+                    "",
+                    type2str(decl->type),
+                    type2str(decl->type->subtype),
                     decl->name);
             print_expr(decl->value, level + 1);
             break;
@@ -1023,7 +1051,7 @@ void print_expr(struct expr *expr, int level) {
             print_expr(expr->right, level + 1);
             break;
         case EXPR_NAME:
-            fprintf(outfile, "%*sNameExpr %s\n", level * 2, "", expr->name);
+            fprintf(outfile, "%*sNameExpr '%s'\n", level * 2, "", expr->name);
             break;
         case EXPR_LT:
             fprintf(outfile, "%*sLtExpr\n", level * 2, "");
@@ -1048,6 +1076,14 @@ void print_expr(struct expr *expr, int level) {
             fprintf(outfile, "%*sBitNotExpr\n", level * 2, "");
             print_expr(expr->left, level + 1);
             break;
+        case EXPR_DEREF:
+            fprintf(outfile, "%*sDerefExpr\n", level * 2, "");
+            print_expr(expr->left, level + 1);
+            break;
+        case EXPR_ADDR:
+            fprintf(outfile, "%*sAddrExpr\n", level * 2, "");
+            print_expr(expr->left, level + 1);
+            break;
     }
 }
 
@@ -1060,6 +1096,7 @@ const char *type2str(struct type *type) {
         case TYPE_STRING: return "string";
         case TYPE_ARRAY: return "array";
         case TYPE_FUNCTION: return "function";
+        case TYPE_POINTER: return "pointer";
     }
     return "unknown";
 }

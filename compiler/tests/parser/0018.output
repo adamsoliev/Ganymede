@@ -1,28 +1,36 @@
-FunctionDecl int main
+FunctionDecl int 'main'
   BlockStmt
     DeclStmt
-      VarDecl int a
+      VarDecl int 'a'
         IntegerLiteral 10
     DeclStmt
-      VarDecl int b
+      VarDecl int 'b'
         IntegerLiteral 5
     DeclStmt
-      VarDecl int positive
+      VarDecl pointer int 'ptr'
+        AddrExpr
+          NameExpr 'a'
+    DeclStmt
+      VarDecl int 'dereferenced'
+        DerefExpr
+          NameExpr 'ptr'
+    DeclStmt
+      VarDecl int 'positive'
         AddExpr
           IntegerLiteral 0
-          NameExpr a
+          NameExpr 'a'
     DeclStmt
-      VarDecl int negation
+      VarDecl int 'negation'
         SubExpr
           IntegerLiteral 0
-          NameExpr b
+          NameExpr 'b'
     DeclStmt
-      VarDecl int bitwise_not
+      VarDecl int 'bitwise_not'
         BitNotExpr
-          NameExpr a
+          NameExpr 'a'
     DeclStmt
-      VarDecl int logical_not
+      VarDecl int 'logical_not'
         NotExpr
-          NameExpr a
+          NameExpr 'a'
     ReturnStmt
       IntegerLiteral 0

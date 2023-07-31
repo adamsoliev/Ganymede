@@ -91,6 +91,8 @@ enum expr_t {
     EXPR_ASSIGN,  // =
     EXPR_BITNOT,  // ~
     EXPR_NOT,     // !
+    EXPR_DEREF,   // *
+    EXPR_ADDR,    // &
     EXPR_NAME,
     EXPR_INTEGER_LITERAL,
     EXPR_STRING_LITERAL
@@ -116,7 +118,8 @@ enum type_t {
     TYPE_INTEGER,
     TYPE_STRING,
     TYPE_ARRAY,
-    TYPE_FUNCTION
+    TYPE_FUNCTION,
+    TYPE_POINTER
 };
 
 struct type {
