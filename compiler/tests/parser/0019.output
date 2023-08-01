@@ -1,11 +1,212 @@
 FunctionDecl int 'main'
   BlockStmt
-    ReturnStmt
-      FuncallExpr
-        NameExpr 'func'
-        ArgsExpr
-          NameExpr 'a'
+    DeclStmt
+      VarDecl int 'a'
+        FuncallExpr
+          NameExpr 'func'
+    IfElseStmt
+      EqExpr
+        NameExpr 'a'
+        IntegerLiteral 0
+      BlockStmt
+        ReturnStmt
+          FuncallExpr
+            NameExpr 'func'
+    DeclStmt
+      VarDecl int 'b'
+        FuncallExpr
+          NameExpr 'func1'
           ArgsExpr
-            NameExpr 'b'
+            NameExpr 'a'
+    IfElseStmt
+      EqExpr
+        NameExpr 'b'
+        IntegerLiteral 0
+      BlockStmt
+        ReturnStmt
+          FuncallExpr
+            NameExpr 'func1'
             ArgsExpr
-              NameExpr 'c'
+              NameExpr 'a'
+    DeclStmt
+      VarDecl int 'c'
+        FuncallExpr
+          NameExpr 'func2'
+          ArgsExpr
+            NameExpr 'a'
+            ArgsExpr
+              NameExpr 'b'
+    IfElseStmt
+      EqExpr
+        NameExpr 'c'
+        IntegerLiteral 0
+      BlockStmt
+        ReturnStmt
+          FuncallExpr
+            NameExpr 'func2'
+            ArgsExpr
+              NameExpr 'a'
+              ArgsExpr
+                NameExpr 'b'
+    DeclStmt
+      VarDecl int 'd'
+        FuncallExpr
+          NameExpr 'func3'
+          ArgsExpr
+            NameExpr 'a'
+            ArgsExpr
+              NameExpr 'b'
+              ArgsExpr
+                NameExpr 'c'
+    IfElseStmt
+      EqExpr
+        NameExpr 'd'
+        IntegerLiteral 0
+      BlockStmt
+        ReturnStmt
+          FuncallExpr
+            NameExpr 'func3'
+            ArgsExpr
+              NameExpr 'a'
+              ArgsExpr
+                NameExpr 'b'
+                ArgsExpr
+                  NameExpr 'c'
+    DeclStmt
+      VarDecl int 'e'
+        FuncallExpr
+          NameExpr 'func4'
+          ArgsExpr
+            NameExpr 'a'
+            ArgsExpr
+              NameExpr 'b'
+              ArgsExpr
+                NameExpr 'c'
+                ArgsExpr
+                  NameExpr 'd'
+    IfElseStmt
+      EqExpr
+        NameExpr 'e'
+        IntegerLiteral 0
+      BlockStmt
+        ReturnStmt
+          FuncallExpr
+            NameExpr 'func4'
+            ArgsExpr
+              NameExpr 'a'
+              ArgsExpr
+                NameExpr 'b'
+                ArgsExpr
+                  NameExpr 'c'
+                  ArgsExpr
+                    NameExpr 'd'
+    DeclStmt
+      VarDecl int 'f'
+        FuncallExpr
+          NameExpr 'func5'
+          ArgsExpr
+            NameExpr 'a'
+            ArgsExpr
+              NameExpr 'b'
+              ArgsExpr
+                NameExpr 'c'
+                ArgsExpr
+                  NameExpr 'd'
+                  ArgsExpr
+                    NameExpr 'e'
+    IfElseStmt
+      EqExpr
+        NameExpr 'f'
+        IntegerLiteral 0
+      BlockStmt
+        ReturnStmt
+          FuncallExpr
+            NameExpr 'func5'
+            ArgsExpr
+              NameExpr 'a'
+              ArgsExpr
+                NameExpr 'b'
+                ArgsExpr
+                  NameExpr 'c'
+                  ArgsExpr
+                    NameExpr 'd'
+                    ArgsExpr
+                      NameExpr 'e'
+    DeclStmt
+      VarDecl int 'g'
+        FuncallExpr
+          NameExpr 'func6'
+          ArgsExpr
+            NameExpr 'a'
+            ArgsExpr
+              NameExpr 'b'
+              ArgsExpr
+                NameExpr 'c'
+                ArgsExpr
+                  NameExpr 'd'
+                  ArgsExpr
+                    NameExpr 'e'
+                    ArgsExpr
+                      NameExpr 'f'
+    IfElseStmt
+      EqExpr
+        NameExpr 'g'
+        IntegerLiteral 0
+      BlockStmt
+        ReturnStmt
+          FuncallExpr
+            NameExpr 'func6'
+            ArgsExpr
+              NameExpr 'a'
+              ArgsExpr
+                NameExpr 'b'
+                ArgsExpr
+                  NameExpr 'c'
+                  ArgsExpr
+                    NameExpr 'd'
+                    ArgsExpr
+                      NameExpr 'e'
+                      ArgsExpr
+                        NameExpr 'f'
+    DeclStmt
+      VarDecl int 'h'
+        FuncallExpr
+          NameExpr 'func7'
+          ArgsExpr
+            NameExpr 'a'
+            ArgsExpr
+              NameExpr 'b'
+              ArgsExpr
+                NameExpr 'c'
+                ArgsExpr
+                  NameExpr 'd'
+                  ArgsExpr
+                    NameExpr 'e'
+                    ArgsExpr
+                      NameExpr 'f'
+                      ArgsExpr
+                        NameExpr 'g'
+    IfElseStmt
+      EqExpr
+        NameExpr 'h'
+        IntegerLiteral 0
+      BlockStmt
+        ReturnStmt
+          FuncallExpr
+            NameExpr 'func7'
+            ArgsExpr
+              NameExpr 'a'
+              ArgsExpr
+                NameExpr 'b'
+                ArgsExpr
+                  NameExpr 'c'
+                  ArgsExpr
+                    NameExpr 'd'
+                    ArgsExpr
+                      NameExpr 'e'
+                      ArgsExpr
+                        NameExpr 'f'
+                        ArgsExpr
+                          NameExpr 'g'
+    ReturnStmt
+      NameExpr 'h'

@@ -735,7 +735,9 @@ static struct expr *postfix_expression(struct Token **rest,
         }
         if (equal(token, "(")) {
             token = token->next;
-            struct expr *args = argument_expression_list(&token, token);
+            struct expr *args = NULL;
+            if (!equal(token, ")"))
+                args = argument_expression_list(&token, token);
             expr = create_expr(EXPR_FUNCALL, expr, args, NULL, 0, NULL);
             *rest = skip(token, ")");
             return expr;
