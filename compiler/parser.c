@@ -21,7 +21,8 @@ static struct stmt *create_stmt();
 static struct expr *create_expr();
 static struct type *create_type();
 static struct param_list *create_param_list();
-static struct decl *function_definition(struct Token *token);
+static struct decl *function_definition(struct Token **rest,
+                                        struct Token *token);
 static struct stmt *declaration(struct Token **rest, struct Token *token);
 static struct type *declaration_specifiers(struct Token **rest,
                                            struct Token *token);
@@ -152,7 +153,8 @@ static struct param_list *create_param_list(char *name, struct type *type,
 //                      | declaration;
 
 // function-definition = declaration-specifiers, declarator, [declaration-list], compound-statement;
-static struct decl *function_definition(struct Token *token) {
+static struct decl *function_definition(struct Token **rest,
+                                        struct Token *token) {
     struct decl *decl = create_decl();
 
     // declaration-specifiers
@@ -167,7 +169,7 @@ static struct decl *function_definition(struct Token *token) {
 
     // compound-statement;
     decl->code = compound_statement(&token, token);
-
+    *rest = token;
     return decl;
 };
 
@@ -951,8 +953,12 @@ static struct stmt *jump_statement(struct Token **rest, struct Token *token) {
 };
 
 struct decl *parse(struct Token *token) {
-    //
-    return function_definition(token);
+    struct decl head = {};
+    struct decl *cur = &head;
+    while (token->kind != TK_EOF) {
+        cur = cur->next = function_definition(&token, token);
+    }
+    return head.next;
 };
 
 void print_decl(struct decl *decl, int level) {

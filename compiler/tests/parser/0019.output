@@ -1,3 +1,7 @@
+FunctionDecl int 'func'
+  BlockStmt
+    ReturnStmt
+      IntegerLiteral 2
 FunctionDecl int 'main'
   BlockStmt
     DeclStmt
