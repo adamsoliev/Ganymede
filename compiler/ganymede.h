@@ -95,7 +95,8 @@ enum expr_t {
     EXPR_ADDR,    // &
     EXPR_NAME,
     EXPR_INTEGER_LITERAL,
-    EXPR_STRING_LITERAL
+    EXPR_STRING_LITERAL,
+    EXPR_FUNCALL
 };
 
 struct expr {

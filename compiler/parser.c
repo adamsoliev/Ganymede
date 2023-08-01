@@ -731,6 +731,13 @@ static struct expr *postfix_expression(struct Token **rest,
             *rest = token;
             return expr;
         }
+        if (equal(token, "(")) {
+            token = token->next;
+            // struct expr *right = expression(&token, token);
+            expr = create_expr(EXPR_FUNCALL, expr, NULL, NULL, 0, NULL);
+            *rest = skip(token, ")");
+            return expr;
+        }
     }
     *rest = token;
     return expr;
@@ -1082,6 +1089,10 @@ void print_expr(struct expr *expr, int level) {
             break;
         case EXPR_ADDR:
             fprintf(outfile, "%*sAddrExpr\n", level * 2, "");
+            print_expr(expr->left, level + 1);
+            break;
+        case EXPR_FUNCALL:
+            fprintf(outfile, "%*sFuncallExpr\n", level * 2, "");
             print_expr(expr->left, level + 1);
             break;
     }

@@ -1,0 +1,5 @@
+FunctionDecl int 'main'
+  BlockStmt
+    ReturnStmt
+      FuncallExpr
+        NameExpr 'func'
