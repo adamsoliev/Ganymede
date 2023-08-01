@@ -1,3 +1,3 @@
 int main() {
-    return func();
+    return func(a, b, c);
 }

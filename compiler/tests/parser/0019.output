@@ -3,3 +3,9 @@ FunctionDecl int 'main'
     ReturnStmt
       FuncallExpr
         NameExpr 'func'
+        ArgsExpr
+          NameExpr 'a'
+          ArgsExpr
+            NameExpr 'b'
+            ArgsExpr
+              NameExpr 'c'

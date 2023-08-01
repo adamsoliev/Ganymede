@@ -74,6 +74,8 @@ static struct expr *postfix_expression(struct Token **rest,
                                        struct Token *token);
 static struct expr *primary_expression(struct Token **rest,
                                        struct Token *token);
+static struct expr *argument_expression_list(struct Token **rest,
+                                             struct Token *token);
 const char *type2str(struct type *type);
 static struct stmt *iteration_statement(struct Token **rest,
                                         struct Token *token);
@@ -733,8 +735,8 @@ static struct expr *postfix_expression(struct Token **rest,
         }
         if (equal(token, "(")) {
             token = token->next;
-            // struct expr *right = expression(&token, token);
-            expr = create_expr(EXPR_FUNCALL, expr, NULL, NULL, 0, NULL);
+            struct expr *args = argument_expression_list(&token, token);
+            expr = create_expr(EXPR_FUNCALL, expr, args, NULL, 0, NULL);
             *rest = skip(token, ")");
             return expr;
         }
@@ -782,6 +784,19 @@ static struct expr *primary_expression(struct Token **rest,
 };
 
 // argument-expression-list = assignment-expression, {',', assignment-expression};
+static struct expr *argument_expression_list(struct Token **rest,
+                                             struct Token *token) {
+    //
+    struct expr *expr = assignment_expression(&token, token);
+    while (equal(token, ",")) {
+        token = token->next;
+        struct expr *right = argument_expression_list(&token, token);
+        *rest = token;
+        return create_expr(EXPR_ARGS, expr, right, NULL, 0, NULL);
+    }
+    *rest = token;
+    return create_expr(EXPR_ARGS, expr, NULL, NULL, 0, NULL);
+};
 
 // constant = integer-constant
 //          | character-constant
@@ -1094,6 +1109,12 @@ void print_expr(struct expr *expr, int level) {
         case EXPR_FUNCALL:
             fprintf(outfile, "%*sFuncallExpr\n", level * 2, "");
             print_expr(expr->left, level + 1);
+            print_expr(expr->right, level + 1);
+            break;
+        case EXPR_ARGS:
+            fprintf(outfile, "%*sArgsExpr\n", level * 2, "");
+            print_expr(expr->left, level + 1);
+            print_expr(expr->right, level + 1);
             break;
     }
 }
