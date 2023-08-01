@@ -290,6 +290,70 @@ Notes on existing compilers
   code generation 
   ---------------
 
+  -- steps --
+  +, -
+  *, / and ()
+  unary + and -
+  ==, !=, <, <=, > and >=
+  multiple statements separated by , 
+  single letter local variables
+  multiple letter local variables
+  return
+  { ... }
+  null stmt
+  if, for, while, 
+  improve error msg
+  unary & and *
+  ptr arithmetic
+  int and var def mandatory
+  zero-rity func calls
+  func call with up to 6 args
+  zero-rity func def 
+  func def with up to 6 args
+  1-dim array
+  arrays of arrays
+  [] operator
+  sizeof
+  merge func with variable
+  global variables
+  char type
+  string literal
+  refactoring: util function
+  \a, \b, \f, \n, \r, \t, \v, \x, \0, \', \", \\
+  \<octal-sequence>
+  \x<hex-sequence>
+  read from file instead of argv[1]
+  refactor
+  add -o and -h optiosn
+  add line and block comments
+  handle block scope
+  rewrite tests in shell script in C
+  line numbers
+  emit .file and .loc directives
+  comma operator
+  add struct, align struct members
+  align local variables
+  support struct tags
+  add -> operator
+  add union
+  add struct assignemnt
+  change size of int from 8 to 4
+  add long type
+  add short type
+  add nested type declarations
+  add func declaration
+  add void type
+  add long long for long
+  add typedef
+  make sizeof to accept type name 
+  use 32 bit regs for char, short and int
+  add type cast
+  add usual arith conversion
+  report error on undefined/undeclared function
+  handle return type converstion
+  https://github.com/rui314/chibicc/commits/main?before=90d1f7f199cc55b13c7fdb5839d1409806633fdb+256&branch=main&qualified_name=refs%2Fheads%2Fmain
+
+
 (shecc)[https://github.com/jserv/shecc]
 (lcc)[https://github.com/drh/lcc]
 (lacc)[https://github.com/larmel/lacc]

@@ -15,6 +15,7 @@
 1. Compiler
 
    - [LLVM](https://llvm.org/)
+   - [Chibicc](https://github.com/rui314/chibicc)
    - [QBE](https://c9x.me/compile/)
    - [Tiny C Compiler](https://bellard.org/tcc/)
 
