@@ -370,8 +370,8 @@ static struct type *type_specifier(struct Token **rest, struct Token *token) {
 static struct type *direct_declarator(struct Token **rest,
                                       struct Token *token) {
     struct type *type = NULL;
-    // funcall
     if (token->next->kind == TK_PUNCT && equal(token->next, "(")) {
+        // funcall
         type = create_type(TYPE_FUNCTION, NULL, NULL);
         type->name = calloc(sizeof(char), token->len + 1);
         memcpy(type->name, token->buffer, token->len);
@@ -382,9 +382,8 @@ static struct type *direct_declarator(struct Token **rest,
             type->params = parameter_type_list(&token, token);
         }
         token = skip(token, ")");
-    }
-    // array
-    if (token->next->kind == TK_PUNCT && equal(token->next, "[")) {
+    } else if (token->next->kind == TK_PUNCT && equal(token->next, "[")) {
+        // array
         type = create_type(TYPE_ARRAY, NULL, NULL);
         type->name = calloc(sizeof(char), token->len + 1);
         memcpy(type->name, token->buffer, token->len);
@@ -394,6 +393,11 @@ static struct type *direct_declarator(struct Token **rest,
         struct expr *expr = assignment_expression(&token, token);
         type->expr = expr;
         token = skip(token, "]");
+    } else {
+        type = create_type(TYPE_VOID, NULL, NULL);
+        type->name = calloc(sizeof(char), token->len + 1);
+        memcpy(type->name, token->buffer, token->len);
+        token = token->next;
     }
 
     *rest = token;
