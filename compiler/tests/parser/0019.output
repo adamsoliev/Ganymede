@@ -2,6 +2,12 @@ FunctionDecl int 'func'
   BlockStmt
     ReturnStmt
       IntegerLiteral 2
+FunctionDecl int 'func1'
+  Params
+    Param int 'a'
+  BlockStmt
+    ReturnStmt
+      NameExpr 'a'
 FunctionDecl int 'main'
   BlockStmt
     DeclStmt

@@ -128,6 +128,7 @@ struct type {
     enum type_t kind;
     struct type *subtype;
     struct param_list *params;
+    const char *name;  // int "'func'(int a, int b)" { return a + b; }
 };
 
 // 5. Parameter list

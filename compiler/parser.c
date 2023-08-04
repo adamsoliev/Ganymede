@@ -28,7 +28,7 @@ static struct type *declaration_specifiers(struct Token **rest,
                                            struct Token *token);
 static struct type *declaration_specifier(struct Token **rest,
                                           struct Token *token);
-static char *declarator(struct Token **rest, struct Token *token);
+static struct type *declarator(struct Token **rest, struct Token *token);
 static struct stmt *compound_statement(struct Token **rest,
                                        struct Token *token);
 static struct stmt *declaration_or_statement(struct Token **rest,
@@ -37,8 +37,14 @@ static struct expr *init_declarator_list(struct Token **rest,
                                          struct Token *token);
 static struct expr *init_declarator(struct Token **rest, struct Token *token);
 static struct type *type_specifier(struct Token **rest, struct Token *token);
-static char *direct_declarator(struct Token **rest, struct Token *token);
+static struct type *direct_declarator(struct Token **rest, struct Token *token);
 static struct expr *initializer(struct Token **rest, struct Token *token);
+static struct param_list *parameter_list(struct Token **rest,
+                                         struct Token *token);
+struct param_list *parameter_type_list(struct Token **rest,
+                                       struct Token *token);
+static struct param_list *parameter_declaration(struct Token **rest,
+                                                struct Token *token);
 static struct stmt *statement(struct Token **rest, struct Token *token);
 static struct stmt *expression_statement(struct Token **rest,
                                          struct Token *token);
@@ -80,6 +86,8 @@ static struct expr *argument_expression_list(struct Token **rest,
 const char *type2str(struct type *type);
 static struct stmt *iteration_statement(struct Token **rest,
                                         struct Token *token);
+
+void print_params(struct param_list *param_list, int level);
 
 // utils
 static struct decl *create_decl(
@@ -163,7 +171,10 @@ static struct decl *function_definition(struct Token **rest,
     decl->type = type;
 
     // declarator
-    decl->name = declarator(&token, token);
+    // decl->name = declarator(&token, token);
+    struct type *temp = declarator(&token, token);  // BADDESIGN
+    decl->name = temp->name;
+    decl->type->params = temp->params;
 
     // FIXME: [declaration-list]
 
@@ -223,9 +234,8 @@ static struct type *declaration_specifier(struct Token **rest,
 };
 
 // declarator = direct-declarator;
-static char *declarator(struct Token **rest, struct Token *token) {
-    char *name = direct_declarator(rest, token);
-    return name;
+static struct type *declarator(struct Token **rest, struct Token *token) {
+    return direct_declarator(rest, token);
 };
 
 // declaration-list = declaration, {declaration};
@@ -271,16 +281,16 @@ static struct expr *init_declarator_list(struct Token **rest,
 // init-declarator = declarator, ['=', initializer];
 static struct expr *init_declarator(struct Token **rest, struct Token *token) {
     //
-    char *name = declarator(&token, token);
+    struct type *temp = declarator(&token, token);
     if (token->kind == TK_PUNCT && equal(token, "=")) {
         token = token->next;
         struct expr *expr = initializer(&token, token);
-        expr->name = name;
+        expr->name = temp->name;
         *rest = token;
         return expr;
     }
     struct expr *expr = create_expr(EXPR_NAME, NULL, NULL, NULL, 0, NULL);
-    expr->name = name;
+    expr->name = temp->name;
     *rest = token;
     return expr;
 };
@@ -347,20 +357,24 @@ static struct type *type_specifier(struct Token **rest, struct Token *token) {
 //                   | direct-declarator, '(', parameter-type-list, ')'
 //                   | direct-declarator, '(', identifier-list, ')'
 //                   | direct-declarator, '(', ')';
-static char *direct_declarator(struct Token **rest, struct Token *token) {
-    char *name = calloc(sizeof(char), token->len + 1);
-    memcpy(name, token->buffer, token->len);
+// static char *direct_declarator(struct Token **rest, struct Token *token) {
+static struct type *direct_declarator(struct Token **rest,
+                                      struct Token *token) {
+    struct type *type = create_type(TYPE_FUNCTION, NULL, NULL);
+    type->name = calloc(sizeof(char), token->len + 1);
+    memcpy(type->name, token->buffer, token->len);
     token = token->next;
 
     if (token->kind == TK_PUNCT && equal(token, "(")) {
         token = skip(token, "(");
-    }
-    if (token->kind == TK_PUNCT && equal(token, ")")) {
+        if (token->kind == TK_KEYWORD && equal(token, "int")) {
+            type->params = parameter_type_list(&token, token);
+        }
         token = skip(token, ")");
     }
 
     *rest = token;
-    return name;
+    return type;
 };
 
 // identifier-list = identifier, {',', identifier};
@@ -430,6 +444,10 @@ static struct expr *initializer(struct Token **rest, struct Token *token) {
 // type-qualifier-list = type-qualifier, {type-qualifier};
 
 // parameter-type-list = parameter-list, [',', '...'];
+struct param_list *parameter_type_list(struct Token **rest,
+                                       struct Token *token) {
+    return parameter_list(rest, token);
+};
 
 // struct-declarator = ':', constant-expression
 //                   | declarator, [':', constant-expression];
@@ -447,8 +465,33 @@ static struct expr *initializer(struct Token **rest, struct Token *token) {
 //                     | '|=';
 
 // parameter-list = parameter-declaration, {',', parameter-declaration};
+static struct param_list *parameter_list(struct Token **rest,
+                                         struct Token *token) {
+    return parameter_declaration(rest, token);
+};
 
 // parameter-declaration = declaration-specifiers, [declarator | abstract-declarator];
+static struct param_list *parameter_declaration(struct Token **rest,
+                                                struct Token *token) {
+    struct param_list *param_list = create_param_list(NULL, NULL, NULL);
+
+    // declaration-specifiers
+    struct type *type = declaration_specifiers(&token, token);
+    param_list->type = type;
+
+    // declarator | abstract-declarator
+    if (token->kind == TK_PUNCT && equal(token, "*")) {
+        token = token->next;
+        struct type *type = create_type(TYPE_POINTER, type, NULL);
+        param_list->type = type;
+    }
+
+    struct type *temp = declarator(&token, token);  // BADDESIGN
+    param_list->name = temp->name;
+
+    *rest = token;
+    return param_list;
+};
 
 // expression = assignment-expression, {',', assignment-expression};
 static struct expr *expression(struct Token **rest, struct Token *token) {
@@ -972,6 +1015,10 @@ void print_decl(struct decl *decl, int level) {
                     "",
                     subtypeName,
                     decl->name);
+            if (decl->type->params != NULL) {
+                fprintf(outfile, "%*sParams\n", (level + 1) * 2, "");
+                print_params(decl->type->params, level + 2);
+            }
             print_stmt(decl->code, level + 1);
             break;
         }
@@ -1125,6 +1172,16 @@ void print_expr(struct expr *expr, int level) {
             print_expr(expr->right, level + 1);
             break;
     }
+}
+
+void print_params(struct param_list *param_list, int level) {
+    if (param_list == NULL) return;
+    fprintf(outfile,
+            "%*sParam %s '%s'\n",
+            level * 2,
+            "",
+            type2str(param_list->type),
+            param_list->name);
 }
 
 const char *type2str(struct type *type) {

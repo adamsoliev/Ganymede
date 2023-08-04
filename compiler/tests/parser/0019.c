@@ -1,10 +1,6 @@
-int func() {
-    return 2;
-}
+int func() { return 2; }
 
-// int func1(int a) {
-//     return a;
-// };
+int func1(int a) { return a; }
 
 // int func2(int a, int b) {
 //     return a + b;
