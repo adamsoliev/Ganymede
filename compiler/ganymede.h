@@ -109,6 +109,8 @@ struct expr {
     const char *string_literal;
     struct symbol *symbol;
     struct decl *decl;  // for ('int i = 0'; i < 10; i++)
+
+    int array_size;
 };
 
 // 4. Types
@@ -129,6 +131,7 @@ struct type {
     struct type *subtype;
     struct param_list *params;
     const char *name;  // int "'func'(int a, int b)" { return a + b; }
+    struct expr *expr; // int a[10];
 };
 
 // 5. Parameter list

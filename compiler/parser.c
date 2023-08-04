@@ -204,6 +204,12 @@ static struct stmt *declaration(struct Token **rest, struct Token *token) {
     // init-declarator-list
     struct expr *expr = init_declarator_list(&token, token);
 
+    // array
+    if (expr->array_size > 0) {
+        struct type *type = create_type(TYPE_ARRAY, decl_specs, NULL);
+        decl->type = type;
+    }
+
     decl->name = calloc(sizeof(char), sizeof(expr->name));
     strcpy(decl->name, expr->name);
 
@@ -286,11 +292,14 @@ static struct expr *init_declarator(struct Token **rest, struct Token *token) {
         token = token->next;
         struct expr *expr = initializer(&token, token);
         expr->name = temp->name;
+        if (temp->kind == TYPE_ARRAY)
+            expr->array_size = temp->expr->integer_value;
         *rest = token;
         return expr;
     }
     struct expr *expr = create_expr(EXPR_NAME, NULL, NULL, NULL, 0, NULL);
     expr->name = temp->name;
+    if (temp->kind == TYPE_ARRAY) expr->array_size = temp->expr->integer_value;
     *rest = token;
     return expr;
 };
@@ -360,17 +369,31 @@ static struct type *type_specifier(struct Token **rest, struct Token *token) {
 // static char *direct_declarator(struct Token **rest, struct Token *token) {
 static struct type *direct_declarator(struct Token **rest,
                                       struct Token *token) {
-    struct type *type = create_type(TYPE_FUNCTION, NULL, NULL);
-    type->name = calloc(sizeof(char), token->len + 1);
-    memcpy(type->name, token->buffer, token->len);
-    token = token->next;
+    struct type *type = NULL;
+    // funcall
+    if (token->next->kind == TK_PUNCT && equal(token->next, "(")) {
+        type = create_type(TYPE_FUNCTION, NULL, NULL);
+        type->name = calloc(sizeof(char), token->len + 1);
+        memcpy(type->name, token->buffer, token->len);
+        token = token->next;
 
-    if (token->kind == TK_PUNCT && equal(token, "(")) {
         token = skip(token, "(");
         if (token->kind == TK_KEYWORD && equal(token, "int")) {
             type->params = parameter_type_list(&token, token);
         }
         token = skip(token, ")");
+    }
+    // array
+    if (token->next->kind == TK_PUNCT && equal(token->next, "[")) {
+        type = create_type(TYPE_ARRAY, NULL, NULL);
+        type->name = calloc(sizeof(char), token->len + 1);
+        memcpy(type->name, token->buffer, token->len);
+        token = token->next;
+
+        token = skip(token, "[");
+        struct expr *expr = assignment_expression(&token, token);
+        type->expr = expr;
+        token = skip(token, "]");
     }
 
     *rest = token;
@@ -1049,6 +1072,17 @@ void print_decl(struct decl *decl, int level) {
             print_expr(decl->value, level + 1);
             break;
         }
+        case TYPE_ARRAY: {
+            fprintf(outfile,
+                    "%*sVarDecl %s[%d] '%s'\n",
+                    level * 2,
+                    type2str(decl->type),
+                    type2str(decl->type->subtype),
+                    decl->value->array_size,
+                    decl->name);
+            print_expr(decl->value, level + 1);
+            break;
+        }
     }
     print_decl(decl->next, level);
 }
@@ -1198,7 +1232,7 @@ const char *type2str(struct type *type) {
         case TYPE_CHARACTER: return "char";
         case TYPE_INTEGER: return "int";
         case TYPE_STRING: return "string";
-        case TYPE_ARRAY: return "array";
+        case TYPE_ARRAY: return "";
         case TYPE_FUNCTION: return "function";
         case TYPE_POINTER: return "pointer";
     }
