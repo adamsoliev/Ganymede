@@ -2,29 +2,21 @@ int func() { return 2; }
 
 int func1(int a) { return a; }
 
-// int func2(int a, int b) {
-//     return a + b;
-// };
+int func2(int a, int b) { return a + b; }
 
-// int func3(int a, int b, int c) {
-//     return a + b + c;
-// };
+int func3(int a, int b, int c) { return a + b + c; }
 
-// int func4(int a, int b, int c, int d) {
-//     return a + b + c + d;
-// };
+int func4(int a, int b, int c, int d) { return a + b + c + d; }
 
-// int func5(int a, int b, int c, int d, int e) {
-//     return a + b + c + d + e;
-// };
+int func5(int a, int b, int c, int d, int e) { return a + b + c + d + e; }
 
-// int func6(int a, int b, int c, int d, int e, int f) {
-//     return a + b + c + d + e + f;
-// };
+int func6(int a, int b, int c, int d, int e, int f) {
+    return a + b + c + d + e + f;
+}
 
-// int func7(int a, int b, int c, int d, int e, int f, int g) {
-//     return a + b + c + d + e + f + g;
-// };
+int func7(int a, int b, int c, int d, int e, int f, int g) {
+    return a + b + c + d + e + f + g;
+}
 
 int main() {
     int a = func();

@@ -8,6 +8,105 @@ FunctionDecl int 'func1'
   BlockStmt
     ReturnStmt
       NameExpr 'a'
+FunctionDecl int 'func2'
+  Params
+    Param int 'a'
+    Param int 'b'
+  BlockStmt
+    ReturnStmt
+      AddExpr
+        NameExpr 'a'
+        NameExpr 'b'
+FunctionDecl int 'func3'
+  Params
+    Param int 'a'
+    Param int 'b'
+    Param int 'c'
+  BlockStmt
+    ReturnStmt
+      AddExpr
+        AddExpr
+          NameExpr 'a'
+          NameExpr 'b'
+        NameExpr 'c'
+FunctionDecl int 'func4'
+  Params
+    Param int 'a'
+    Param int 'b'
+    Param int 'c'
+    Param int 'd'
+  BlockStmt
+    ReturnStmt
+      AddExpr
+        AddExpr
+          AddExpr
+            NameExpr 'a'
+            NameExpr 'b'
+          NameExpr 'c'
+        NameExpr 'd'
+FunctionDecl int 'func5'
+  Params
+    Param int 'a'
+    Param int 'b'
+    Param int 'c'
+    Param int 'd'
+    Param int 'e'
+  BlockStmt
+    ReturnStmt
+      AddExpr
+        AddExpr
+          AddExpr
+            AddExpr
+              NameExpr 'a'
+              NameExpr 'b'
+            NameExpr 'c'
+          NameExpr 'd'
+        NameExpr 'e'
+FunctionDecl int 'func6'
+  Params
+    Param int 'a'
+    Param int 'b'
+    Param int 'c'
+    Param int 'd'
+    Param int 'e'
+    Param int 'f'
+  BlockStmt
+    ReturnStmt
+      AddExpr
+        AddExpr
+          AddExpr
+            AddExpr
+              AddExpr
+                NameExpr 'a'
+                NameExpr 'b'
+              NameExpr 'c'
+            NameExpr 'd'
+          NameExpr 'e'
+        NameExpr 'f'
+FunctionDecl int 'func7'
+  Params
+    Param int 'a'
+    Param int 'b'
+    Param int 'c'
+    Param int 'd'
+    Param int 'e'
+    Param int 'f'
+    Param int 'g'
+  BlockStmt
+    ReturnStmt
+      AddExpr
+        AddExpr
+          AddExpr
+            AddExpr
+              AddExpr
+                AddExpr
+                  NameExpr 'a'
+                  NameExpr 'b'
+                NameExpr 'c'
+              NameExpr 'd'
+            NameExpr 'e'
+          NameExpr 'f'
+        NameExpr 'g'
 FunctionDecl int 'main'
   BlockStmt
     DeclStmt

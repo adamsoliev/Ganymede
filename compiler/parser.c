@@ -467,7 +467,13 @@ struct param_list *parameter_type_list(struct Token **rest,
 // parameter-list = parameter-declaration, {',', parameter-declaration};
 static struct param_list *parameter_list(struct Token **rest,
                                          struct Token *token) {
-    return parameter_declaration(rest, token);
+    struct param_list *param_list = parameter_declaration(&token, token);
+    if (token->kind == TK_PUNCT && equal(token, ",")) {
+        token = token->next;
+        param_list->next = parameter_list(&token, token);
+    }
+    *rest = token;
+    return param_list;
 };
 
 // parameter-declaration = declaration-specifiers, [declarator | abstract-declarator];
@@ -1182,6 +1188,7 @@ void print_params(struct param_list *param_list, int level) {
             "",
             type2str(param_list->type),
             param_list->name);
+    print_params(param_list->next, level);
 }
 
 const char *type2str(struct type *type) {
