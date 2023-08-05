@@ -56,22 +56,27 @@ char *concat(const char *str1, const char *str2) {
 int main(int argc, char **argv) {
     int opt;
     char *optstring = "hvf:o:s:t:";
-    char *input;
+    char *input = NULL;
     FILE *infile;
 
     while ((opt = getopt(argc, argv, optstring)) != -1) {
         switch (opt) {
             case 'h':
-                printf("Usage: ganymede [options]\n");
+                printf("Usage: ganymede [OPTION]... [FILE]...\n");
                 printf("Options:\n");
-                printf("  -h, --help        Print this help message\n");
-                printf("  -v, --version     Print the version number\n");
-                printf("  -f, --file        Specify the input file\n");
-                printf("  -o, --file        Specify the output file\n");
-                printf("  -s, --string      Specify the input string\n");
-                printf("  -t, --test        Run testsuite\n");
+                printf("  -h                 Print this help message\n");
+                printf("  -v                 Print the version number\n");
+                printf("  -f                 Specify the input file\n");
+                printf("  -o                 Specify the output file\n");
+                printf("  -s                 Specify the input string\n");
+                printf("  -t TESTSUITE       Run testsuite\n");
+                printf(
+                    "                     TESTSUITE is 'scan' and 'parse'\n");
                 return 0;
-            case 'v': printf("tc version 1.0\n"); break;
+            case 'v': {
+                printf("ganymede version 0.0.2\n");
+                return 0;
+            }
             case 'f': {
                 input = readFile(optarg);
                 if (input == NULL) {
@@ -86,13 +91,22 @@ int main(int argc, char **argv) {
             }
             case 's': input = optarg; break;
             case 't': {
+                // we can't handle this from the compiler itself yet and need test.sh
                 run_tests = true;
                 test_suite = optarg;
                 break;
             }
-            default: printf("Unknown option: %s\n", optarg); break;
+            default: {
+                exit(1);
+            }
         }
     }
+
+    if (input == NULL) {
+        printf("No input file specified\n");
+        exit(1);
+    }
+
     if (outfile == NULL) {
         outfile = stdout;
     }
@@ -123,7 +137,7 @@ int main(int argc, char **argv) {
 
     // semantic_analysis(program);
     // irgen(program);
-    // codegen(program);
+    codegen(program);
 
     return 0;
 }

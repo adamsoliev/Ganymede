@@ -31,7 +31,7 @@ assert() {
     input="$2"
 
     # ./build/ganymede "$input" > ./build/tmp.s || exit
-    ./build/ganymede "$input" || exit
+    ./build/ganymede "-s" "$input" -o ./build/tmp.s || exit
 
     # riscv64-linux-gnu-gcc -static -o ./build/tmp ./build/tmp.s
     riscv64-linux-gnu-gcc -static -o ./build/tmp ./build/tmp.s
