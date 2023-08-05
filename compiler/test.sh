@@ -1,18 +1,18 @@
 #!/bin/bash
 
-# echo "-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*"
-# echo "             RUNNING SCANNER TESTS              "
-# echo "-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*"
-# cd ./tests/scanner # dump way to do this
-# python3 runner.py
-# exit_code=$?
-# if [[ $exit_code -ne 0 ]]; then
-#     echo "Script failed"
-#     exit 1
-# fi
-# cd ../../
-
 echo "-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*"
+echo "             RUNNING SCANNER TESTS              "
+echo "-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*"
+cd ./tests/scanner # dump way to do this
+python3 runner.py
+exit_code=$?
+if [[ $exit_code -ne 0 ]]; then
+    echo "Script failed"
+    exit 1
+fi
+cd ../../
+
+echo -e "\n-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*"
 echo "             RUNNING PARSER TESTS               "
 echo "-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*"
 cd ./tests/parser # dump way to do this

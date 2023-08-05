@@ -172,8 +172,7 @@ TK_PUNCT     ;
 TK_KEYWORD   if
 TK_PUNCT     (
 TK_IDENT     c
-TK_PUNCT     =
-TK_PUNCT     =
+TK_PUNCT     ==
 TK_NUM       7
 TK_PUNCT     )
 TK_IDENT     print

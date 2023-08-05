@@ -6,18 +6,20 @@ import subprocess
 all_tests_pass = True
 
 def execute_command(name):
-    command = f"./../../build/ganymede -f ./{name}.c -o ./{name}.temp.output"
+    command = f"./../../build/ganymede -f ./{name}.c -o ./{name}.temp.output -t parse"
     subprocess.run(command, shell=True)
 
 def cleanup(name):
     command = f"rm ./{name}.temp.output"
+    subprocess.run(command, shell=True)
+    command = f"rm ./{name}.temp.output.parse"
     subprocess.run(command, shell=True)
 
 def compare_files(name):
     global all_tests_pass
     cf = f"./{name}.c"
     outputf = f"./{name}.output"
-    tempoutputf = f"./{name}.temp.output"
+    tempoutputf = f"./{name}.temp.output.parse"
 
     # Read the contents of the files into variables
     with open(outputf, "r") as file:
