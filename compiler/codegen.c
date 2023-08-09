@@ -25,7 +25,7 @@ static void expr_as(struct expr *e) {
     switch (e->kind) {
         case EXPR_INTEGER_LITERAL:
             fprintf(out, "li        a1, %d\n", e->integer_value);
-            return;
+            break;
         case EXPR_ADD: {
             expr_as(e->left);
             fprintf(out, "mv        t0, a1\n");
@@ -49,6 +49,17 @@ static void expr_as(struct expr *e) {
             fprintf(out, "mv        t0, a1\n");
             expr_as(e->right);
             fprintf(out, "div       a1, t0, a1\n");
+        } break;
+        case EXPR_NE:
+        case EXPR_EQ: {
+            expr_as(e->left);
+            fprintf(out, "mv        t0, a1\n");
+            expr_as(e->right);
+            fprintf(out, "xor      a1, t0, a1\n");
+            if (e->kind == EXPR_EQ)
+                fprintf(out, "seqz      a1, a1\n");
+            else
+                fprintf(out, "snez      a1, a1\n");
         } break;
         default: assert(false);
     }
