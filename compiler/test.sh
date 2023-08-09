@@ -40,12 +40,15 @@ assert() {
     actual="$?"
 
     if [ "$actual" = "$expected" ]; then
-        echo "$input => $actual"
+        echo "$input => $actual" | tr -d '\n'
     else
         echo "$input => $expected expected, but got $actual"
         exit 1
     fi
 }
+
+assert 2 "$(cat tests/parser/0001.c)"
+assert -2 "$(cat tests/parser/0002.c)"
 
 # assert 0 "int main() { return 0; }"
 # assert 2 "int main() { return 2; }"

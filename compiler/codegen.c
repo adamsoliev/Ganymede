@@ -1,75 +1,94 @@
 
 #include "ganymede.h"
 
-static FILE* in;
-static FILE* out;
-static const int MAX_LINE_LENGTH = 256;
-static const int MAX_WORD_LENGTH = 63;
+static FILE *out;
+static struct decl *current_fn = NULL;
 
-static void prologue() {
-    //
+void prologue();
+void epilogue();
+
+static void type_ir(struct type *t) {
+    if (!t) return;
+    if (t->kind == TYPE_FUNCTION) {
+        fprintf(out, "define");
+        type_ir(t->subtype);
+        // param_list_ir(t->params);
+        return;
+    }
+    if (t->kind == TYPE_INTEGER) {
+        fprintf(out, " i32");
+    }
 }
 
-static void epilogue() {
-    //
+static void expr_as(struct expr *e) {
+    if (!e) return;
+    switch (e->kind) {
+        case EXPR_INTEGER_LITERAL:
+            fprintf(out, "li        a1, %d\n", e->integer_value);
+            return;
+        default: assert(false);
+    }
 }
 
-static void function(const char* definition) {
-    char* start = strchr(definition, '@');  // Find the '@' character
-    if (start != NULL) {
-        char* end = strchr(start, '(');     // Find the '(' character
-        if (end != NULL) {
-            size_t length = end - (start + 1);
-            char function_name[length + 1];
-            strncpy(function_name, start + 1, length);
-            function_name[length] = '\0';  // Null-terminate the function name
-            // name
-            fprintf(out, "  .globl  %s\n", function_name);
-            fprintf(out, "  .type   %s,@function\n", function_name);
-            fprintf(out, "%s:\n", function_name);
+static void stmt_ir(struct stmt *s) {
+    if (!s) return;
+    while (s) {
+        switch (s->kind) {
+            case STMT_RETURN: {
+                expr_as(s->expr);
+            } break;
+            case STMT_BLOCK: {
+                stmt_ir(s->body);
+            } break;
+            case STMT_DECL: {
+                fprintf(out, " @%s()", s->decl->name);
+                if (s->decl->value) {
+                    fprintf(out, " =");
+                    expr_as(s->decl->value);
+                }
+            } break;
+        }
+        s = s->next;
+    }
+}
+
+static void decl_as(struct decl *d) {
+    for (struct decl *decl = d; decl; decl = decl->next) {
+        if (decl->type->kind == TYPE_FUNCTION) {
+            current_fn = decl;
+
+            prologue();
+            stmt_ir(decl->code);
+            epilogue();
         }
     }
-
-    // prologue();
-
-    // body
-    char line[MAX_LINE_LENGTH];
-    char firstWord[MAX_WORD_LENGTH];
-    while (fgets(line, sizeof(line), in) != NULL) {
-        sscanf(line, "%s", firstWord);
-        if (strcmp(firstWord, "ret") == 0) {
-            char secondWord[MAX_WORD_LENGTH];
-            char thirdWord[MAX_WORD_LENGTH];
-            if (sscanf(line, "%*s %s %s", secondWord, thirdWord) == 2) {
-                fprintf(out, "  li a0, %d\n", atoi(thirdWord));  // return 2
-            }
-            fprintf(out, "  ret\n");
-        }
-    }
-
-    // epilogue();
 }
 
-void codegen() {
-    in = fopen("./build/ir.ll", "r");
-    if (in == NULL) {
-        error(true, "cannot open file\n");
-    }
+void prologue() {
+    fprintf(out, ".globl    %s\n", current_fn->name);
+    fprintf(out, ".type     %s,@function\n", current_fn->name);
+    fprintf(out, "main:\n");
+    fprintf(out, "addi      sp, sp, -16\n");
+    fprintf(out, "sd        s0, 8(sp)\n");
+    fprintf(out, "addi      s0, sp, 16\n");
+}
 
-    out = fopen("./build/tmp.s", "w+");
+void epilogue() {
+    fprintf(out, "mv        a0, a1\n");
+    fprintf(out, "ld        s0, 8(sp)\n");
+    fprintf(out, "addi      sp, sp, 16\n");
+    fprintf(out, "jr        ra\n");
+}
+
+void codegen(struct decl *d) {
+    // out = fopen("/home/adam/dev/ganymede/compiler/build/program.s", "w+");
+    out = outfile;
     if (out == NULL) {
         error(true, "cannot open file\n");
     }
 
-    char line[MAX_LINE_LENGTH];
-    char firstWord[MAX_LINE_LENGTH];
-    while (fgets(line, sizeof(line), in) != NULL) {
-        sscanf(line, "%s", firstWord);
-        if (strcmp(firstWord, "define") == 0) {
-            function(line);
-        }
-    }
+    decl_as(d);
+    fprintf(out, "\n");
 
-    fclose(in);
     fclose(out);
 }
