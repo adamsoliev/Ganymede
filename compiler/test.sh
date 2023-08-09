@@ -49,6 +49,9 @@ assert() {
 
 assert 2 "$(cat tests/parser/0001.c)"
 assert -2 "$(cat tests/parser/0002.c)"
+assert 4 "$(cat tests/parser/0003.c)"
+assert 4 "$(cat tests/parser/0004.c)"
+assert 1 "$(cat tests/parser/0005.c)"
 
 # assert 0 "int main() { return 0; }"
 # assert 2 "int main() { return 2; }"
