@@ -26,6 +26,12 @@ static void expr_as(struct expr *e) {
         case EXPR_INTEGER_LITERAL:
             fprintf(out, "li        a1, %d\n", e->integer_value);
             return;
+        case EXPR_SUB: {
+            expr_as(e->left);
+            fprintf(out, "mv        t0, a1\n");
+            expr_as(e->right);
+            fprintf(out, "sub       a1, t0, a1\n");
+        } break;
         default: assert(false);
     }
 }

@@ -40,7 +40,7 @@ assert() {
     actual="$?"
 
     if [ "$actual" = "$expected" ]; then
-        echo "$input => $actual" | tr -d '\n'
+        echo "$input => $actual" | paste -s -d ' '
     else
         echo "$input => $expected expected, but got $actual"
         exit 1
