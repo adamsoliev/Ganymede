@@ -15,28 +15,28 @@ static void type_ir(struct type *t) {
     }
 }
 
-static int expr_ir(struct expr *e) {
+static int expr_as(struct expr *e) {
     if (!e) return -1;
     switch (e->kind) {
         case EXPR_INTEGER_LITERAL: return e->integer_value;
         case EXPR_ADD: {
-            int left = expr_ir(e->left);
-            int right = expr_ir(e->right);
+            int left = expr_as(e->left);
+            int right = expr_as(e->right);
             return left + right;
         }
         case EXPR_SUB: {
-            int left = expr_ir(e->left);
-            int right = expr_ir(e->right);
+            int left = expr_as(e->left);
+            int right = expr_as(e->right);
             return left - right;
         }
         case EXPR_MUL: {
-            int left = expr_ir(e->left);
-            int right = expr_ir(e->right);
+            int left = expr_as(e->left);
+            int right = expr_as(e->right);
             return left * right;
         }
         case EXPR_DIV: {
-            int left = expr_ir(e->left);
-            int right = expr_ir(e->right);
+            int left = expr_as(e->left);
+            int right = expr_as(e->right);
             return left / right;
         }
     }
@@ -48,7 +48,7 @@ static void stmt_ir(struct stmt *s) {
         switch (s->kind) {
             case STMT_RETURN: {
                 fprintf(out, " ret");
-                int value = expr_ir(s->expr);
+                int value = expr_as(s->expr);
                 fprintf(out, " i32 %d", value);
             } break;
             case STMT_BLOCK: {
@@ -60,7 +60,7 @@ static void stmt_ir(struct stmt *s) {
                 fprintf(out, " @%s()", s->decl->name);
                 if (s->decl->value) {
                     fprintf(out, " =");
-                    expr_ir(s->decl->value);
+                    expr_as(s->decl->value);
                 }
             } break;
         }
@@ -74,7 +74,7 @@ static void decl_ir(struct decl *d) {
         fprintf(out, " @%s()", decl->name);  // name_ir(decl->name);
         if (decl->value) {
             fprintf(out, " =");
-            expr_ir(decl->value);
+            expr_as(decl->value);
         }
         if (decl->code) {
             // fprintf(out, " {\n");
@@ -87,7 +87,7 @@ static void decl_ir(struct decl *d) {
 
 void irgen(struct decl *d) {
     //
-    out = fopen("./build/ir.ll", "w+");
+    out = fopen("/home/adam/dev/ganymede/compiler/build/ir.ll", "w+");
     if (out == NULL) {
         error(true, "cannot open file\n");
     }

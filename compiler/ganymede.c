@@ -112,32 +112,32 @@ int main(int argc, char **argv) {
     }
 
     // SCANNING
-    struct Token *token = b_scan(input);
-    if (run_tests && strcmp(test_suite, "scan") == 0) {
-        char *scan_file_name = concat(outfile_name, ".scan");
-        FILE *temp = outfile;
-        outfile = fopen(scan_file_name, "w+");
-        print(token);
-        outfile = temp;
-        free(scan_file_name);
-        if (strcmp(test_suite, "scan") == 0) return 0;
-    }
+    // struct Token *token = b_scan(input);
+    // if (run_tests && strcmp(test_suite, "scan") == 0) {
+    //     char *scan_file_name = concat(outfile_name, ".scan");
+    //     FILE *temp = outfile;
+    //     outfile = fopen(scan_file_name, "w+");
+    //     print(token);
+    //     outfile = temp;
+    //     free(scan_file_name);
+    //     if (strcmp(test_suite, "scan") == 0) return 0;
+    // }
 
     // PARSING
-    struct decl *program = parse(token);
-    if (run_tests && strcmp(test_suite, "parse") == 0) {
-        char *scan_file_name = concat(outfile_name, ".parse");
-        FILE *temp = outfile;
-        outfile = fopen(scan_file_name, "w+");
-        print_decl(program, 0);
-        outfile = temp;
-        free(scan_file_name);
-        if (strcmp(test_suite, "parse") == 0) return 0;
-    }
+    // struct decl *program = parse(token);
+    // if (run_tests && strcmp(test_suite, "parse") == 0) {
+    //     char *scan_file_name = concat(outfile_name, ".parse");
+    //     FILE *temp = outfile;
+    //     outfile = fopen(scan_file_name, "w+");
+    //     print_decl(program, 0);
+    //     outfile = temp;
+    //     free(scan_file_name);
+    //     if (strcmp(test_suite, "parse") == 0) return 0;
+    // }
 
     // semantic_analysis(program);
     // irgen(program);
-    codegen(program);
+    // codegen(program);
 
     return 0;
 }
