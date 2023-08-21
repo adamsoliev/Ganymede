@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 enum {
@@ -141,6 +142,8 @@ static unsigned char map[256] = {
 };
 
 enum TokenKind {
+        LT,      // <
+        GT,      // >
         LEQ,     // <=
         GEQ,     // >=
         LSHIFT,  // <<
@@ -153,31 +156,52 @@ enum TokenKind {
         SUB,
         MUL,
         DIV,
+        MOD,        // %
         ADDASSIGN,  // +=
         SUBASSIGN,  // -=
         MULASSIGN,  // *=
         DIVASSIGN,  // /=
+        MODASSIGN,  // %=
         OROR,       // ||
         ANDAND,     // &&
         INCR,       // ++
         EOI,        // end of input
         IF,
         INT,
-        OBR,    // [
-        CBR,    // ]
-        OCBR,   // {
-        CCBR,   // }
-        OPAR,   // (
-        CPAR,   // )
-        SEMIC,  // ;
-        COMMA,  // ,
+        OBR,        // [
+        CBR,        // ]
+        OCBR,       // {
+        CCBR,       // }
+        OPAR,       // (
+        CPAR,       // )
+        SEMIC,      // ;
+        COMMA,      // ,
+        TILDA,      // ~
+        AND,        // &
+        OR,         // |
+        XOR,        // ^
+        NOT,        // !
+        ANDASSIGN,  // &=
+        ORASSIGN,   // |=
+        XORASSIGN,  // ^=
+        NOTASSIGN,  // !=
+        STRGIZE,    // #
+        TKPASTE,    // ##
+        ASSIGN,     // =
+        QMARK,      // ?
+        IDENT,
+        INTCONST,
+        FLOATCONST,
+        STRCONST,
+        CHARCONST,
 };
 
 struct Token {
         enum TokenKind kind;
-        char *start;
-        int len;
+        char *start;  // for IDENT
+        int len;      // for IDENT
         struct Token *next;
+        int value;  // for INTCONST
 };
 
 static struct Token *new_token(enum TokenKind kind, char *start, int len) {
@@ -239,20 +263,38 @@ struct Token *scan(char *cp) {
                                 CHECK_PUNCTUATION(':', OBR, 1)
                                 CHECK_PUNCTUATION('%', OPAR, 1)
                                 // HANDLEME: <<=
+                                ck = new_token(LT, NULL, 0);
+                                goto next;
                         case '>':
                                 CHECK_PUNCTUATION('=', GEQ, 1)
                                 CHECK_PUNCTUATION('>', RSHIFT, 1)
                                 // HANDLEME: >>=
+                                ck = new_token(GT, NULL, 0);
+                                goto next;
                         case '-':
                                 CHECK_PUNCTUATION('>', DEREF, 1)
                                 CHECK_PUNCTUATION('-', DECR, 1)
                                 CHECK_PUNCTUATION('=', SUBASSIGN, 1)
                                 ck = new_token(SUB, NULL, 0);
                                 goto next;
-                        case '=': CHECK_PUNCTUATION('=', EQ, 1)
-                        case '!': CHECK_PUNCTUATION('=', NEQ, 1)
-                        case '|': CHECK_PUNCTUATION('|', OROR, 1)
-                        case '&': CHECK_PUNCTUATION('&', ANDAND, 1)
+                        case '=':
+                                CHECK_PUNCTUATION('=', EQ, 1)
+                                ck = new_token(ASSIGN, NULL, 0);
+                                goto next;
+                        case '!':
+                                CHECK_PUNCTUATION('=', NEQ, 1)
+                                ck = new_token(NOT, NULL, 0);
+                                goto next;
+                        case '|':
+                                CHECK_PUNCTUATION('|', OROR, 1)
+                                CHECK_PUNCTUATION('=', ORASSIGN, 1)
+                                ck = new_token(OR, NULL, 0);
+                                goto next;
+                        case '&':
+                                CHECK_PUNCTUATION('&', ANDAND, 1)
+                                CHECK_PUNCTUATION('=', ANDASSIGN, 1)
+                                ck = new_token(AND, NULL, 0);
+                                goto next;
                         case '+':
                                 CHECK_PUNCTUATION('+', INCR, 1)
                                 CHECK_PUNCTUATION('=', ADDASSIGN, 1)
@@ -265,31 +307,48 @@ struct Token *scan(char *cp) {
                                 CHECK_PUNCTUATION('=', MULASSIGN, 1)
                                 ck = new_token(MUL, NULL, 0);
                                 goto next;
-                        case '~':
-                        case '%': CHECK_PUNCTUATION('>', CPAR, 1)
+                        case '~': ck = new_token(TILDA, NULL, 0); goto next;
+                        case '%':
+                                CHECK_PUNCTUATION('>', CPAR, 1)
+                                CHECK_PUNCTUATION('=', MODASSIGN, 1)
+                                CHECK_PUNCTUATION(':', STRGIZE, 1)
+                                ck = new_token(MOD, NULL, 0);
+                                goto next;
                         case '^':
-                        case '?':
-                        case '[':
-                        case ']':
-                        case '{':
-                        case '}':
-                        case '(':
-                        case ')':
+                                CHECK_PUNCTUATION('=', XORASSIGN, 1)
+                                ck = new_token(XOR, NULL, 0);
+                                goto next;
+                        case '?': ck = new_token(QMARK, NULL, 0); goto next;
+                        case '[': ck = new_token(OBR, NULL, 0); goto next;
+                        case ']': ck = new_token(CBR, NULL, 0); goto next;
+                        case '{': ck = new_token(OCBR, NULL, 0); goto next;
+                        case '}': ck = new_token(CCBR, NULL, 0); goto next;
+                        case '(': ck = new_token(OPAR, NULL, 0); goto next;
+                        case ')': ck = new_token(CPAR, NULL, 0); goto next;
                         case '\n':
                         case '\v':
                         case '\r':
+                        case '\0':
                         case '\f':
+                                if (rcp == limit) {
+                                        printf("%p\n", &rcp);
+                                        ck = new_token(EOI, NULL, 0);
+                                        cur = cur->next = ck;
+                                        goto exit_loop;
+                                }
                         case 'i':
                                 if (rcp[0] == 'f' &&
                                     !(map[rcp[1]] & (DIGIT | LETTER))) {
-                                        cp = rcp + 1;
+                                        rcp += 1;
                                         ck = new_token(IF, NULL, 0);
+                                        cp = rcp;
                                         goto next;
                                 }
                                 if (rcp[0] == 'n' && rcp[1] == 't' &&
                                     !(map[rcp[2]] & (DIGIT | LETTER))) {
-                                        cp = rcp + 2;
+                                        rcp += 2;
                                         ck = new_token(INT, NULL, 0);
+                                        cp = rcp;
                                         goto next;
                                 }
                                 goto id;
@@ -329,20 +388,72 @@ struct Token *scan(char *cp) {
                         case 'X':
                         case 'Y':
                         case 'Z':
-                        id:
-                                continue;
-                        next:
+                        id : {
+                                char *start = rcp - 1;
+                                while (map[*rcp] & (DIGIT | LETTER)) rcp++;
+                                ck = new_token(IDENT, start, rcp - start);
+                                cp = rcp;
+                                goto next;
+                        }
+                        case '0':
+                        case '1':
+                        case '2':
+                        case '3':
+                        case '4':
+                        case '5':
+                        case '6':
+                        case '7':
+                        case '8':
+                        case '9': {
+                                unsigned long n = 0;
+                                char *start = rcp - 1;
+                                if (*start == '0' &&
+                                    (*rcp == 'x' || *rcp == 'X')) {
+                                        // hex
+                                        // HANDLEME: overflow
+                                        int d;
+                                        while (*++rcp) {
+                                                if (map[*rcp] & DIGIT)
+                                                        d = *rcp - '0';
+                                                else if (*rcp >= 'a' &&
+                                                         *rcp <= 'f')
+                                                        d = *rcp - 'a' + 10;
+                                                else if (*rcp >= 'A' &&
+                                                         *rcp <= 'F')
+                                                        d = *rcp - 'A' + 10;
+                                                else
+                                                        break;
+                                                n = (n << 4) | d;
+                                        }
+                                        ck = new_token(
+                                                INTCONST, start, rcp - start);
+                                        ck->value = n;
+                                        cp = rcp;
+                                        goto next;
+                                } else if (*start == '0') {
+                                        // octal
+                                } else {
+                                        // decimal
+                                }
+                        }
+                        next : {
                                 cur = cur->next = ck;
                                 continue;
+                        }
                         default: error("Unhandled character: %c\n", *(rcp - 1));
                 }
         }
+exit_loop:
         return head.next;
 }
 
 int main() {
-        char *cp = "int main() { return 0; }";
+        char cp[] = "0xABC23 0x231465 int main() 0x0";
+        limit = cp + sizeof(cp);
+        printf("%p\n", &limit);
+        // *limit = '\n';
         struct Token *tokens = scan(cp);
+        printTokens(tokens);
         return 0;
 }
 
@@ -350,12 +461,8 @@ void printTokens(struct Token *head) {
         FILE *output = stdout;
         struct Token *current = head;
         while (current != NULL) {
-                fprintf(output, "Token: ");
                 printTokenKind(current->kind, output);
-                fprintf(output,
-                        "\tStart: %.*s\n",
-                        current->len,
-                        current->start);
+                fprintf(output, "\t: %.*s\n", current->len, current->start);
                 current = current->next;
         }
 }
@@ -392,6 +499,28 @@ void printTokenKind(enum TokenKind kind, FILE *output) {
                 case CPAR: fprintf(output, "CPAR"); break;
                 case SEMIC: fprintf(output, "SEMIC"); break;
                 case COMMA: fprintf(output, "COMMA"); break;
+                case LT: fprintf(output, "LT"); break;
+                case GT: fprintf(output, "GT"); break;
+                case MOD: fprintf(output, "MOD"); break;
+                case MODASSIGN: fprintf(output, "MODASSIGN"); break;
+                case TILDA: fprintf(output, "TILDA"); break;
+                case AND: fprintf(output, "AND"); break;
+                case OR: fprintf(output, "OR"); break;
+                case XOR: fprintf(output, "XOR"); break;
+                case NOT: fprintf(output, "NOT"); break;
+                case ANDASSIGN: fprintf(output, "ANDASSIGN"); break;
+                case ORASSIGN: fprintf(output, "ORASSIGN "); break;
+                case XORASSIGN: fprintf(output, "XORASSIGN"); break;
+                case NOTASSIGN: fprintf(output, "NOTASSIGN"); break;
+                case STRGIZE: fprintf(output, "STRGIZE"); break;
+                case TKPASTE: fprintf(output, "TKPASTE"); break;
+                case ASSIGN: fprintf(output, "ASSIGN"); break;
+                case QMARK: fprintf(output, "QMARK"); break;
+                case IDENT: fprintf(output, "IDENT"); break;
+                case INTCONST: fprintf(output, "INTCONST"); break;
+                case FLOATCONST: fprintf(output, "FLOATCONS"); break;
+                case STRCONST: fprintf(output, "STRCONST"); break;
+                case CHARCONST: fprintf(output, "CHARCONST"); break;
                 default: fprintf(output, "Unknown Token"); break;
         }
 }
