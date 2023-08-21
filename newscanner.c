@@ -281,13 +281,13 @@ struct Token *scan(char *cp) {
                         case '\f':
                         case 'i':
                                 if (rcp[0] == 'f' &&
-                                    (map[rcp[1]] & DIGIT | LETTER)) {
+                                    !(map[rcp[1]] & (DIGIT | LETTER))) {
                                         cp = rcp + 1;
                                         ck = new_token(IF, NULL, 0);
                                         goto next;
                                 }
                                 if (rcp[0] == 'n' && rcp[1] == 't' &&
-                                    (map[rcp[2]] & DIGIT | LETTER)) {
+                                    !(map[rcp[2]] & (DIGIT | LETTER))) {
                                         cp = rcp + 2;
                                         ck = new_token(INT, NULL, 0);
                                         goto next;
