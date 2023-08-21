@@ -363,3 +363,7 @@ Notes on existing compilers
 (kefir)[https://github.com/protopopov1122/kefir]
 
 
+TranslationUnit ExternalDeclaration
+
+ExternalDeclaration
+
