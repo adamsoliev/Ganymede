@@ -331,7 +331,6 @@ struct Token *scan(char *cp) {
                         case '\0':
                         case '\f':
                                 if (rcp == limit) {
-                                        printf("%p\n", &rcp);
                                         ck = new_token(EOI, NULL, 0);
                                         cur = cur->next = ck;
                                         goto exit_loop;
@@ -425,17 +424,51 @@ struct Token *scan(char *cp) {
                                                         break;
                                                 n = (n << 4) | d;
                                         }
+                                        if (map[*rcp] & LETTER)
+                                                error("Invalid hex constant: "
+                                                      "%.*s\n",
+                                                      rcp - start + 1,
+                                                      start);
                                         ck = new_token(
                                                 INTCONST, start, rcp - start);
                                         ck->value = n;
                                         cp = rcp;
                                         goto next;
                                 } else if (*start == '0') {
+                                        int err = 0;
                                         // octal
+                                        // HANDLEME: overflow
+                                        // HANDLEME: floating point
+                                        for (; map[*rcp] & DIGIT; rcp++) {
+                                                if (*rcp == '8' || *rcp == '9')
+                                                        err = 1;
+                                                n = (n << 3) + (*rcp - '0');
+                                        }
+                                        if (err)
+                                                error("Invalid octal "
+                                                      "constant: %.*s\n",
+                                                      rcp - start,
+                                                      start);
+                                        ck = new_token(
+                                                INTCONST, start, rcp - start);
+                                        ck->value = n;
+                                        cp = rcp;
+                                        goto next;
                                 } else {
                                         // decimal
+                                        for (n = *start - '0';
+                                             map[*rcp] & DIGIT;) {
+                                                int d = *rcp++ - '0';
+                                                n = n * 10 + d;
+                                        }
+                                        ck = new_token(
+                                                INTCONST, start, rcp - start);
+                                        ck->value = n;
+                                        cp = rcp;
+                                        goto next;
                                 }
                         }
+                        
                         next : {
                                 cur = cur->next = ck;
                                 continue;
@@ -448,10 +481,8 @@ exit_loop:
 }
 
 int main() {
-        char cp[] = "0xABC23 0x231465 int main() 0x0";
+        char cp[] = "0x1234 29 198734 05125 0x231465 int main() 0755";
         limit = cp + sizeof(cp);
-        printf("%p\n", &limit);
-        // *limit = '\n';
         struct Token *tokens = scan(cp);
         printTokens(tokens);
         return 0;
