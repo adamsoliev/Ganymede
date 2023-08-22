@@ -271,10 +271,10 @@ struct Token *scan(char *cp) {
                 HANDLE_TOKEN(token, incr); \
         }
 
-#define HANDLE_TOKEN(token_kind, token_length) \
-        rcp += token_length;                   \
-        ck = new_token(token_kind, NULL, 0);   \
-        cp = rcp;                              \
+#define HANDLE_TOKEN(kind, length)     \
+        rcp += length;                 \
+        ck = new_token(kind, NULL, 0); \
+        cp = rcp;                      \
         goto next;
 
         struct Token head = {};
@@ -541,7 +541,22 @@ struct Token *scan(char *cp) {
                                 goto id;
                         case '\'': {
                                 // HANDLEME: wide char int const
-                                break;
+                                char *start = rcp - 1;
+                                while (*rcp != '\'') {
+                                        if (*rcp == '\\') {
+                                                rcp++;
+                                        }
+                                        if (rcp == limit) {
+                                                error("Unterminated char "
+                                                      "constant: %s\n",
+                                                      start);
+                                        }
+                                        rcp++;
+                                }
+                                rcp++;
+                                ck = new_token(CHARCONST, start, rcp - start);
+                                cp = rcp;
+                                goto next;
                         }
                         case '"': {
                                 char *start = rcp - 1;
