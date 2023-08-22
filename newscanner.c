@@ -1,6 +1,14 @@
+#include <assert.h>
+#include <ctype.h>
+#include <fcntl.h>
+#include <getopt.h>
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 enum {
         BLANK = 01,
@@ -145,7 +153,7 @@ enum TokenKind {
         LT,      // <
         GT,      // >
         LEQ,     // <=
-        GEQ,     // >=
+        GEQ,     // >=c getopt and optarg header
         LSHIFT,  // <<
         RSHIFT,  // >>
         DEREF,   // ->
@@ -194,6 +202,36 @@ enum TokenKind {
         FLOATCONST,
         STRCONST,
         CHARCONST,
+        ELLIPSIS,
+        AUTO,
+        CASE,
+        CHAR,
+        CONST,
+        CONTINUE,
+        DEFAULT,
+        DO,
+        DOUBLE,
+        ELSE,
+        ENUM,
+        EXTERN,
+        FLOAT,
+        FOR,
+        GOTO,
+        LONG,
+        REGISTER,
+        RETURN,
+        SHORT,
+        SIGNED,
+        SIZEOF,
+        STATIC,
+        STRUCT,
+        SWITCH,
+        TYPEDEF,
+        UNION,
+        UNSIGNED,
+        VOID,
+        VOLATILE,
+        WHILE,
 };
 
 struct Token {
@@ -223,16 +261,21 @@ static void error(char *fmt, ...) {
 char *limit;
 static struct Token *ck;
 
+char *readFile(const char *filename);
 void printTokens(struct Token *head);
 void printTokenKind(enum TokenKind kind, FILE *output);
 
 struct Token *scan(char *cp) {
-#define CHECK_PUNCTUATION(op, token, incr)      \
-        if (*rcp == op) {                       \
-                cp += incr;                     \
-                ck = new_token(token, NULL, 0); \
-                goto next;                      \
+#define CHECK_PUNCTUATION(op, token, incr) \
+        if (*rcp == op) {                  \
+                HANDLE_TOKEN(token, incr); \
         }
+
+#define HANDLE_TOKEN(token_kind, token_length) \
+        rcp += token_length;                   \
+        ck = new_token(token_kind, NULL, 0);   \
+        cp = rcp;                              \
+        goto next;
 
         struct Token head = {};
         struct Token *cur = &head;
@@ -241,7 +284,8 @@ struct Token *scan(char *cp) {
                 while (map[*rcp] & BLANK) rcp++;
                 switch (*rcp++) {
                         case '/':
-                                if (*rcp++ == '*') {
+                                if (*rcp == '*') {
+                                        rcp++;
                                         while (rcp < limit) {
                                                 if (*rcp == '*' &&
                                                     *(rcp + 1) == '/') {
@@ -256,7 +300,22 @@ struct Token *scan(char *cp) {
                                         cp = rcp;
                                         continue;
                                 }
-                                error("Unknown character following '/'\n");
+                                if (*rcp == '/') {
+                                        rcp++;
+                                        while (*rcp != '\n') {
+                                                if (rcp == limit) {
+                                                        error("Unterminated "
+                                                              "comment: %s\n",
+                                                              rcp - 1);
+                                                }
+                                                rcp++;
+                                        }
+                                        rcp++;
+                                        cp = rcp;
+                                        continue;
+                                }
+                                error("Unknown character following '/': %s\n",
+                                      rcp - 1);
                         case '<':
                                 CHECK_PUNCTUATION('=', LEQ, 1)
                                 CHECK_PUNCTUATION('<', LSHIFT, 1)
@@ -300,8 +359,8 @@ struct Token *scan(char *cp) {
                                 CHECK_PUNCTUATION('=', ADDASSIGN, 1)
                                 ck = new_token(ADD, NULL, 0);
                                 goto next;
-                        case ';': ck = new_token(SEMIC, NULL, 0); continue;
-                        case ',': ck = new_token(COMMA, NULL, 0); continue;
+                        case ';': ck = new_token(SEMIC, NULL, 0); goto next;
+                        case ',': ck = new_token(COMMA, NULL, 0); goto next;
                         case ':': CHECK_PUNCTUATION('>', CBR, 1)
                         case '*':
                                 CHECK_PUNCTUATION('=', MULASSIGN, 1)
@@ -328,27 +387,19 @@ struct Token *scan(char *cp) {
                         case '\n':
                         case '\v':
                         case '\r':
+                        case '\f': continue;
                         case '\0':
-                        case '\f':
-                                if (rcp == limit) {
-                                        ck = new_token(EOI, NULL, 0);
-                                        cur = cur->next = ck;
-                                        goto exit_loop;
-                                }
+                                ck = new_token(EOI, NULL, 0);
+                                cur = cur->next = ck;
+                                goto exit_loop;
                         case 'i':
                                 if (rcp[0] == 'f' &&
                                     !(map[rcp[1]] & (DIGIT | LETTER))) {
-                                        rcp += 1;
-                                        ck = new_token(IF, NULL, 0);
-                                        cp = rcp;
-                                        goto next;
+                                        HANDLE_TOKEN(IF, 1);
                                 }
                                 if (rcp[0] == 'n' && rcp[1] == 't' &&
                                     !(map[rcp[2]] & (DIGIT | LETTER))) {
-                                        rcp += 2;
-                                        ck = new_token(INT, NULL, 0);
-                                        cp = rcp;
-                                        goto next;
+                                        HANDLE_TOKEN(INT, 2);
                                 }
                                 goto id;
                         case 'h':
@@ -393,6 +444,10 @@ struct Token *scan(char *cp) {
                                 ck = new_token(IDENT, start, rcp - start);
                                 cp = rcp;
                                 goto next;
+                        }
+                        next : {
+                                cur = cur->next = ck;
+                                continue;
                         }
                         case '0':
                         case '1':
@@ -468,11 +523,231 @@ struct Token *scan(char *cp) {
                                         goto next;
                                 }
                         }
-                        
-                        next : {
-                                cur = cur->next = ck;
-                                continue;
+                        case '.':
+                                if (rcp[0] == '.' && rcp[1] == '.') {
+                                        ck = new_token(ELLIPSIS, NULL, 0);
+                                        rcp += 2;
+                                        cp = rcp;
+                                        goto next;
+                                }
+                                if ((map[*rcp] & DIGIT) == 0) {
+                                        error("Invalid dot character\n");
+                                }
+                                // HANDLEME: floating point
+                                error("Unhandled dot character\n");
+                        case 'L':
+                                // HANDLEME: wide char int const
+                                // HANDLEME: wide char string const
+                                goto id;
+                        case '\'': {
+                                // HANDLEME: wide char int const
+                                break;
                         }
+                        case '"': {
+                                char *start = rcp - 1;
+                                while (*rcp != '"') {
+                                        if (*rcp == '\\') {
+                                                rcp++;
+                                        }
+                                        if (rcp == limit) {
+                                                error("Unterminated string "
+                                                      "constant: %s\n",
+                                                      start);
+                                        }
+                                        rcp++;
+                                }
+                                rcp++;
+                                ck = new_token(STRCONST, start, rcp - start);
+                                cp = rcp;
+                                goto next;
+                        }
+                        case 'a':
+                                if (rcp[0] == 'u' && rcp[1] == 't' &&
+                                    rcp[2] == 'o' &&
+                                    !(map[rcp[3]] & (DIGIT | LETTER))) {
+                                        HANDLE_TOKEN(AUTO, 3);
+                                }
+                                goto id;
+                        case 'c':
+                                if (rcp[0] == 'a' && rcp[1] == 's' &&
+                                    rcp[2] == 'e' &&
+                                    !(map[rcp[3]] & (DIGIT | LETTER))) {
+                                        HANDLE_TOKEN(CASE, 3);
+                                }
+                                if (rcp[0] == 'h' && rcp[1] == 'a' &&
+                                    rcp[2] == 'r' &&
+                                    !(map[rcp[3]] & (DIGIT | LETTER))) {
+                                        HANDLE_TOKEN(CHAR, 3);
+                                }
+                                if (rcp[0] == 'o' && rcp[1] == 'n' &&
+                                    rcp[2] == 's' && rcp[3] == 't' &&
+                                    !(map[rcp[4]] & (DIGIT | LETTER))) {
+                                        HANDLE_TOKEN(CONST, 4);
+                                }
+                                if (rcp[0] == 'o' && rcp[1] == 'n' &&
+                                    rcp[2] == 't' && rcp[3] == 'i' &&
+                                    rcp[4] == 'n' && rcp[5] == 'u' &&
+                                    rcp[6] == 'e' &&
+                                    !(map[rcp[7]] & (DIGIT | LETTER))) {
+                                        HANDLE_TOKEN(CONTINUE, 7);
+                                }
+                                goto id;
+                        case 'd':
+                                if (rcp[0] == 'e' && rcp[1] == 'f' &&
+                                    rcp[2] == 'a' && rcp[3] == 'u' &&
+                                    rcp[4] == 'l' && rcp[5] == 't' &&
+                                    !(map[rcp[6]] & (DIGIT | LETTER))) {
+                                        HANDLE_TOKEN(DEFAULT, 6);
+                                }
+                                if (rcp[0] == 'o' && rcp[1] == 'u' &&
+                                    rcp[2] == 'b' && rcp[3] == 'l' &&
+                                    rcp[4] == 'e' &&
+                                    !(map[rcp[5]] & (DIGIT | LETTER))) {
+                                        HANDLE_TOKEN(DOUBLE, 5);
+                                }
+                                if (rcp[0] == 'o' &&
+                                    !(map[rcp[1]] & (DIGIT | LETTER))) {
+                                        HANDLE_TOKEN(DO, 1);
+                                }
+                                goto id;
+                        case 'e':
+                                if (rcp[0] == 'l' && rcp[1] == 's' &&
+                                    rcp[2] == 'e' &&
+                                    !(map[rcp[3]] & (DIGIT | LETTER))) {
+                                        HANDLE_TOKEN(ELSE, 3);
+                                }
+                                if (rcp[0] == 'n' && rcp[1] == 'u' &&
+                                    rcp[2] == 'm' &&
+                                    !(map[rcp[3]] & (DIGIT | LETTER))) {
+                                        HANDLE_TOKEN(ENUM, 3);
+                                }
+                                if (rcp[0] == 'x' && rcp[1] == 't' &&
+                                    rcp[2] == 'e' && rcp[3] == 'r' &&
+                                    rcp[4] == 'n' &&
+                                    !(map[rcp[5]] & (DIGIT | LETTER))) {
+                                        HANDLE_TOKEN(EXTERN, 5);
+                                }
+                                goto id;
+                        case 'f':
+                                if (rcp[0] == 'l' && rcp[1] == 'o' &&
+                                    rcp[2] == 'a' && rcp[3] == 't' &&
+                                    !(map[rcp[4]] & (DIGIT | LETTER))) {
+                                        HANDLE_TOKEN(FLOAT, 4);
+                                }
+                                if (rcp[0] == 'o' && rcp[1] == 'r' &&
+                                    !(map[rcp[2]] & (DIGIT | LETTER))) {
+                                        HANDLE_TOKEN(FOR, 2);
+                                }
+                                goto id;
+                        case 'g':
+                                if (rcp[0] == 'o' && rcp[1] == 't' &&
+                                    rcp[2] == 'o' &&
+                                    !(map[rcp[3]] & (DIGIT | LETTER))) {
+                                        HANDLE_TOKEN(GOTO, 3);
+                                }
+                                goto id;
+                        case 'l':
+                                if (rcp[0] == 'o' && rcp[1] == 'n' &&
+                                    rcp[2] == 'g' &&
+                                    !(map[rcp[3]] & (DIGIT | LETTER))) {
+                                        HANDLE_TOKEN(LONG, 3);
+                                }
+                                goto id;
+                        case 'r':
+                                if (rcp[0] == 'e' && rcp[1] == 'g' &&
+                                    rcp[2] == 'i' && rcp[3] == 's' &&
+                                    rcp[4] == 't' && rcp[5] == 'e' &&
+                                    rcp[6] == 'r' &&
+                                    !(map[rcp[7]] & (DIGIT | LETTER))) {
+                                        HANDLE_TOKEN(REGISTER, 7);
+                                }
+                                if (rcp[0] == 'e' && rcp[1] == 't' &&
+                                    rcp[2] == 'u' && rcp[3] == 'r' &&
+                                    rcp[4] == 'n' &&
+                                    !(map[rcp[5]] & (DIGIT | LETTER))) {
+                                        HANDLE_TOKEN(RETURN, 5);
+                                }
+                                goto id;
+                        case 's':
+                                if (rcp[0] == 'h' && rcp[1] == 'o' &&
+                                    rcp[2] == 'r' && rcp[3] == 't' &&
+                                    !(map[rcp[4]] & (DIGIT | LETTER))) {
+                                        HANDLE_TOKEN(SHORT, 4);
+                                }
+                                if (rcp[0] == 'i' && rcp[1] == 'g' &&
+                                    rcp[2] == 'n' && rcp[3] == 'e' &&
+                                    rcp[4] == 'd' &&
+                                    !(map[rcp[5]] & (DIGIT | LETTER))) {
+                                        HANDLE_TOKEN(SIGNED, 5);
+                                }
+                                if (rcp[0] == 'i' && rcp[1] == 'z' &&
+                                    rcp[2] == 'e' && rcp[3] == 'o' &&
+                                    rcp[4] == 'f' &&
+                                    !(map[rcp[5]] & (DIGIT | LETTER))) {
+                                        HANDLE_TOKEN(SIZEOF, 5);
+                                }
+                                if (rcp[0] == 't' && rcp[1] == 'a' &&
+                                    rcp[2] == 't' && rcp[3] == 'i' &&
+                                    rcp[4] == 'c' &&
+                                    !(map[rcp[5]] & (DIGIT | LETTER))) {
+                                        HANDLE_TOKEN(STATIC, 5);
+                                }
+                                if (rcp[0] == 't' && rcp[1] == 'r' &&
+                                    rcp[2] == 'u' && rcp[3] == 'c' &&
+                                    rcp[4] == 't' &&
+                                    !(map[rcp[5]] & (DIGIT | LETTER))) {
+                                        HANDLE_TOKEN(STRUCT, 5);
+                                }
+                                if (rcp[0] == 'w' && rcp[1] == 'i' &&
+                                    rcp[2] == 't' && rcp[3] == 'c' &&
+                                    rcp[4] == 'h' &&
+                                    !(map[rcp[5]] & (DIGIT | LETTER))) {
+                                        HANDLE_TOKEN(SWITCH, 5);
+                                }
+                                goto id;
+                        case 't':
+                                if (rcp[0] == 'y' && rcp[1] == 'p' &&
+                                    rcp[2] == 'e' && rcp[3] == 'd' &&
+                                    rcp[4] == 'e' && rcp[5] == 'f' &&
+                                    !(map[rcp[6]] & (DIGIT | LETTER))) {
+                                        HANDLE_TOKEN(TYPEDEF, 6);
+                                }
+                                goto id;
+                        case 'u':
+                                if (rcp[0] == 'n' && rcp[1] == 'i' &&
+                                    rcp[2] == 'o' && rcp[3] == 'n' &&
+                                    !(map[rcp[4]] & (DIGIT | LETTER))) {
+                                        HANDLE_TOKEN(UNION, 4);
+                                }
+                                if (rcp[0] == 'n' && rcp[1] == 's' &&
+                                    rcp[2] == 'i' && rcp[3] == 'g' &&
+                                    rcp[4] == 'n' && rcp[5] == 'e' &&
+                                    rcp[6] == 'd' &&
+                                    !(map[rcp[7]] & (DIGIT | LETTER))) {
+                                        HANDLE_TOKEN(UNSIGNED, 7);
+                                }
+                                goto id;
+                        case 'v':
+                                if (rcp[0] == 'o' && rcp[1] == 'i' &&
+                                    rcp[2] == 'd' &&
+                                    !(map[rcp[3]] & (DIGIT | LETTER))) {
+                                        HANDLE_TOKEN(VOID, 3);
+                                }
+                                if (rcp[0] == 'o' && rcp[1] == 'l' &&
+                                    rcp[2] == 'a' && rcp[3] == 't' &&
+                                    rcp[4] == 'i' && rcp[5] == 'l' &&
+                                    rcp[6] == 'e' &&
+                                    !(map[rcp[7]] & (DIGIT | LETTER))) {
+                                        HANDLE_TOKEN(VOLATILE, 7);
+                                }
+                                goto id;
+                        case 'w':
+                                if (rcp[0] == 'h' && rcp[1] == 'i' &&
+                                    rcp[2] == 'l' && rcp[3] == 'e' &&
+                                    !(map[rcp[4]] & (DIGIT | LETTER))) {
+                                        HANDLE_TOKEN(WHILE, 4);
+                                }
+                                goto id;
                         default: error("Unhandled character: %c\n", *(rcp - 1));
                 }
         }
@@ -480,12 +755,86 @@ exit_loop:
         return head.next;
 }
 
-int main() {
-        char cp[] = "0x1234 29 198734 05125 0x231465 int main() 0755";
-        limit = cp + sizeof(cp);
-        struct Token *tokens = scan(cp);
+FILE *outfile_name, *outfile;
+
+int main(int argc, char **argv) {
+        int opt;
+        char *optstring = "f:o:s:t:";
+        char *input = NULL;
+        FILE *infile;
+
+        while ((opt = getopt(argc, argv, optstring)) != -1) {
+                switch (opt) {
+                        case 'f': {
+                                input = readFile(optarg);
+                                if (input == NULL) {
+                                        exit(1);
+                                }
+                                break;
+                        }
+                        case 'o': {
+                                outfile = fopen(optarg, "w+");
+                                outfile_name = optarg;
+                                break;
+                        }
+                        default: {
+                                exit(1);
+                        }
+                }
+        }
+
+        if (input == NULL) {
+                printf("No input file specified\n");
+                exit(1);
+        }
+
+        if (outfile == NULL) {
+                outfile = stdout;
+        }
+        limit = input + strlen(input);
+        struct Token *tokens = scan(input);
         printTokens(tokens);
         return 0;
+}
+
+char *readFile(const char *filename) {
+        // Open the file in read mode
+        FILE *file = fopen(filename, "r");
+        if (file == NULL) {
+                fprintf(stderr, "%s: Error opening file\n", filename);
+                return NULL;
+        }
+
+        // Determine the size of the file
+        fseek(file, 0, SEEK_END);
+        long file_size = ftell(file);
+        fseek(file, 0, SEEK_SET);
+
+        // Allocate memory for the char array
+        char *content =
+                (char *)malloc(file_size + 1);  // +1 for null-terminator
+        if (content == NULL) {
+                fprintf(stderr, "Memory allocation error\n");
+                fclose(file);
+                return NULL;
+        }
+
+        // Read the contents of the file
+        size_t bytes_read = fread(content, 1, file_size, file);
+        if (bytes_read != file_size) {
+                fprintf(stderr, "%s: Error reading file\n", filename);
+                free(content);
+                fclose(file);
+                return NULL;
+        }
+
+        // Null-terminate the content
+        content[bytes_read] = '\0';
+
+        // Close the file and clean up resources
+        fclose(file);
+
+        return content;
 }
 
 void printTokens(struct Token *head) {
@@ -552,6 +901,36 @@ void printTokenKind(enum TokenKind kind, FILE *output) {
                 case FLOATCONST: fprintf(output, "FLOATCONS"); break;
                 case STRCONST: fprintf(output, "STRCONST"); break;
                 case CHARCONST: fprintf(output, "CHARCONST"); break;
+                case ELLIPSIS: fprintf(output, "ELLIPSIS"); break;
+                case AUTO: fprintf(output, "AUTO"); break;
+                case CASE: fprintf(output, "CASE"); break;
+                case CHAR: fprintf(output, "CHAR"); break;
+                case CONST: fprintf(output, "CONST"); break;
+                case CONTINUE: fprintf(output, "CONTINUE"); break;
+                case DEFAULT: fprintf(output, "DEFAULT "); break;
+                case DO: fprintf(output, "DO"); break;
+                case DOUBLE: fprintf(output, "DOUBLE"); break;
+                case ELSE: fprintf(output, "ELSE"); break;
+                case ENUM: fprintf(output, "ENUM"); break;
+                case EXTERN: fprintf(output, "EXTERN"); break;
+                case FLOAT: fprintf(output, "FLOAT"); break;
+                case FOR: fprintf(output, "FOR"); break;
+                case GOTO: fprintf(output, "GOTO"); break;
+                case LONG: fprintf(output, "LONG"); break;
+                case REGISTER: fprintf(output, "REGISTER"); break;
+                case RETURN: fprintf(output, "RETURN"); break;
+                case SHORT: fprintf(output, "SHORT"); break;
+                case SIGNED: fprintf(output, "SIGNED"); break;
+                case SIZEOF: fprintf(output, "SIZEOF"); break;
+                case STATIC: fprintf(output, "STATIC"); break;
+                case STRUCT: fprintf(output, "STRUCT"); break;
+                case SWITCH: fprintf(output, "SWITCH"); break;
+                case TYPEDEF: fprintf(output, "TYPEDEF "); break;
+                case UNION: fprintf(output, "UNION"); break;
+                case UNSIGNED: fprintf(output, "UNSIGNED"); break;
+                case VOID: fprintf(output, "VOID"); break;
+                case VOLATILE: fprintf(output, "VOLATILE"); break;
+                case WHILE: fprintf(output, "WHILE"); break;
                 default: fprintf(output, "Unknown Token"); break;
         }
 }
