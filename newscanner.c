@@ -978,6 +978,6 @@ void printTokenKind(enum TokenKind kind, FILE *output) {
         if (kind >= 0 && kind < numTokenStrs) {
                 fprintf(output, "%s\n", tokenStrs[kind]);
         } else {
-                fprintf(output, "Unknown known");
+                fprintf(output, "Unknown token");
         }
 }
