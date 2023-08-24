@@ -233,7 +233,10 @@ enum TokenKind {
         VOLATILE,
         WHILE,
         DOT,
-        BREAK
+        BREAK,
+        COLON,
+        RSHIFTASSIGN,
+        LSHIFTASSIGN,
 };
 
 struct Token {
@@ -318,19 +321,28 @@ struct Token *scan(char *cp) {
                                         cp = rcp;
                                         continue;
                                 }
+                                CHECK_PUNCTUATION('=', DIVASSIGN, 1)
                                 HANDLE_TOKEN(DIV, 0);
                         case '<':
+                                if (rcp[0] == '<' && rcp[1] == '=') {
+                                        rcp += 2;
+                                        ck = new_token(LSHIFTASSIGN, NULL, 0);
+                                        goto next;
+                                }
                                 CHECK_PUNCTUATION('=', LEQ, 1)
                                 CHECK_PUNCTUATION('<', LSHIFT, 1)
                                 CHECK_PUNCTUATION(':', OBR, 1)
                                 CHECK_PUNCTUATION('%', OPAR, 1)
-                                // HANDLEME: <<=
                                 ck = new_token(LT, NULL, 0);
                                 goto next;
                         case '>':
+                                if (rcp[0] == '>' && rcp[1] == '=') {
+                                        rcp += 2;
+                                        ck = new_token(RSHIFTASSIGN, NULL, 0);
+                                        goto next;
+                                }
                                 CHECK_PUNCTUATION('=', GEQ, 1)
                                 CHECK_PUNCTUATION('>', RSHIFT, 1)
-                                // HANDLEME: >>=
                                 ck = new_token(GT, NULL, 0);
                                 goto next;
                         case '-':
@@ -364,7 +376,10 @@ struct Token *scan(char *cp) {
                                 goto next;
                         case ';': ck = new_token(SEMIC, NULL, 0); goto next;
                         case ',': ck = new_token(COMMA, NULL, 0); goto next;
-                        case ':': CHECK_PUNCTUATION('>', CBR, 1)
+                        case ':':
+                                CHECK_PUNCTUATION('>', CBR, 1)
+                                ck = new_token(COLON, NULL, 0);
+                                goto next;
                         case '*':
                                 CHECK_PUNCTUATION('=', MULASSIGN, 1)
                                 ck = new_token(MUL, NULL, 0);
@@ -503,6 +518,18 @@ struct Token *scan(char *cp) {
                                                       "constant: %.*s\n",
                                                       rcp - start,
                                                       start);
+
+                                        if ((*rcp == 'u' || *rcp == 'U') &&
+                                                    (rcp[1] == 'l' ||
+                                                     rcp[1] == 'L') ||
+                                            (*rcp == 'l' || *rcp == 'L') &&
+                                                    (rcp[1] == 'u' ||
+                                                     rcp[1] == 'U')) {
+                                                rcp += 2;
+                                        }
+                                        if (*rcp == 'u' || *rcp == 'U') {
+                                                rcp++;
+                                        }
                                         if (*rcp == 'l' || *rcp == 'L') rcp++;
                                         ck = new_token(
                                                 INTCONST, start, rcp - start);
@@ -1008,6 +1035,9 @@ void printTokenKind(enum TokenKind kind, FILE *output) {
                 case WHILE: fprintf(output, "WHILE"); break;
                 case DOT: fprintf(output, "DOT"); break;
                 case BREAK: fprintf(output, "BREAK"); break;
+                case COLON: fprintf(output, "COLON"); break;
+                case RSHIFTASSIGN: fprintf(output, "RSHIFTASSIGN"); break;
+                case LSHIFTASSIGN: fprintf(output, "LSHIFTASSIGN"); break;
                 default: fprintf(output, "Unknown Token"); break;
         }
 }
