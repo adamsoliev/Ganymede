@@ -232,6 +232,8 @@ enum TokenKind {
         VOID,
         VOLATILE,
         WHILE,
+        DOT,
+        BREAK
 };
 
 struct Token {
@@ -260,10 +262,12 @@ static void error(char *fmt, ...) {
 
 char *limit;
 static struct Token *ck;
+FILE *outfile_name, *outfile;
 
 char *readFile(const char *filename);
 void printTokens(struct Token *head);
 void printTokenKind(enum TokenKind kind, FILE *output);
+void floatconst(char **rcp);
 
 struct Token *scan(char *cp) {
 #define CHECK_PUNCTUATION(op, token, incr) \
@@ -314,8 +318,7 @@ struct Token *scan(char *cp) {
                                         cp = rcp;
                                         continue;
                                 }
-                                error("Unknown character following '/': %s\n",
-                                      rcp - 1);
+                                HANDLE_TOKEN(DIV, 0);
                         case '<':
                                 CHECK_PUNCTUATION('=', LEQ, 1)
                                 CHECK_PUNCTUATION('<', LSHIFT, 1)
@@ -479,11 +482,7 @@ struct Token *scan(char *cp) {
                                                         break;
                                                 n = (n << 4) | d;
                                         }
-                                        if (map[*rcp] & LETTER)
-                                                error("Invalid hex constant: "
-                                                      "%.*s\n",
-                                                      rcp - start + 1,
-                                                      start);
+                                        if (*rcp == 'l' || *rcp == 'L') rcp++;
                                         ck = new_token(
                                                 INTCONST, start, rcp - start);
                                         ck->value = n;
@@ -504,6 +503,7 @@ struct Token *scan(char *cp) {
                                                       "constant: %.*s\n",
                                                       rcp - start,
                                                       start);
+                                        if (*rcp == 'l' || *rcp == 'L') rcp++;
                                         ck = new_token(
                                                 INTCONST, start, rcp - start);
                                         ck->value = n;
@@ -516,6 +516,7 @@ struct Token *scan(char *cp) {
                                                 int d = *rcp++ - '0';
                                                 n = n * 10 + d;
                                         }
+                                        if (*rcp == 'l' || *rcp == 'L') rcp++;
                                         ck = new_token(
                                                 INTCONST, start, rcp - start);
                                         ck->value = n;
@@ -530,11 +531,14 @@ struct Token *scan(char *cp) {
                                         cp = rcp;
                                         goto next;
                                 }
-                                if ((map[*rcp] & DIGIT) == 0) {
-                                        error("Invalid dot character\n");
-                                }
                                 // HANDLEME: floating point
-                                error("Unhandled dot character\n");
+                                if ((map[*rcp] & DIGIT)) {
+                                        floatconst(&rcp);
+                                        ck = new_token(FLOATCONST, NULL, 0);
+                                        cp = rcp;
+                                        goto next;
+                                }
+                                HANDLE_TOKEN(DOT, 0);
                         case 'L':
                                 // HANDLEME: wide char int const
                                 // HANDLEME: wide char string const
@@ -581,6 +585,13 @@ struct Token *scan(char *cp) {
                                     rcp[2] == 'o' &&
                                     !(map[rcp[3]] & (DIGIT | LETTER))) {
                                         HANDLE_TOKEN(AUTO, 3);
+                                }
+                                goto id;
+                        case 'b':
+                                if (rcp[0] == 'r' && rcp[1] == 'e' &&
+                                    rcp[2] == 'a' && rcp[3] == 'k' &&
+                                    !(map[rcp[4]] & (DIGIT | LETTER))) {
+                                        HANDLE_TOKEN(BREAK, 4);
                                 }
                                 goto id;
                         case 'c':
@@ -763,6 +774,7 @@ struct Token *scan(char *cp) {
                                         HANDLE_TOKEN(WHILE, 4);
                                 }
                                 goto id;
+                        case '_': goto id;
                         default: error("Unhandled character: %c\n", *(rcp - 1));
                 }
         }
@@ -770,7 +782,33 @@ exit_loop:
         return head.next;
 }
 
-FILE *outfile_name, *outfile;
+void floatconst(char **rcp) {
+        char *start = *rcp;
+        if (**rcp == '.') {
+                do (*rcp)++;
+                while (map[**rcp] & DIGIT);
+        }
+        if (**rcp == 'e' || **rcp == 'E') {
+                if (**++rcp == '-' || **rcp == '+') (*rcp)++;
+                if (map[**rcp] & DIGIT) {
+                        do {
+                                (*rcp)++;
+                        } while (map[**rcp] & DIGIT);
+                } else {
+                        error("Invalid floating point constant: %.*s\n",
+                              *rcp - start,
+                              start);
+                }
+        }
+        if (**rcp == 'f' || **rcp == 'F') {
+                ++(*rcp);
+        } else if (**rcp == 'l' || **rcp == 'L') {
+                // long double
+                (*rcp)++;
+        } else {
+                // double type
+        }
+};
 
 int main(int argc, char **argv) {
         int opt;
@@ -806,7 +844,7 @@ int main(int argc, char **argv) {
         if (outfile == NULL) {
                 outfile = stdout;
         }
-        limit = input + strlen(input);
+        limit = input + strlen(input) + 1;
         struct Token *tokens = scan(input);
         printTokens(tokens);
         return 0;
@@ -853,7 +891,7 @@ char *readFile(const char *filename) {
 }
 
 void printTokens(struct Token *head) {
-        FILE *output = stdout;
+        FILE *output = outfile;
         struct Token *current = head;
         while (current != NULL) {
                 printTokenKind(current->kind, output);
@@ -946,6 +984,8 @@ void printTokenKind(enum TokenKind kind, FILE *output) {
                 case VOID: fprintf(output, "VOID"); break;
                 case VOLATILE: fprintf(output, "VOLATILE"); break;
                 case WHILE: fprintf(output, "WHILE"); break;
+                case DOT: fprintf(output, "DOT"); break;
+                case BREAK: fprintf(output, "BREAK"); break;
                 default: fprintf(output, "Unknown Token"); break;
         }
 }
