@@ -945,100 +945,39 @@ void printTokens(struct Token *head) {
         while (current != NULL) {
                 printTokenKind(current->kind, output);
                 // fprintf(output, ": %.*s\n", current->len, current->start);
-                fprintf(output, "\n");
                 current = current->next;
         }
 }
 
 void printTokenKind(enum TokenKind kind, FILE *output) {
-        switch (kind) {
-                case LEQ: fprintf(output, "LEQ"); break;
-                case GEQ: fprintf(output, "GEQ"); break;
-                case LSHIFT: fprintf(output, "LSHIFT"); break;
-                case RSHIFT: fprintf(output, "RSHIFT"); break;
-                case DEREF: fprintf(output, "DEREF"); break;
-                case DECR: fprintf(output, "DECR"); break;
-                case EQ: fprintf(output, "EQ"); break;
-                case NEQ: fprintf(output, "NEQ"); break;
-                case ADD: fprintf(output, "ADD"); break;
-                case SUB: fprintf(output, "SUB"); break;
-                case MUL: fprintf(output, "MUL"); break;
-                case DIV: fprintf(output, "DIV"); break;
-                case ADDASSIGN: fprintf(output, "ADDASSIGN"); break;
-                case SUBASSIGN: fprintf(output, "SUBASSIGN"); break;
-                case MULASSIGN: fprintf(output, "MULASSIGN"); break;
-                case DIVASSIGN: fprintf(output, "DIVASSIGN"); break;
-                case OROR: fprintf(output, "OROR"); break;
-                case ANDAND: fprintf(output, "ANDAND"); break;
-                case INCR: fprintf(output, "INCR"); break;
-                case EOI: fprintf(output, "EOI"); break;
-                case IF: fprintf(output, "IF"); break;
-                case INT: fprintf(output, "INT"); break;
-                case OBR: fprintf(output, "OBR"); break;
-                case CBR: fprintf(output, "CBR"); break;
-                case OCBR: fprintf(output, "OCBR"); break;
-                case CCBR: fprintf(output, "CCBR"); break;
-                case OPAR: fprintf(output, "OPAR"); break;
-                case CPAR: fprintf(output, "CPAR"); break;
-                case SEMIC: fprintf(output, "SEMIC"); break;
-                case COMMA: fprintf(output, "COMMA"); break;
-                case LT: fprintf(output, "LT"); break;
-                case GT: fprintf(output, "GT"); break;
-                case MOD: fprintf(output, "MOD"); break;
-                case MODASSIGN: fprintf(output, "MODASSIGN"); break;
-                case TILDA: fprintf(output, "TILDA"); break;
-                case AND: fprintf(output, "AND"); break;
-                case OR: fprintf(output, "OR"); break;
-                case XOR: fprintf(output, "XOR"); break;
-                case NOT: fprintf(output, "NOT"); break;
-                case ANDASSIGN: fprintf(output, "ANDASSIGN"); break;
-                case ORASSIGN: fprintf(output, "ORASSIGN "); break;
-                case XORASSIGN: fprintf(output, "XORASSIGN"); break;
-                case NOTASSIGN: fprintf(output, "NOTASSIGN"); break;
-                case STRGIZE: fprintf(output, "STRGIZE"); break;
-                case TKPASTE: fprintf(output, "TKPASTE"); break;
-                case ASSIGN: fprintf(output, "ASSIGN"); break;
-                case QMARK: fprintf(output, "QMARK"); break;
-                case IDENT: fprintf(output, "IDENT"); break;
-                case INTCONST: fprintf(output, "INTCONST"); break;
-                case FLOATCONST: fprintf(output, "FLOATCONS"); break;
-                case STRCONST: fprintf(output, "STRCONST"); break;
-                case CHARCONST: fprintf(output, "CHARCONST"); break;
-                case ELLIPSIS: fprintf(output, "ELLIPSIS"); break;
-                case AUTO: fprintf(output, "AUTO"); break;
-                case CASE: fprintf(output, "CASE"); break;
-                case CHAR: fprintf(output, "CHAR"); break;
-                case CONST: fprintf(output, "CONST"); break;
-                case CONTINUE: fprintf(output, "CONTINUE"); break;
-                case DEFAULT: fprintf(output, "DEFAULT "); break;
-                case DO: fprintf(output, "DO"); break;
-                case DOUBLE: fprintf(output, "DOUBLE"); break;
-                case ELSE: fprintf(output, "ELSE"); break;
-                case ENUM: fprintf(output, "ENUM"); break;
-                case EXTERN: fprintf(output, "EXTERN"); break;
-                case FLOAT: fprintf(output, "FLOAT"); break;
-                case FOR: fprintf(output, "FOR"); break;
-                case GOTO: fprintf(output, "GOTO"); break;
-                case LONG: fprintf(output, "LONG"); break;
-                case REGISTER: fprintf(output, "REGISTER"); break;
-                case RETURN: fprintf(output, "RETURN"); break;
-                case SHORT: fprintf(output, "SHORT"); break;
-                case SIGNED: fprintf(output, "SIGNED"); break;
-                case SIZEOF: fprintf(output, "SIZEOF"); break;
-                case STATIC: fprintf(output, "STATIC"); break;
-                case STRUCT: fprintf(output, "STRUCT"); break;
-                case SWITCH: fprintf(output, "SWITCH"); break;
-                case TYPEDEF: fprintf(output, "TYPEDEF "); break;
-                case UNION: fprintf(output, "UNION"); break;
-                case UNSIGNED: fprintf(output, "UNSIGNED"); break;
-                case VOID: fprintf(output, "VOID"); break;
-                case VOLATILE: fprintf(output, "VOLATILE"); break;
-                case WHILE: fprintf(output, "WHILE"); break;
-                case DOT: fprintf(output, "DOT"); break;
-                case BREAK: fprintf(output, "BREAK"); break;
-                case COLON: fprintf(output, "COLON"); break;
-                case RSHIFTASSIGN: fprintf(output, "RSHIFTASSIGN"); break;
-                case LSHIFTASSIGN: fprintf(output, "LSHIFTASSIGN"); break;
-                default: fprintf(output, "Unknown Token"); break;
+        const char *tokenStrs[] = {
+                "LT",        "GT",           "LEQ",         "GEQ",
+                "LSHIFT",    "RSHIFT",       "DEREF",       "DECR",
+                "EQ",        "NEQ",          "ADD",         "SUB",
+                "MUL",       "DIV",          "MOD",         "ADDASSIGN",
+                "SUBASSIGN", "MULASSIGN",    "DIVASSIGN",   "MODASSIGN",
+                "OROR",      "ANDAND",       "INCR",        "EOI",
+                "IF",        "INT",          "OBR",         "CBR",
+                "OCBR",      "CCBR",         "OPAR",        "CPAR",
+                "SEMIC",     "COMMA",        "TILDA",       "AND",
+                "OR",        "XOR",          "NOT",         "ANDASSIGN",
+                "ORASSIGN",  "XORASSIGN",    "NOTASSIGN",   "STRGIZE",
+                "TKPASTE",   "ASSIGN",       "QMARK",       "IDENT",
+                "INTCONST",  "FLOATCONST",   "STRCONST",    "CHARCONST",
+                "ELLIPSIS",  "AUTO",         "CASE",        "CHAR",
+                "CONST",     "CONTINUE",     "DEFAULT",     "DO",
+                "DOUBLE",    "ELSE",         "ENUM",        "EXTERN",
+                "FLOAT",     "FOR",          "GOTO",        "LONG",
+                "REGISTER",  "RETURN",       "SHORT",       "SIGNED",
+                "SIZEOF",    "STATIC",       "STRUCT",      "SWITCH",
+                "TYPEDEF",   "UNION",        "UNSIGNED",    "VOID",
+                "VOLATILE",  "WHILE",        "DOT",         "BREAK",
+                "COLON",     "RSHIFTASSIGN", "LSHIFTASSIGN"};
+        size_t numTokenStrs = sizeof(tokenStrs) / sizeof(tokenStrs[0]);
+
+        if (kind >= 0 && kind < numTokenStrs) {
+                fprintf(output, "%s\n", tokenStrs[kind]);
+        } else {
+                fprintf(output, "Unknown known");
         }
 }
