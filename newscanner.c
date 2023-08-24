@@ -944,7 +944,8 @@ void printTokens(struct Token *head) {
         struct Token *current = head;
         while (current != NULL) {
                 printTokenKind(current->kind, output);
-                fprintf(output, "\t: %.*s\n", current->len, current->start);
+                // fprintf(output, ": %.*s\n", current->len, current->start);
+                fprintf(output, "\n");
                 current = current->next;
         }
 }
