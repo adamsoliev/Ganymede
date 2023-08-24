@@ -516,7 +516,30 @@ struct Token *scan(char *cp) {
                                                 int d = *rcp++ - '0';
                                                 n = n * 10 + d;
                                         }
-                                        if (*rcp == 'l' || *rcp == 'L') rcp++;
+                                        if (*rcp == '.' || *rcp == 'e' ||
+                                            *rcp == 'E') {
+                                                floatconst(&rcp);
+                                                ck = new_token(FLOATCONST,
+                                                               start,
+                                                               rcp - start);
+                                                ck->value = n;
+                                                cp = rcp;
+                                                goto next;
+                                        }
+                                        if ((*rcp == 'u' || *rcp == 'U') &&
+                                                    (rcp[1] == 'l' ||
+                                                     rcp[1] == 'L') ||
+                                            (*rcp == 'l' || *rcp == 'L') &&
+                                                    (rcp[1] == 'u' ||
+                                                     rcp[1] == 'U')) {
+                                                rcp += 2;
+                                        }
+                                        if (*rcp == 'u' || *rcp == 'U') {
+                                                rcp++;
+                                        }
+                                        if (*rcp == 'l' || *rcp == 'L') {
+                                                rcp++;
+                                        }
                                         ck = new_token(
                                                 INTCONST, start, rcp - start);
                                         ck->value = n;
@@ -533,8 +556,10 @@ struct Token *scan(char *cp) {
                                 }
                                 // HANDLEME: floating point
                                 if ((map[*rcp] & DIGIT)) {
+                                        char *start = --rcp;
                                         floatconst(&rcp);
-                                        ck = new_token(FLOATCONST, NULL, 0);
+                                        ck = new_token(
+                                                FLOATCONST, start, rcp - start);
                                         cp = rcp;
                                         goto next;
                                 }
@@ -782,29 +807,26 @@ exit_loop:
         return head.next;
 }
 
-void floatconst(char **rcp) {
-        char *start = *rcp;
-        if (**rcp == '.') {
-                do (*rcp)++;
-                while (map[**rcp] & DIGIT);
+void floatconst(char **start) {
+        if (**start == '.') {
+                do (*start)++;
+                while (map[**start] & DIGIT);
         }
-        if (**rcp == 'e' || **rcp == 'E') {
-                if (**++rcp == '-' || **rcp == '+') (*rcp)++;
-                if (map[**rcp] & DIGIT) {
+        if (**start == 'e' || **start == 'E') {
+                if (*(++(*start)) == '-' || **start == '+') (*start)++;
+                if (map[**start] & DIGIT) {
                         do {
-                                (*rcp)++;
-                        } while (map[**rcp] & DIGIT);
+                                (*start)++;
+                        } while (map[**start] & DIGIT);
                 } else {
-                        error("Invalid floating point constant: %.*s\n",
-                              *rcp - start,
-                              start);
+                        error("Invalid floating point constant: %s\n", *start);
                 }
         }
-        if (**rcp == 'f' || **rcp == 'F') {
-                ++(*rcp);
-        } else if (**rcp == 'l' || **rcp == 'L') {
+        if (**start == 'f' || **start == 'F') {
+                ++(*start);
+        } else if (**start == 'l' || **start == 'L') {
                 // long double
-                (*rcp)++;
+                (*start)++;
         } else {
                 // double type
         }
