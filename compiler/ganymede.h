@@ -102,6 +102,8 @@ enum TokenKind {
         COLON,
         RSHIFTASSIGN,
         LSHIFTASSIGN,
+        INCLUDE,
+        DEFINE,
 };
 
 struct Token {

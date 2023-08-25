@@ -1,6 +1,6 @@
 #include "ganymede.h"
 
-static enum {
+enum {
         BLANK = 01,
         NEWLINE = 02,
         LETTER = 04,
@@ -183,13 +183,16 @@ struct Token *scan(char *cp) {
                                                         rcp += 2;
                                                         break;
                                                 }
-                                                *rcp++;
+                                                rcp++;
                                         }
                                         if (rcp >= limit) {
                                                 error("Unterminated comment\n");
                                         }
                                         cp = rcp;
                                         continue;
+                                }
+                                if (*rcp == '\\') {
+                                        rcp += 2;
                                 }
                                 if (*rcp == '/') {
                                         rcp++;
@@ -199,7 +202,10 @@ struct Token *scan(char *cp) {
                                                               "comment: %s\n",
                                                               rcp - 1);
                                                 }
-                                                rcp++;
+                                                if (*rcp == '\\')
+                                                        rcp += 2;
+                                                else
+                                                        rcp++;
                                         }
                                         rcp++;
                                         cp = rcp;
@@ -711,6 +717,22 @@ struct Token *scan(char *cp) {
                                 }
                                 goto id;
                         case '_': goto id;
+                        case '#':
+                                if (rcp[0] == 'i' && rcp[1] == 'n' &&
+                                    rcp[2] == 'c' && rcp[3] == 'l' &&
+                                    rcp[4] == 'u' && rcp[5] == 'd' &&
+                                    rcp[6] == 'e' && rcp[7] == ' ') {
+                                        HANDLE_TOKEN(INCLUDE, 7);
+                                }
+                                if (rcp[0] == 'd' && rcp[1] == 'e' &&
+                                    rcp[2] == 'f' && rcp[3] == 'i' &&
+                                    rcp[4] == 'n' && rcp[5] == 'e' &&
+                                    rcp[6] == ' ') {
+                                        HANDLE_TOKEN(DEFINE, 6);
+                                }
+                                CHECK_PUNCTUATION('#', TKPASTE, 1)
+                                error("Invalid preprocessor directive: %s\n",
+                                      rcp - 1);
                         default: error("Unhandled character: %c\n", *(rcp - 1));
                 }
         }
@@ -755,39 +777,41 @@ void printTokens(struct Token *head, FILE *outfile) {
         struct Token *current = head;
         while (current != NULL) {
                 printTokenKind(current->kind, outfile);
-                // fprintf(output, ": %.*s\n", current->len, current->start);
+                fprintf(outfile, "\n");
+                // fprintf(outfile, ": %.*s\n", current->len, current->start);
                 current = current->next;
         }
 }
 
 void printTokenKind(enum TokenKind kind, FILE *output) {
         const char *tokenStrs[] = {
-                "LT",        "GT",           "LEQ",         "GEQ",
-                "LSHIFT",    "RSHIFT",       "DEREF",       "DECR",
-                "EQ",        "NEQ",          "ADD",         "SUB",
-                "MUL",       "DIV",          "MOD",         "ADDASSIGN",
-                "SUBASSIGN", "MULASSIGN",    "DIVASSIGN",   "MODASSIGN",
-                "OROR",      "ANDAND",       "INCR",        "EOI",
-                "IF",        "INT",          "OBR",         "CBR",
-                "OCBR",      "CCBR",         "OPAR",        "CPAR",
-                "SEMIC",     "COMMA",        "TILDA",       "AND",
-                "OR",        "XOR",          "NOT",         "ANDASSIGN",
-                "ORASSIGN",  "XORASSIGN",    "NOTASSIGN",   "STRGIZE",
-                "TKPASTE",   "ASSIGN",       "QMARK",       "IDENT",
-                "INTCONST",  "FLOATCONST",   "STRCONST",    "CHARCONST",
-                "ELLIPSIS",  "AUTO",         "CASE",        "CHAR",
-                "CONST",     "CONTINUE",     "DEFAULT",     "DO",
-                "DOUBLE",    "ELSE",         "ENUM",        "EXTERN",
-                "FLOAT",     "FOR",          "GOTO",        "LONG",
-                "REGISTER",  "RETURN",       "SHORT",       "SIGNED",
-                "SIZEOF",    "STATIC",       "STRUCT",      "SWITCH",
-                "TYPEDEF",   "UNION",        "UNSIGNED",    "VOID",
-                "VOLATILE",  "WHILE",        "DOT",         "BREAK",
-                "COLON",     "RSHIFTASSIGN", "LSHIFTASSIGN"};
+                "LT",        "GT",           "LEQ",          "GEQ",
+                "LSHIFT",    "RSHIFT",       "DEREF",        "DECR",
+                "EQ",        "NEQ",          "ADD",          "SUB",
+                "MUL",       "DIV",          "MOD",          "ADDASSIGN",
+                "SUBASSIGN", "MULASSIGN",    "DIVASSIGN",    "MODASSIGN",
+                "OROR",      "ANDAND",       "INCR",         "EOI",
+                "IF",        "INT",          "OBR",          "CBR",
+                "OCBR",      "CCBR",         "OPAR",         "CPAR",
+                "SEMIC",     "COMMA",        "TILDA",        "AND",
+                "OR",        "XOR",          "NOT",          "ANDASSIGN",
+                "ORASSIGN",  "XORASSIGN",    "NOTASSIGN",    "STRGIZE",
+                "TKPASTE",   "ASSIGN",       "QMARK",        "IDENT",
+                "INTCONST",  "FLOATCONST",   "STRCONST",     "CHARCONST",
+                "ELLIPSIS",  "AUTO",         "CASE",         "CHAR",
+                "CONST",     "CONTINUE",     "DEFAULT",      "DO",
+                "DOUBLE",    "ELSE",         "ENUM",         "EXTERN",
+                "FLOAT",     "FOR",          "GOTO",         "LONG",
+                "REGISTER",  "RETURN",       "SHORT",        "SIGNED",
+                "SIZEOF",    "STATIC",       "STRUCT",       "SWITCH",
+                "TYPEDEF",   "UNION",        "UNSIGNED",     "VOID",
+                "VOLATILE",  "WHILE",        "DOT",          "BREAK",
+                "COLON",     "RSHIFTASSIGN", "LSHIFTASSIGN", "INCLUDE",
+                "DEFINE"};
         size_t numTokenStrs = sizeof(tokenStrs) / sizeof(tokenStrs[0]);
 
         if (kind >= 0 && kind < numTokenStrs) {
-                fprintf(output, "%s\n", tokenStrs[kind]);
+                fprintf(output, "%s", tokenStrs[kind]);
         } else {
                 fprintf(output, "Unknown token");
         }
