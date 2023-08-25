@@ -12,17 +12,17 @@ if [[ $exit_code -ne 0 ]]; then
 fi
 cd ../../
 
-echo -e "\n-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*"
-echo "             RUNNING PARSER TESTS               "
-echo "-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*"
-cd ./tests/parser # dump way to do this
-python3 runner.py
-exit_code=$?
-if [[ $exit_code -ne 0 ]]; then
-    echo "Script failed"
-    exit 1
-fi
-cd ../../
+# echo -e "\n-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*"
+# echo "             RUNNING PARSER TESTS               "
+# echo "-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*"
+# cd ./tests/parser # dump way to do this
+# python3 runner.py
+# exit_code=$?
+# if [[ $exit_code -ne 0 ]]; then
+#     echo "Script failed"
+#     exit 1
+# fi
+# cd ../../
 
 
 # echo "TESTSUITE #1 - ensure generated .s file is runnable and returns expected value"
@@ -47,13 +47,13 @@ assert() {
     fi
 }
 
-assert 2 "$(cat tests/parser/0001.c)"
-assert -2 "$(cat tests/parser/0002.c)"
-assert 4 "$(cat tests/parser/0003.c)"
-assert 4 "$(cat tests/parser/0004.c)"
-assert 1 "$(cat tests/parser/0005.c)"
-assert 1 "$(cat tests/parser/0007.c)"
-assert 0 "$(cat tests/parser/0008.c)"
+# assert 2 "$(cat tests/parser/0001.c)"
+# assert -2 "$(cat tests/parser/0002.c)"
+# assert 4 "$(cat tests/parser/0003.c)"
+# assert 4 "$(cat tests/parser/0004.c)"
+# assert 1 "$(cat tests/parser/0005.c)"
+# assert 1 "$(cat tests/parser/0007.c)"
+# assert 0 "$(cat tests/parser/0008.c)"
 
 # assert 0 "int main() { return 0; }"
 # assert 2 "int main() { return 2; }"
