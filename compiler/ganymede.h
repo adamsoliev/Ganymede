@@ -104,6 +104,7 @@ enum TokenKind {
         LSHIFTASSIGN,
         INCLUDE,
         DEFINE,
+        BACKSLASH,
 };
 
 struct Token {

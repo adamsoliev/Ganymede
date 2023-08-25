@@ -45,7 +45,7 @@ def compare_files(name):
 
 
 def main():
-    names = ["0001"]
+    names = ["0001", "0002", "0003"]
     for name in names:
         execute_command(name)
         compare_files(name)

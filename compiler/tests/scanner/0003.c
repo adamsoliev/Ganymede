@@ -747,7 +747,6 @@ struct Token *scan(char *cp) {
                                       "line %d\n",
                                       rcp - 1,
                                       line);
-                        case '\\': HANDLE_TOKEN(BACKSLASH, 0);
                         default:
                                 error("Unhandled character: %c in line %d\n",
                                       *(rcp - 1),
@@ -828,7 +827,7 @@ void printTokenKind(enum TokenKind kind, FILE *output) {
                 "TYPEDEF",   "UNION",        "UNSIGNED",     "VOID",
                 "VOLATILE",  "WHILE",        "DOT",          "BREAK",
                 "COLON",     "RSHIFTASSIGN", "LSHIFTASSIGN", "INCLUDE",
-                "DEFINE",    "BACKSLASH"};
+                "DEFINE"};
         size_t numTokenStrs = sizeof(tokenStrs) / sizeof(tokenStrs[0]);
 
         if (kind >= 0 && kind < numTokenStrs) {
