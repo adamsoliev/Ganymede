@@ -1,4 +1,0 @@
-FunctionDecl int 'main'
-  BlockStmt
-    ReturnStmt
-      IntegerLiteral 2

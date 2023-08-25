@@ -1,6 +1,0 @@
-FunctionDecl int 'main'
-  BlockStmt
-    ReturnStmt
-      NeExpr
-        IntegerLiteral 2
-        IntegerLiteral 2

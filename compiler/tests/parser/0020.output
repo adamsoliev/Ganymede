@@ -1,7 +1,0 @@
-FunctionDecl int 'main'
-  BlockStmt
-    DeclStmt
-      VarDecl int[5] 'numbers'
-        NameExpr 'numbers'
-    ReturnStmt
-      IntegerLiteral 0
