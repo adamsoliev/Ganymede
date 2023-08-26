@@ -3,17 +3,15 @@
 static struct Token *ct;
 
 // either function or declaration
-struct Node {
-        struct Node *next;
+struct ExtDecl {
+        struct ExtDecl *next;
         struct declspec *declspec;
         struct decltor *decltor;
-
-        // declaration value
-        struct expr *expr;
+        struct expr *expr;    // for declaration
+        struct block *block;  // for function
 };
 
 struct declspec {
-        //
         enum {
                 D_INT,
         } type;
@@ -29,34 +27,50 @@ struct decltor {
 };
 
 struct expr {
+        enum {
+                E_INT,
+        } kind;
         int value;
+};
+
+// statement or declaration
+struct block {
+        struct block *next;
+        struct ExtDecl *decl;
+        struct stmt *stmt;
+};
+
+struct stmt {
+        struct expr *expr;
+        enum {
+                S_RETURN,
+        } kind;
 };
 
 void copystr(char **dest, char **src, int len);
 void consume(enum TokenKind kind);
-struct Node *function(struct declspec **declspec, struct decltor **decltor);
-struct Node *declaration(struct declspec **declspec, struct decltor **decltor);
+struct ExtDecl *function(struct declspec **declspec, struct decltor **decltor);
+struct ExtDecl *declaration(struct declspec **declspec, struct decltor **decltor);
 struct expr *expr();
 struct declspec *declaration_specifiers();
 struct decltor *declarator();
 
 void consume(enum TokenKind kind) {
         if (ct->kind != kind) {
-                error("Expected %s, got %s",
-                      token_names[kind],
-                      token_names[ct->kind]);
+                error("Expected %s, got %s", token_names[kind], token_names[ct->kind]);
         }
         ct = ct->next;
 }
 
 // function-definition ::=
 //      declarator ("{" declaration* or statement* "}")? ;
-struct Node *function(struct declspec **declspec, struct decltor **decltor) {
-        struct Node head = {};
-        struct Node *cur = &head;
-        cur = cur->next = calloc(1, sizeof(struct Node));
-        cur->declspec = *declspec;
-        cur->decltor = *decltor;
+struct ExtDecl *function(struct declspec **declspec, struct decltor **decltor) {
+        struct ExtDecl *func = calloc(1, sizeof(struct ExtDecl));
+        func->declspec = *declspec;
+        func->decltor = *decltor;
+
+        struct block head = {};
+        struct block *cur = &head;
         if (ct->kind == OCBR) {
                 consume(OCBR);
                 while (ct->kind != CCBR) {
@@ -73,31 +87,37 @@ struct Node *function(struct declspec **declspec, struct decltor **decltor) {
                                 case GOTO:
                                 case CONTINUE:
                                 case BREAK: break;
-                                case RETURN: 
+                                case RETURN:
                                         consume(RETURN);
-                                        if (ct->kind != SEMIC)
-                                                cur->expr = expr();
+                                        cur = cur->next = calloc(1, sizeof(struct block));
+                                        cur->stmt = calloc(1, sizeof(struct stmt));
+                                        cur->stmt->kind = S_RETURN;
+                                        if (ct->kind != SEMIC) {
+                                                cur->stmt->expr = expr();
+                                        }
                                         break;
                                 default:
                                         // declaration
-                                        struct declspec *declspec =
-                                                declaration_specifiers();
-                                        struct decltor *decltor = declarator();
-                                        cur = cur->next = declaration(&declspec,
-                                                                      &decltor);
+                                        {
+                                                struct declspec *declspec =
+                                                        declaration_specifiers();
+                                                struct decltor *decltor = declarator();
+                                                func = func->next =
+                                                        declaration(&declspec, &decltor);
+                                        }
                         }
                 }
                 consume(CCBR);
         }
-        return head.next;
+        return func;
 };
 
 // declaration ::=
 // 	    declspec decltor ("=" expr)? ("," decltor ("=" expr)?)* ";"
-struct Node *declaration(struct declspec **declspec, struct decltor **decltor) {
-        struct Node head = {};
-        struct Node *cur = &head;
-        cur = cur->next = calloc(1, sizeof(struct Node));
+struct ExtDecl *declaration(struct declspec **declspec, struct decltor **decltor) {
+        struct ExtDecl head = {};
+        struct ExtDecl *cur = &head;
+        cur = cur->next = calloc(1, sizeof(struct ExtDecl));
         cur->declspec = *declspec;
         cur->decltor = *decltor;
         while (ct->kind != SEMIC) {
@@ -107,23 +127,13 @@ struct Node *declaration(struct declspec **declspec, struct decltor **decltor) {
                 }
                 if (ct->kind == COMMA) {
                         consume(COMMA);
-                        cur = cur->next = calloc(1, sizeof(struct Node));
+                        cur = cur->next = calloc(1, sizeof(struct ExtDecl));
                         cur->declspec = *declspec;
                         cur->decltor = declarator();
                 }
         }
         consume(SEMIC);
         return head.next;
-};
-
-struct expr *expr() {
-        struct expr *expr = calloc(1, sizeof(struct expr));
-        if (ct->kind == INTCONST) {
-                consume(INTCONST);
-                expr->value = ct->value;
-                return expr;
-        }
-        return expr;
 };
 
 struct declspec *declaration_specifiers() {
@@ -156,6 +166,17 @@ struct decltor *declarator() {
         return decltor;
 };
 
+struct expr *expr() {
+        struct expr *expr = calloc(1, sizeof(struct expr));
+        if (ct->kind == INTCONST) {
+                expr->kind = E_INT;
+                expr->value = ct->value;
+                consume(INTCONST);
+                return expr;
+        }
+        return expr;
+};
+
 // direct-declarator ::=
 // 	    "[" type-qualifier-list? assignment-expression? "]"
 // 	    "[" "static" type-qualifier-list? assignment-expression "]"
@@ -166,10 +187,10 @@ struct decltor *declarator() {
 
 // function-definition
 // declaration
-struct Node *parse(struct Token *tokens) {
+struct ExtDecl *parse(struct Token *tokens) {
         ct = tokens;
-        struct Node head = {};
-        struct Node *cur = &head;
+        struct ExtDecl head = {};
+        struct ExtDecl *cur = &head;
         while (tokens->kind != EOI) {
                 struct declspec *declspec = declaration_specifiers();
                 struct decltor *decltor = declarator();  // #1 declarator

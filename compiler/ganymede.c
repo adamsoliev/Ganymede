@@ -123,6 +123,6 @@ int main(int argc, char **argv) {
         // SCANNING
         struct Token *tokens = scan(input);
         printTokens(tokens, outfile);
-        struct Node *program = parse(tokens);
+        struct ExtDecl *program = parse(tokens);
         return 0;
 }

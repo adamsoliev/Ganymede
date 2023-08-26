@@ -121,4 +121,4 @@ void printTokens(struct Token *head, FILE *outfile);
 struct Token *scan(char *stream);
 
 // parser
-struct Node* parse(struct Token *tokens);
+struct ExtDecl* parse(struct Token *tokens);
