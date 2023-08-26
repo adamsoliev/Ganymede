@@ -18,7 +18,7 @@ enum Kind {
         LT,      // <
         GT,      // >
         LEQ,     // <=
-        GEQ,     // >=c getopt and optarg header
+        GEQ,     // >=
         LSHIFT,  // <<
         RSHIFT,  // >>
         DEREF,   // ->

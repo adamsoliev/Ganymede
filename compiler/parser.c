@@ -68,6 +68,7 @@ struct expr *primary_expression();
 struct expr *additive_expression();
 struct expr *multiplicative_expression();
 struct expr *shift_expression();
+struct expr *relational_expression();
 
 void consume(enum Kind kind) {
         if (ct->kind != kind) {
@@ -182,7 +183,7 @@ struct decltor *declarator() {
         return decltor;
 };
 
-struct expr *expr() { return shift_expression(); }
+struct expr *expr() { return relational_expression(); }
 
 #define HANDLE_BINOP(opEnum, func)                  \
         if (ct->kind == opEnum) {                   \
@@ -190,6 +191,15 @@ struct expr *expr() { return shift_expression(); }
                 struct expr *rhs = func;            \
                 return new_expr(opEnum, expr, rhs); \
         }
+
+struct expr *relational_expression() {
+        struct expr *expr = shift_expression();
+        HANDLE_BINOP(LT, relational_expression());
+        HANDLE_BINOP(GT, relational_expression());
+        HANDLE_BINOP(LEQ, relational_expression());
+        HANDLE_BINOP(GEQ, relational_expression());
+        return expr;
+}
 
 struct expr *shift_expression() {
         struct expr *expr = additive_expression();
@@ -327,7 +337,11 @@ void printExpr(struct expr *expr, int level) {
                 case MUL:
                 case DIV:
                 case LSHIFT:
-                case RSHIFT: {
+                case RSHIFT:
+                case LT:
+                case GT:
+                case LEQ:
+                case GEQ: {
                         printf("%*sBinExpr %s\n", level * INDENT, "", token_names[expr->kind]);
                         printExpr(expr->lhs, level + 1);
                         printExpr(expr->rhs, level + 1);
