@@ -1,6 +1,7 @@
 #include "ganymede.h"
 
 static struct Token *ct;
+static int INDENT = 4;
 
 // either function or declaration
 struct ExtDecl {
@@ -12,9 +13,7 @@ struct ExtDecl {
 };
 
 struct declspec {
-        enum {
-                D_INT,
-        } type;
+        enum Kind type;
 };
 
 struct decltor {
@@ -27,10 +26,9 @@ struct decltor {
 };
 
 struct expr {
-        enum {
-                E_INT,
-        } kind;
+        enum Kind kind;
         int value;
+        char *strLit;
 };
 
 // statement or declaration
@@ -42,20 +40,21 @@ struct block {
 
 struct stmt {
         struct expr *expr;
-        enum {
-                S_RETURN,
-        } kind;
+        enum Kind kind;
 };
 
 void copystr(char **dest, char **src, int len);
-void consume(enum TokenKind kind);
+void consume(enum Kind kind);
 struct ExtDecl *function(struct declspec **declspec, struct decltor **decltor);
 struct ExtDecl *declaration(struct declspec **declspec, struct decltor **decltor);
 struct expr *expr();
 struct declspec *declaration_specifiers();
 struct decltor *declarator();
+void printBlock(struct block *block, int level);
+void printStmt(struct stmt *stmt, int level);
+void printExpr(struct expr *expr, int level);
 
-void consume(enum TokenKind kind) {
+void consume(enum Kind kind) {
         if (ct->kind != kind) {
                 error("Expected %s, got %s", token_names[kind], token_names[ct->kind]);
         }
@@ -91,10 +90,11 @@ struct ExtDecl *function(struct declspec **declspec, struct decltor **decltor) {
                                         consume(RETURN);
                                         cur = cur->next = calloc(1, sizeof(struct block));
                                         cur->stmt = calloc(1, sizeof(struct stmt));
-                                        cur->stmt->kind = S_RETURN;
+                                        cur->stmt->kind = RETURN;
                                         if (ct->kind != SEMIC) {
                                                 cur->stmt->expr = expr();
                                         }
+                                        consume(SEMIC);
                                         break;
                                 default:
                                         // declaration
@@ -109,6 +109,7 @@ struct ExtDecl *function(struct declspec **declspec, struct decltor **decltor) {
                 }
                 consume(CCBR);
         }
+        func->block = head.next;
         return func;
 };
 
@@ -140,7 +141,7 @@ struct declspec *declaration_specifiers() {
         struct declspec *declspec = calloc(1, sizeof(struct declspec));
         if (ct->kind == INT) {
                 consume(INT);
-                declspec->type = D_INT;
+                declspec->type = INT;
                 return declspec;
         }
         return declspec;
@@ -168,8 +169,14 @@ struct decltor *declarator() {
 
 struct expr *expr() {
         struct expr *expr = calloc(1, sizeof(struct expr));
+        if (ct->kind == IDENT) {
+                expr->kind = IDENT;
+                copystr(&expr->strLit, &ct->start, ct->len);
+                consume(IDENT);
+                return expr;
+        }
         if (ct->kind == INTCONST) {
-                expr->kind = E_INT;
+                expr->kind = INT;
                 expr->value = ct->value;
                 consume(INTCONST);
                 return expr;
@@ -191,7 +198,7 @@ struct ExtDecl *parse(struct Token *tokens) {
         ct = tokens;
         struct ExtDecl head = {};
         struct ExtDecl *cur = &head;
-        while (tokens->kind != EOI) {
+        while (ct->kind != EOI) {
                 struct declspec *declspec = declaration_specifiers();
                 struct decltor *decltor = declarator();  // #1 declarator
                 if (decltor->kind == FUNCTION) {
@@ -210,4 +217,66 @@ void copystr(char **dest, char **src, int len) {
         }
         strncpy(*dest, *src, len);
         (*dest)[len] = '\0';
+};
+
+// prints AST
+void printExtDecl(struct ExtDecl *extDecl, int level) {
+        if (extDecl == NULL) {
+                return;
+        }
+        switch (extDecl->decltor->kind) {
+                case FUNCTION: {
+                        printf("%*s%s FuncExcDecl '%s'\n",
+                               level * INDENT,
+                               "",
+                               token_names[extDecl->declspec->type],
+                               extDecl->decltor->name);
+                        printBlock(extDecl->block, level + 1);
+                        break;
+                }
+                case DECLARATION: {
+                        printf("%*s%s DeclExlDecl '%s'\n",
+                               level * INDENT,
+                               "",
+                               token_names[extDecl->declspec->type],
+                               extDecl->decltor->name);
+                        printExpr(extDecl->expr, level + 1);
+                        break;
+                }
+        }
+        printExtDecl(extDecl->next, level);
+};
+
+void printBlock(struct block *block, int level) {
+        if (block == NULL) return;
+        assert(block->stmt == NULL || block->decl == NULL);
+        if (block->stmt != NULL) {
+                printStmt(block->stmt, level);
+        } else if (block->decl != NULL) {
+                printExtDecl(block->decl, level);
+        } else {
+                error("Empty block\n");
+        }
+        printBlock(block->next, level);
+};
+
+void printStmt(struct stmt *stmt, int level) {
+        if (stmt == NULL) return;
+        switch (stmt->kind) {
+                case RETURN: {
+                        printf("%*sReturnStmt\n", level * INDENT, "");
+                        printExpr(stmt->expr, level + 1);
+                        break;
+                }
+                default: error("Unknown statement kind\n");
+        }
+};
+
+void printExpr(struct expr *expr, int level) {
+        if (expr == NULL) return;
+        switch (expr->kind) {
+                case INT: printf("%*sIntExpr %d\n", level * INDENT, "", expr->value); break;
+                case IDENT: printf("%*sIdentExpr '%s'\n", level * INDENT, "", expr->strLit); break;
+                default: error("Unknown expression kind\n");
+        }
 };

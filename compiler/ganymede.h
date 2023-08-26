@@ -14,7 +14,7 @@
 extern FILE *outfile;
 extern char *limit;
 
-enum TokenKind {
+enum Kind {
         LT,      // <
         GT,      // >
         LEQ,     // <=
@@ -108,7 +108,7 @@ enum TokenKind {
 };
 
 struct Token {
-        enum TokenKind kind;
+        enum Kind kind;
         char *start;  // for IDENT
         int len;      // for IDENT
         struct Token *next;
@@ -121,4 +121,5 @@ void printTokens(struct Token *head, FILE *outfile);
 struct Token *scan(char *stream);
 
 // parser
-struct ExtDecl* parse(struct Token *tokens);
+struct ExtDecl *parse(struct Token *tokens);
+void printExtDecl(struct ExtDecl *extDecl, int level);

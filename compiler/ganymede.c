@@ -20,8 +20,7 @@ char *readFile(const char *filename) {
         fseek(file, 0, SEEK_SET);
 
         // Allocate memory for the char array
-        char *content =
-                (char *)malloc(file_size + 1);  // +1 for null-terminator
+        char *content = (char *)malloc(file_size + 1);  // +1 for null-terminator
         if (content == NULL) {
                 fprintf(stderr, "Memory allocation error\n");
                 fclose(file);
@@ -124,5 +123,6 @@ int main(int argc, char **argv) {
         struct Token *tokens = scan(input);
         printTokens(tokens, outfile);
         struct ExtDecl *program = parse(tokens);
+        printExtDecl(program, 0);
         return 0;
 }
