@@ -121,7 +121,7 @@ int main(int argc, char **argv) {
 
         // SCANNING
         struct Token *tokens = scan(input);
-        printTokens(tokens, outfile);
+        // printTokens(tokens, outfile);
         struct ExtDecl *program = parse(tokens);
         printExtDecl(program, 0);
         return 0;
