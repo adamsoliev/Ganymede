@@ -7,6 +7,9 @@ struct Node {
         struct Node *next;
         struct declspec *declspec;
         struct decltor *decltor;
+
+        // declaration value
+        struct expr *expr;
 };
 
 struct declspec {
@@ -25,7 +28,17 @@ struct decltor {
         } kind;
 };
 
+struct expr {
+        int value;
+};
+
 void copystr(char **dest, char **src, int len);
+void consume(enum TokenKind kind);
+struct Node *function(struct declspec **declspec, struct decltor **decltor);
+struct Node *declaration(struct declspec **declspec, struct decltor **decltor);
+struct expr *expr();
+struct declspec *declaration_specifiers();
+struct decltor *declarator();
 
 void consume(enum TokenKind kind) {
         if (ct->kind != kind) {
@@ -37,23 +50,80 @@ void consume(enum TokenKind kind) {
 }
 
 // function-definition ::=
-// 	declarator declaration-list? compound-statement
-struct Node *function(struct declspec *declspec, struct decltor *decltor){
-        //
+//      declarator ("{" declaration* or statement* "}")? ;
+struct Node *function(struct declspec **declspec, struct decltor **decltor) {
+        struct Node head = {};
+        struct Node *cur = &head;
+        cur = cur->next = calloc(1, sizeof(struct Node));
+        cur->declspec = *declspec;
+        cur->decltor = *decltor;
+        if (ct->kind == OCBR) {
+                consume(OCBR);
+                while (ct->kind != CCBR) {
+                        // declaration or statement
+                        switch (ct->kind) {
+                                case IDENT:
+                                case CASE:
+                                case DEFAULT:
+                                case IF:
+                                case SWITCH:
+                                case WHILE:
+                                case DO:
+                                case FOR:
+                                case GOTO:
+                                case CONTINUE:
+                                case BREAK: break;
+                                case RETURN: 
+                                        consume(RETURN);
+                                        if (ct->kind != SEMIC)
+                                                cur->expr = expr();
+                                        break;
+                                default:
+                                        // declaration
+                                        struct declspec *declspec =
+                                                declaration_specifiers();
+                                        struct decltor *decltor = declarator();
+                                        cur = cur->next = declaration(&declspec,
+                                                                      &decltor);
+                        }
+                }
+                consume(CCBR);
+        }
+        return head.next;
 };
 
 // declaration ::=
-// 	init-declarator-list? ";"
-struct Node *declaration(struct declspec *declspec, struct decltor *decltor) {
-        if (ct->kind == ASSIGN) {
-                consume(ASSIGN);
-                if (ct->kind == INTCONST) {
-                        consume(INTCONST);
-                } else {
-                        error("Expected number, got %s", token_names[ct->kind]);
+// 	    declspec decltor ("=" expr)? ("," decltor ("=" expr)?)* ";"
+struct Node *declaration(struct declspec **declspec, struct decltor **decltor) {
+        struct Node head = {};
+        struct Node *cur = &head;
+        cur = cur->next = calloc(1, sizeof(struct Node));
+        cur->declspec = *declspec;
+        cur->decltor = *decltor;
+        while (ct->kind != SEMIC) {
+                if (ct->kind == ASSIGN) {
+                        consume(ASSIGN);
+                        cur->expr = expr();
+                }
+                if (ct->kind == COMMA) {
+                        consume(COMMA);
+                        cur = cur->next = calloc(1, sizeof(struct Node));
+                        cur->declspec = *declspec;
+                        cur->decltor = declarator();
                 }
         }
         consume(SEMIC);
+        return head.next;
+};
+
+struct expr *expr() {
+        struct expr *expr = calloc(1, sizeof(struct expr));
+        if (ct->kind == INTCONST) {
+                consume(INTCONST);
+                expr->value = ct->value;
+                return expr;
+        }
+        return expr;
 };
 
 struct declspec *declaration_specifiers() {
@@ -63,9 +133,11 @@ struct declspec *declaration_specifiers() {
                 declspec->type = D_INT;
                 return declspec;
         }
-        error("Expected int, got %s", token_names[ct->kind]);
+        return declspec;
 };
 
+// declarator ::=
+// 	    pointer? (identifier or "(" declarator ")")
 struct decltor *declarator() {
         struct decltor *decltor = calloc(1, sizeof(struct decltor));
         if (ct->kind == IDENT) {
@@ -81,8 +153,16 @@ struct decltor *declarator() {
                         return decltor;
                 }
         }
-        error("Expected identifier, got %s", token_names[ct->kind]);
+        return decltor;
 };
+
+// direct-declarator ::=
+// 	    "[" type-qualifier-list? assignment-expression? "]"
+// 	    "[" "static" type-qualifier-list? assignment-expression "]"
+// 	    "[" type-qualifier-list "static" assignment-expression "]"
+// 	    "[" type-qualifier-list? "*" "]"
+// 	    "(" parameter-type-list ")"
+// 	    "(" identifier-list? ")"
 
 // function-definition
 // declaration
@@ -92,13 +172,12 @@ struct Node *parse(struct Token *tokens) {
         struct Node *cur = &head;
         while (tokens->kind != EOI) {
                 struct declspec *declspec = declaration_specifiers();
-                struct decltor *decltor = declarator();
+                struct decltor *decltor = declarator();  // #1 declarator
                 if (decltor->kind == FUNCTION) {
-                        cur->next = function(declspec, decltor);
+                        cur = cur->next = function(&declspec, &decltor);
                 } else {
-                        cur->next = declaration(declspec, decltor);
+                        cur = cur->next = declaration(&declspec, &decltor);
                 }
-                cur = cur->next;
         }
         return head.next;
 };
