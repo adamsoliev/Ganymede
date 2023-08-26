@@ -121,7 +121,8 @@ int main(int argc, char **argv) {
         }
 
         // SCANNING
-        struct Token *token = scan(input);
-        printTokens(token, outfile);
+        struct Token *tokens = scan(input);
+        printTokens(tokens, outfile);
+        struct Node *program = parse(tokens);
         return 0;
 }

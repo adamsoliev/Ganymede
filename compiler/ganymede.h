@@ -115,6 +115,10 @@ struct Token {
         int value;  // for INTCONST
 };
 
+extern char *token_names[];
 void error(char *fmt, ...);
 void printTokens(struct Token *head, FILE *outfile);
 struct Token *scan(char *stream);
+
+// parser
+struct Node* parse(struct Token *tokens);

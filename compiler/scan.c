@@ -9,6 +9,26 @@ enum {
         OTHER = 040
 };
 
+char *token_names[] = {
+        "LT",           "GT",           "LEQ",       "GEQ",       "LSHIFT",
+        "RSHIFT",       "DEREF",        "DECR",      "EQ",        "NEQ",
+        "ADD",          "SUB",          "MUL",       "DIV",       "MOD",
+        "ADDASSIGN",    "SUBASSIGN",    "MULASSIGN", "DIVASSIGN", "MODASSIGN",
+        "OROR",         "ANDAND",       "INCR",      "EOI",       "IF",
+        "INT",          "OBR",          "CBR",       "OCBR",      "CCBR",
+        "OPAR",         "CPAR",         "SEMIC",     "COMMA",     "TILDA",
+        "AND",          "OR",           "XOR",       "NOT",       "ANDASSIGN",
+        "ORASSIGN",     "XORASSIGN",    "NOTASSIGN", "STRGIZE",   "TKPASTE",
+        "ASSIGN",       "QMARK",        "IDENT",     "INTCONST",  "FLOATCONST",
+        "STRCONST",     "CHARCONST",    "ELLIPSIS",  "AUTO",      "CASE",
+        "CHAR",         "CONST",        "CONTINUE",  "DEFAULT",   "DO",
+        "DOUBLE",       "ELSE",         "ENUM",      "EXTERN",    "FLOAT",
+        "FOR",          "GOTO",         "LONG",      "REGISTER",  "RETURN",
+        "SHORT",        "SIGNED",       "SIZEOF",    "STATIC",    "STRUCT",
+        "SWITCH",       "TYPEDEF",      "UNION",     "UNSIGNED",  "VOID",
+        "VOLATILE",     "WHILE",        "DOT",       "BREAK",     "COLON",
+        "RSHIFTASSIGN", "LSHIFTASSIGN", "INCLUDE",   "DEFINE",    "BACKSLASH"};
+
 static unsigned char map[256] = {
         /* 000 nul */ 0,
         /* 001 soh */ 0,
@@ -781,9 +801,9 @@ void floatconst(char **start) {
         } else if (**start == 'l' || **start == 'L') {
                 // long double
                 (*start)++;
-        } else {
-                // double type
-        }
+        }  // else {
+           // double type
+        // }
 };
 
 void error(char *fmt, ...) {
@@ -805,34 +825,9 @@ void printTokens(struct Token *head, FILE *outfile) {
 }
 
 void printTokenKind(enum TokenKind kind, FILE *output) {
-        const char *tokenStrs[] = {
-                "LT",        "GT",           "LEQ",          "GEQ",
-                "LSHIFT",    "RSHIFT",       "DEREF",        "DECR",
-                "EQ",        "NEQ",          "ADD",          "SUB",
-                "MUL",       "DIV",          "MOD",          "ADDASSIGN",
-                "SUBASSIGN", "MULASSIGN",    "DIVASSIGN",    "MODASSIGN",
-                "OROR",      "ANDAND",       "INCR",         "EOI",
-                "IF",        "INT",          "OBR",          "CBR",
-                "OCBR",      "CCBR",         "OPAR",         "CPAR",
-                "SEMIC",     "COMMA",        "TILDA",        "AND",
-                "OR",        "XOR",          "NOT",          "ANDASSIGN",
-                "ORASSIGN",  "XORASSIGN",    "NOTASSIGN",    "STRGIZE",
-                "TKPASTE",   "ASSIGN",       "QMARK",        "IDENT",
-                "INTCONST",  "FLOATCONST",   "STRCONST",     "CHARCONST",
-                "ELLIPSIS",  "AUTO",         "CASE",         "CHAR",
-                "CONST",     "CONTINUE",     "DEFAULT",      "DO",
-                "DOUBLE",    "ELSE",         "ENUM",         "EXTERN",
-                "FLOAT",     "FOR",          "GOTO",         "LONG",
-                "REGISTER",  "RETURN",       "SHORT",        "SIGNED",
-                "SIZEOF",    "STATIC",       "STRUCT",       "SWITCH",
-                "TYPEDEF",   "UNION",        "UNSIGNED",     "VOID",
-                "VOLATILE",  "WHILE",        "DOT",          "BREAK",
-                "COLON",     "RSHIFTASSIGN", "LSHIFTASSIGN", "INCLUDE",
-                "DEFINE",    "BACKSLASH"};
-        size_t numTokenStrs = sizeof(tokenStrs) / sizeof(tokenStrs[0]);
-
+        size_t numTokenStrs = sizeof(token_names) / sizeof(token_names[0]);
         if (kind >= 0 && kind < numTokenStrs) {
-                fprintf(output, "%s", tokenStrs[kind]);
+                fprintf(output, "%s", token_names[kind]);
         } else {
                 fprintf(output, "Unknown token in line %d\n", line);
         }
