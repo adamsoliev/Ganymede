@@ -67,6 +67,7 @@ void printExpr(struct expr *expr, int level);
 struct expr *primary_expression();
 struct expr *additive_expression();
 struct expr *multiplicative_expression();
+struct expr *shift_expression();
 
 void consume(enum Kind kind) {
         if (ct->kind != kind) {
@@ -181,35 +182,33 @@ struct decltor *declarator() {
         return decltor;
 };
 
-struct expr *expr() { return additive_expression(); }
+struct expr *expr() { return shift_expression(); }
+
+#define HANDLE_BINOP(opEnum, func)                  \
+        if (ct->kind == opEnum) {                   \
+                consume(opEnum);                    \
+                struct expr *rhs = func;            \
+                return new_expr(opEnum, expr, rhs); \
+        }
+
+struct expr *shift_expression() {
+        struct expr *expr = additive_expression();
+        HANDLE_BINOP(LSHIFT, shift_expression());
+        HANDLE_BINOP(RSHIFT, shift_expression());
+        return expr;
+}
 
 struct expr *additive_expression() {
         struct expr *expr = multiplicative_expression();
-        if (ct->kind == ADD) {
-                consume(ADD);
-                struct expr *rhs = additive_expression();
-                return new_expr(ADD, expr, rhs);
-        }
-        if (ct->kind == SUB) {
-                consume(SUB);
-                struct expr *rhs = additive_expression();
-                return new_expr(SUB, expr, rhs);
-        }
+        HANDLE_BINOP(ADD, additive_expression());
+        HANDLE_BINOP(SUB, additive_expression());
         return expr;
 };
 
 struct expr *multiplicative_expression() {
         struct expr *expr = primary_expression();
-        if (ct->kind == MUL) {
-                consume(MUL);
-                struct expr *rhs = multiplicative_expression();
-                return new_expr(MUL, expr, rhs);
-        }
-        if (ct->kind == DIV) {
-                consume(DIV);
-                struct expr *rhs = multiplicative_expression();
-                return new_expr(DIV, expr, rhs);
-        }
+        HANDLE_BINOP(MUL, multiplicative_expression());
+        HANDLE_BINOP(DIV, multiplicative_expression());
         return expr;
 };
 
@@ -326,7 +325,9 @@ void printExpr(struct expr *expr, int level) {
                 case ADD:
                 case SUB:
                 case MUL:
-                case DIV: {
+                case DIV:
+                case LSHIFT:
+                case RSHIFT: {
                         printf("%*sBinExpr %s\n", level * INDENT, "", token_names[expr->kind]);
                         printExpr(expr->lhs, level + 1);
                         printExpr(expr->rhs, level + 1);
