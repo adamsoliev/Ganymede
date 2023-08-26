@@ -29,7 +29,18 @@ struct expr {
         enum Kind kind;
         int value;
         char *strLit;
+
+        struct expr *lhs;
+        struct expr *rhs;
 };
+
+struct expr *new_expr(enum Kind kind, struct expr *lhs, struct expr *rhs) {
+        struct expr *expr = calloc(1, sizeof(struct expr));
+        expr->kind = kind;
+        expr->lhs = lhs;
+        expr->rhs = rhs;
+        return expr;
+}
 
 // statement or declaration
 struct block {
@@ -53,6 +64,8 @@ struct decltor *declarator();
 void printBlock(struct block *block, int level);
 void printStmt(struct stmt *stmt, int level);
 void printExpr(struct expr *expr, int level);
+struct expr *primary_expression();
+struct expr *additive_expression();
 
 void consume(enum Kind kind) {
         if (ct->kind != kind) {
@@ -167,7 +180,24 @@ struct decltor *declarator() {
         return decltor;
 };
 
-struct expr *expr() {
+struct expr *expr() { return additive_expression(); }
+
+struct expr *additive_expression() {
+        struct expr *expr = primary_expression();
+        if (ct->kind == ADD) {
+                consume(ADD);
+                struct expr *rhs = additive_expression();
+                return new_expr(ADD, expr, rhs);
+        }
+        if (ct->kind == SUB) {
+                consume(SUB);
+                struct expr *rhs = additive_expression();
+                return new_expr(SUB, expr, rhs);
+        }
+        return expr;
+};
+
+struct expr *primary_expression() {
         struct expr *expr = calloc(1, sizeof(struct expr));
         if (ct->kind == IDENT) {
                 expr->kind = IDENT;
@@ -277,6 +307,13 @@ void printExpr(struct expr *expr, int level) {
         switch (expr->kind) {
                 case INT: printf("%*sIntExpr %d\n", level * INDENT, "", expr->value); break;
                 case IDENT: printf("%*sIdentExpr '%s'\n", level * INDENT, "", expr->strLit); break;
+                case ADD:
+                case SUB: {
+                        printf("%*sBinExpr %s\n", level * INDENT, "", token_names[expr->kind]);
+                        printExpr(expr->lhs, level + 1);
+                        printExpr(expr->rhs, level + 1);
+                        break;
+                }
                 default: error("Unknown expression kind\n");
         }
 };
