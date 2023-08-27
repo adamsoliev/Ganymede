@@ -25,5 +25,11 @@ int main() {
         -e;
         !f;
         ~g;
+        g++;
+        g--;
+        g.b;
+        g->a;
+        g[2];
+        g();
         return e;
 }

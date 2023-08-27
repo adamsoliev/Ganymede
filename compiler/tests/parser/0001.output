@@ -110,5 +110,26 @@ INT FuncExcDecl 'main'
     ExprStmt
         UnaryExpr TILDA
             IdentExpr 'g'
+    ExprStmt
+        UnaryExpr INCR
+            IdentExpr 'g'
+    ExprStmt
+        UnaryExpr DECR
+            IdentExpr 'g'
+    ExprStmt
+        StructExpr
+            IdentExpr 'g'
+            IdentExpr 'b'
+    ExprStmt
+        DerefExpr
+            IdentExpr 'g'
+            IdentExpr 'a'
+    ExprStmt
+        ArrayExpr
+            IdentExpr 'g'
+            IntExpr 2
+    ExprStmt
+        FuncCallExpr
+            IdentExpr 'g'
     ReturnStmt
         IdentExpr 'e'

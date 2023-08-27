@@ -79,6 +79,7 @@ struct expr *logic_or_expression();
 struct expr *conditional_expression();
 struct expr *unary_expression();
 struct expr *assignment_expression();
+struct expr *postfix_expression();
 
 void consume(enum Kind kind) {
         if (ct->kind != kind) {
@@ -342,7 +343,7 @@ struct expr *unary_expression() {
                         return new_expr(SIZEOF, expr, NULL);
                 }
         }
-        return primary_expression();
+        return postfix_expression();
 }
 
 // postfix-expression ::=
@@ -355,6 +356,40 @@ struct expr *unary_expression() {
 // 	    postfix-expression "--"                                             -- decrement
 // 	    "(" type-name ")" "{" initializer-list "}"                          -- compound literal
 // 	    "(" type-name ")" "{" initializer-list "," "}"                      -- compound literal
+struct expr *postfix_expression() {
+        if (ct->kind == OPAR) {
+                error("postfix_expression not implemented\n");
+        }
+        struct expr *prim_expr = primary_expression();
+        if (ct->kind == OBR) {
+                // array access
+                consume(OBR);
+                struct expr *index = expr();
+                consume(CBR);
+                return new_expr(OBR, prim_expr, index);
+        } else if (ct->kind == OPAR) {
+                // func call
+                consume(OPAR);
+                consume(CPAR);
+                return new_expr(OPAR, prim_expr, NULL);
+        } else if (ct->kind == DOT) {
+                // struct access
+                consume(DOT);
+                struct expr *field = primary_expression();
+                return new_expr(DOT, prim_expr, field);
+        } else if (ct->kind == DEREF) {
+                consume(DEREF);
+                struct expr *field = primary_expression();
+                return new_expr(DEREF, prim_expr, field);
+        } else if (ct->kind == INCR) {
+                consume(INCR);
+                return new_expr(INCR, prim_expr, NULL);
+        } else if (ct->kind == DECR) {
+                consume(DECR);
+                return new_expr(DECR, prim_expr, NULL);
+        }
+        return prim_expr;
+}
 
 struct expr *primary_expression() {
         struct expr *expr = calloc(1, sizeof(struct expr));
@@ -569,6 +604,29 @@ void printExpr(struct expr *expr, int level) {
                 }
                 case ASSIGN: {
                         fprintf(outfile, "%*sAssignExpr\n", level * INDENT, "");
+                        printExpr(expr->lhs, level + 1);
+                        printExpr(expr->rhs, level + 1);
+                        break;
+                }
+                case OPAR: { // func call
+                        fprintf(outfile, "%*sFuncCallExpr\n", level * INDENT, "");
+                        printExpr(expr->lhs, level + 1);
+                        break;
+                }
+                case OBR: { // array access
+                        fprintf(outfile, "%*sArrayExpr\n", level * INDENT, "");
+                        printExpr(expr->lhs, level + 1);
+                        printExpr(expr->rhs, level + 1);
+                        break;
+                }
+                case DOT: {
+                        fprintf(outfile, "%*sStructExpr\n", level * INDENT, "");
+                        printExpr(expr->lhs, level + 1);
+                        printExpr(expr->rhs, level + 1);
+                        break;
+                }
+                case DEREF: {
+                        fprintf(outfile, "%*sDerefExpr\n", level * INDENT, "");
                         printExpr(expr->lhs, level + 1);
                         printExpr(expr->rhs, level + 1);
                         break;
