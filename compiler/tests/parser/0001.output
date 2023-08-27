@@ -131,5 +131,32 @@ INT FuncExcDecl 'main'
     ExprStmt
         FuncCallExpr
             IdentExpr 'g'
+    ExprStmt
+        FuncCallExpr
+            IdentExpr 'g'
+            FuncCallExpr
+                IdentExpr 'a'
+    ExprStmt
+        FuncCallExpr
+            IdentExpr 'g'
+            FuncCallExpr
+                IdentExpr 'a'
+                FuncCallExpr
+                    IdentExpr 'b'
+    ExprStmt
+        FuncCallExpr
+            IdentExpr 'g'
+            FuncCallExpr
+                IdentExpr 'a'
+                FuncCallExpr
+                    IdentExpr 'b'
+                    FuncCallExpr
+                        IdentExpr 'c'
+                        FuncCallExpr
+                            IdentExpr 'd'
+                            FuncCallExpr
+                                IdentExpr 'e'
+                                FuncCallExpr
+                                    IdentExpr 'f'
     ReturnStmt
         IdentExpr 'e'

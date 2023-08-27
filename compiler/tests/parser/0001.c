@@ -31,5 +31,8 @@ int main() {
         g->a;
         g[2];
         g();
+        g(a);
+        g(a, b);
+        g(a, b, c, d, e, f);
         return e;
 }

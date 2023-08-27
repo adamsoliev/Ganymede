@@ -80,6 +80,7 @@ struct expr *conditional_expression();
 struct expr *unary_expression();
 struct expr *assignment_expression();
 struct expr *postfix_expression();
+struct expr *arg_expr_list();
 
 void consume(enum Kind kind) {
         if (ct->kind != kind) {
@@ -356,6 +357,23 @@ struct expr *unary_expression() {
 // 	    postfix-expression "--"                                             -- decrement
 // 	    "(" type-name ")" "{" initializer-list "}"                          -- compound literal
 // 	    "(" type-name ")" "{" initializer-list "," "}"                      -- compound literal
+
+// argument-expression-list ::=
+// 	    assignment-expression
+// 	    argument-expression-list "," assignment-expression
+struct expr *arg_expr_list() {
+        if (ct->kind != CPAR) {
+                struct expr *arg_list = expr();
+                if (ct->kind == COMMA) {
+                        consume(COMMA);
+                        struct expr *next = arg_expr_list();
+                        return new_expr(OPAR, arg_list, next);
+                }
+                return new_expr(OPAR, arg_list, NULL);
+        }
+        return NULL;
+}
+
 struct expr *postfix_expression() {
         if (ct->kind == OPAR) {
                 error("postfix_expression not implemented\n");
@@ -370,8 +388,10 @@ struct expr *postfix_expression() {
         } else if (ct->kind == OPAR) {
                 // func call
                 consume(OPAR);
+                struct expr *arg_list = arg_expr_list();
+                // arguments
                 consume(CPAR);
-                return new_expr(OPAR, prim_expr, NULL);
+                return new_expr(OPAR, prim_expr, arg_list);
         } else if (ct->kind == DOT) {
                 // struct access
                 consume(DOT);
@@ -608,12 +628,13 @@ void printExpr(struct expr *expr, int level) {
                         printExpr(expr->rhs, level + 1);
                         break;
                 }
-                case OPAR: { // func call
+                case OPAR: {  // func call
                         fprintf(outfile, "%*sFuncCallExpr\n", level * INDENT, "");
                         printExpr(expr->lhs, level + 1);
+                        printExpr(expr->rhs, level + 1);
                         break;
                 }
-                case OBR: { // array access
+                case OBR: {  // array access
                         fprintf(outfile, "%*sArrayExpr\n", level * INDENT, "");
                         printExpr(expr->lhs, level + 1);
                         printExpr(expr->rhs, level + 1);
