@@ -345,6 +345,17 @@ struct expr *unary_expression() {
         return primary_expression();
 }
 
+// postfix-expression ::=
+// 	    primary-expression
+// 	    postfix-expression "[" expression "]"                               -- array
+// 	    postfix-expression "(" argument-expression-list? ")"                -- function call
+// 	    postfix-expression "." identifier                                   -- struct
+// 	    postfix-expression "->" identifier                                  -- struct pointer
+// 	    postfix-expression "++"                                             -- increment
+// 	    postfix-expression "--"                                             -- decrement
+// 	    "(" type-name ")" "{" initializer-list "}"                          -- compound literal
+// 	    "(" type-name ")" "{" initializer-list "," "}"                      -- compound literal
+
 struct expr *primary_expression() {
         struct expr *expr = calloc(1, sizeof(struct expr));
         if (ct->kind == IDENT) {
@@ -404,20 +415,22 @@ void printExtDecl(struct ExtDecl *extDecl, int level) {
         }
         switch (extDecl->decltor->kind) {
                 case FUNCTION: {
-                        printf("%*s%s FuncExcDecl '%s'\n",
-                               level * INDENT,
-                               "",
-                               token_names[extDecl->declspec->type],
-                               extDecl->decltor->name);
+                        fprintf(outfile,
+                                "%*s%s FuncExcDecl '%s'\n",
+                                level * INDENT,
+                                "",
+                                token_names[extDecl->declspec->type],
+                                extDecl->decltor->name);
                         printBlock(extDecl->block, level + 1);
                         break;
                 }
                 case DECLARATION: {
-                        printf("%*s%s DeclExlDecl '%s'\n",
-                               level * INDENT,
-                               "",
-                               token_names[extDecl->declspec->type],
-                               extDecl->decltor->name);
+                        fprintf(outfile,
+                                "%*s%s DeclExlDecl '%s'\n",
+                                level * INDENT,
+                                "",
+                                token_names[extDecl->declspec->type],
+                                extDecl->decltor->name);
                         printExpr(extDecl->expr, level + 1);
                         break;
                 }
@@ -442,12 +455,12 @@ void printStmt(struct stmt *stmt, int level) {
         if (stmt == NULL) return;
         switch (stmt->kind) {
                 case STMT_EXPR: {
-                        printf("%*sExprStmt\n", level * INDENT, "");
+                        fprintf(outfile, "%*sExprStmt\n", level * INDENT, "");
                         printExpr(stmt->expr, level + 1);
                         break;
                 }
                 case RETURN: {
-                        printf("%*sReturnStmt\n", level * INDENT, "");
+                        fprintf(outfile, "%*sReturnStmt\n", level * INDENT, "");
                         printExpr(stmt->expr, level + 1);
                         break;
                 }
@@ -458,22 +471,28 @@ void printStmt(struct stmt *stmt, int level) {
 void printExpr(struct expr *expr, int level) {
         if (expr == NULL) return;
         switch (expr->kind) {
-                case INT: printf("%*sIntExpr %d\n", level * INDENT, "", expr->value); break;
-                case IDENT: printf("%*sIdentExpr '%s'\n", level * INDENT, "", expr->strLit); break;
+                case INT:
+                        fprintf(outfile, "%*sIntExpr %d\n", level * INDENT, "", expr->value);
+                        break;
+                case IDENT:
+                        fprintf(outfile, "%*sIdentExpr '%s'\n", level * INDENT, "", expr->strLit);
+                        break;
                 case ADD:
                 case SUB:
                 case MUL:
                 case DIV: {
                         if (expr->rhs == NULL) {
-                                printf("%*sUnaryExpr %s\n",
-                                       level * INDENT,
-                                       "",
-                                       token_names[expr->kind]);
+                                fprintf(outfile,
+                                        "%*sUnaryExpr %s\n",
+                                        level * INDENT,
+                                        "",
+                                        token_names[expr->kind]);
                         } else {
-                                printf("%*sArithExpr %s\n",
-                                       level * INDENT,
-                                       "",
-                                       token_names[expr->kind]);
+                                fprintf(outfile,
+                                        "%*sArithExpr %s\n",
+                                        level * INDENT,
+                                        "",
+                                        token_names[expr->kind]);
                         }
                         printExpr(expr->lhs, level + 1);
                         printExpr(expr->rhs, level + 1);
@@ -481,7 +500,11 @@ void printExpr(struct expr *expr, int level) {
                 }
                 case LSHIFT:
                 case RSHIFT: {
-                        printf("%*sShiftExpr %s\n", level * INDENT, "", token_names[expr->kind]);
+                        fprintf(outfile,
+                                "%*sShiftExpr %s\n",
+                                level * INDENT,
+                                "",
+                                token_names[expr->kind]);
                         printExpr(expr->lhs, level + 1);
                         printExpr(expr->rhs, level + 1);
                         break;
@@ -492,7 +515,11 @@ void printExpr(struct expr *expr, int level) {
                 case GEQ:
                 case EQ:
                 case NEQ: {
-                        printf("%*sRelatExpr %s\n", level * INDENT, "", token_names[expr->kind]);
+                        fprintf(outfile,
+                                "%*sRelatExpr %s\n",
+                                level * INDENT,
+                                "",
+                                token_names[expr->kind]);
                         printExpr(expr->lhs, level + 1);
                         printExpr(expr->rhs, level + 1);
                         break;
@@ -500,20 +527,28 @@ void printExpr(struct expr *expr, int level) {
                 case AND:
                 case OR:
                 case XOR: {
-                        printf("%*sBitExpr %s\n", level * INDENT, "", token_names[expr->kind]);
+                        fprintf(outfile,
+                                "%*sBitExpr %s\n",
+                                level * INDENT,
+                                "",
+                                token_names[expr->kind]);
                         printExpr(expr->lhs, level + 1);
                         printExpr(expr->rhs, level + 1);
                         break;
                 }
                 case ANDAND:
                 case OROR: {
-                        printf("%*sLogicExpr %s\n", level * INDENT, "", token_names[expr->kind]);
+                        fprintf(outfile,
+                                "%*sLogicExpr %s\n",
+                                level * INDENT,
+                                "",
+                                token_names[expr->kind]);
                         printExpr(expr->lhs, level + 1);
                         printExpr(expr->rhs, level + 1);
                         break;
                 }
                 case QMARK: {
-                        printf("%*sCondExpr\n", level * INDENT, "");
+                        fprintf(outfile, "%*sCondExpr\n", level * INDENT, "");
                         printExpr(expr->lhs, level + 1);
                         printExpr(expr->rhs->lhs, level + 1);
                         printExpr(expr->rhs->rhs, level + 1);
@@ -524,12 +559,16 @@ void printExpr(struct expr *expr, int level) {
                 case NOT:
                 case TILDA:
                 case SIZEOF: {
-                        printf("%*sUnaryExpr %s\n", level * INDENT, "", token_names[expr->kind]);
+                        fprintf(outfile,
+                                "%*sUnaryExpr %s\n",
+                                level * INDENT,
+                                "",
+                                token_names[expr->kind]);
                         printExpr(expr->lhs, level + 1);
                         break;
                 }
                 case ASSIGN: {
-                        printf("%*sAssignExpr\n", level * INDENT, "");
+                        fprintf(outfile, "%*sAssignExpr\n", level * INDENT, "");
                         printExpr(expr->lhs, level + 1);
                         printExpr(expr->rhs, level + 1);
                         break;
