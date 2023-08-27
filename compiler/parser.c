@@ -50,7 +50,15 @@ struct block {
 };
 
 struct stmt {
-        struct expr *expr;  // return expr | expr-stmt
+        // return expr | expr-stmt
+        struct expr *expr;
+
+        // 'if' or 'for' stmt
+        struct expr *cond;
+        struct stmt *then;
+        struct stmt *els;
+        struct expr *init;
+
         enum Kind kind;
 };
 
@@ -81,6 +89,7 @@ struct expr *unary_expression();
 struct expr *assignment_expression();
 struct expr *postfix_expression();
 struct expr *arg_expr_list();
+struct stmt *stmt();
 
 void consume(enum Kind kind) {
         if (ct->kind != kind) {
@@ -102,47 +111,14 @@ struct ExtDecl *function(struct declspec **declspec, struct decltor **decltor) {
                 consume(OCBR);
                 while (ct->kind != CCBR) {
                         // declaration or statement
-                        switch (ct->kind) {
-                                case INT: {
-                                        struct declspec *declspec = declaration_specifiers();
-                                        struct decltor *decltor = declarator();
-                                        cur = cur->next = calloc(1, sizeof(struct block));
-                                        cur->decl = calloc(1, sizeof(struct ExtDecl));
-                                        cur->decl = declaration(&declspec, &decltor);
-                                        break;
-                                }
-                                case IDENT:
-                                        // handle other statements
-                                        goto stmt_expr;
-                                case CASE:
-                                case DEFAULT:
-                                case IF:
-                                case SWITCH:
-                                case WHILE:
-                                case DO:
-                                case FOR:
-                                case GOTO:
-                                case CONTINUE:
-                                case BREAK: break;
-                                case RETURN:
-                                        consume(RETURN);
-                                        cur = cur->next = calloc(1, sizeof(struct block));
-                                        cur->stmt = calloc(1, sizeof(struct stmt));
-                                        cur->stmt->kind = RETURN;
-                                        if (ct->kind != SEMIC) {
-                                                cur->stmt->expr = expr();
-                                        }
-                                        consume(SEMIC);
-                                        break;
-                                default:
-                                stmt_expr : {
-                                        // expression-statement
-                                        cur = cur->next = calloc(1, sizeof(struct block));
-                                        cur->stmt = calloc(1, sizeof(struct stmt));
-                                        cur->stmt->expr = expr();
-                                        cur->stmt->kind = STMT_EXPR;
-                                        consume(SEMIC);
-                                }
+                        cur = cur->next = calloc(1, sizeof(struct block));
+                        if (ct->kind == INT) {
+                                struct declspec *declspec = declaration_specifiers();
+                                struct decltor *decltor = declarator();
+                                cur->decl = calloc(1, sizeof(struct ExtDecl));
+                                cur->decl = declaration(&declspec, &decltor);
+                        } else {
+                                cur->stmt = stmt();
                         }
                 }
                 consume(CCBR);
@@ -150,6 +126,56 @@ struct ExtDecl *function(struct declspec **declspec, struct decltor **decltor) {
         func->block = head.next;
         return func;
 };
+
+struct stmt *stmt() {
+        struct stmt *statement = calloc(1, sizeof(struct stmt));
+        switch (ct->kind) {
+                case IDENT:
+                        // handle other statements
+                        goto stmt_expr;
+                case CASE:
+                case DEFAULT:
+                case IF:
+                        consume(IF);
+                        consume(OPAR);
+                        statement->kind = IF;
+                        statement->cond = expr();
+                        consume(CPAR);
+                        if (ct->kind == OCBR) consume(OCBR);
+                        statement->then = stmt();
+                        if (ct->kind == CCBR) consume(CCBR);
+                        if (ct->kind == ELSE) {
+                                consume(ELSE);
+                                if (ct->kind == OCBR) consume(OCBR);
+                                statement->els = stmt();
+                                if (ct->kind == CCBR) consume(CCBR);
+                        }
+                        break;
+                case SWITCH:
+                case WHILE:
+                case DO:
+                case FOR:
+                case GOTO:
+                case CONTINUE:
+                case BREAK: break;
+                case RETURN:
+                        consume(RETURN);
+                        statement->kind = RETURN;
+                        if (ct->kind != SEMIC) {
+                                statement->expr = expr();
+                        }
+                        consume(SEMIC);
+                        break;
+                default:
+                stmt_expr : {
+                        // expression-statement
+                        statement->expr = expr();
+                        statement->kind = STMT_EXPR;
+                        consume(SEMIC);
+                }
+        }
+        return statement;
+}
 
 // declaration ::=
 // 	    declspec decltor ("=" expr)? ("," decltor ("=" expr)?)* ";"
@@ -357,23 +383,6 @@ struct expr *unary_expression() {
 // 	    postfix-expression "--"                                             -- decrement
 // 	    "(" type-name ")" "{" initializer-list "}"                          -- compound literal
 // 	    "(" type-name ")" "{" initializer-list "," "}"                      -- compound literal
-
-// argument-expression-list ::=
-// 	    assignment-expression
-// 	    argument-expression-list "," assignment-expression
-struct expr *arg_expr_list() {
-        if (ct->kind != CPAR) {
-                struct expr *arg_list = expr();
-                if (ct->kind == COMMA) {
-                        consume(COMMA);
-                        struct expr *next = arg_expr_list();
-                        return new_expr(OPAR, arg_list, next);
-                }
-                return new_expr(OPAR, arg_list, NULL);
-        }
-        return NULL;
-}
-
 struct expr *postfix_expression() {
         if (ct->kind == OPAR) {
                 error("postfix_expression not implemented\n");
@@ -427,6 +436,22 @@ struct expr *primary_expression() {
         }
         return expr;
 };
+
+// argument-expression-list ::=
+// 	    assignment-expression
+// 	    argument-expression-list "," assignment-expression
+struct expr *arg_expr_list() {
+        if (ct->kind != CPAR) {
+                struct expr *arg_list = expr();
+                if (ct->kind == COMMA) {
+                        consume(COMMA);
+                        struct expr *next = arg_expr_list();
+                        return new_expr(OPAR, arg_list, next);
+                }
+                return new_expr(OPAR, arg_list, NULL);
+        }
+        return NULL;
+}
 
 // direct-declarator ::=
 // 	    "[" type-qualifier-list? assignment-expression? "]"
@@ -509,6 +534,13 @@ void printBlock(struct block *block, int level) {
 void printStmt(struct stmt *stmt, int level) {
         if (stmt == NULL) return;
         switch (stmt->kind) {
+                case IF: {
+                        fprintf(outfile, "%*sIfStmt\n", level * INDENT, "");
+                        printExpr(stmt->cond, level + 1);
+                        printStmt(stmt->then, level + 1);
+                        printStmt(stmt->els, level + 1);
+                        break;
+                }
                 case STMT_EXPR: {
                         fprintf(outfile, "%*sExprStmt\n", level * INDENT, "");
                         printExpr(stmt->expr, level + 1);

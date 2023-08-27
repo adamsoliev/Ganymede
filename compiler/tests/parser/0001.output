@@ -76,87 +76,65 @@ INT DeclExlDecl 'v'
     UnaryExpr SIZEOF
         IdentExpr 'a'
 INT FuncExcDecl 'main'
-    INT DeclExlDecl 'a'
-        CondExpr
-            RelatExpr EQ
+    IfStmt
+        RelatExpr EQ
+            IdentExpr 'a'
+            IntExpr 23
+        ExprStmt
+            AssignExpr
+                IdentExpr 'a'
+                IntExpr 32
+    IfStmt
+        RelatExpr EQ
+            IdentExpr 'a'
+            IntExpr 43
+        ExprStmt
+            AssignExpr
                 IdentExpr 'b'
                 IntExpr 23
-            IntExpr 32
-            IntExpr 43
-    ExprStmt
-        AssignExpr
-            IdentExpr 'a'
-            CondExpr
-                RelatExpr NEQ
-                    IdentExpr 'b'
-                    IntExpr 23
-                IntExpr 32
-                IntExpr 43
-    INT DeclExlDecl 'aa'
-        UnaryExpr INCR
-            IdentExpr 'b'
-    ExprStmt
-        UnaryExpr DECR
+    IfStmt
+        RelatExpr EQ
             IdentExpr 'c'
-    ExprStmt
-        UnaryExpr ADD
-            IdentExpr 'd'
-    ExprStmt
-        UnaryExpr SUB
-            IdentExpr 'e'
-    ExprStmt
-        UnaryExpr NOT
-            IdentExpr 'f'
-    ExprStmt
-        UnaryExpr TILDA
-            IdentExpr 'g'
-    ExprStmt
-        UnaryExpr INCR
-            IdentExpr 'g'
-    ExprStmt
-        UnaryExpr DECR
-            IdentExpr 'g'
-    ExprStmt
-        StructExpr
-            IdentExpr 'g'
-            IdentExpr 'b'
-    ExprStmt
-        DerefExpr
-            IdentExpr 'g'
+            IntExpr 23
+        ExprStmt
+            AssignExpr
+                IdentExpr 'g'
+                IntExpr 32
+        ExprStmt
+            AssignExpr
+                IdentExpr 'g'
+                IntExpr 0
+    IfStmt
+        RelatExpr EQ
             IdentExpr 'a'
-    ExprStmt
-        ArrayExpr
-            IdentExpr 'g'
-            IntExpr 2
-    ExprStmt
-        FuncCallExpr
-            IdentExpr 'g'
-    ExprStmt
-        FuncCallExpr
-            IdentExpr 'g'
-            FuncCallExpr
-                IdentExpr 'a'
-    ExprStmt
-        FuncCallExpr
-            IdentExpr 'g'
-            FuncCallExpr
-                IdentExpr 'a'
-                FuncCallExpr
-                    IdentExpr 'b'
-    ExprStmt
-        FuncCallExpr
-            IdentExpr 'g'
-            FuncCallExpr
-                IdentExpr 'a'
-                FuncCallExpr
-                    IdentExpr 'b'
-                    FuncCallExpr
-                        IdentExpr 'c'
-                        FuncCallExpr
-                            IdentExpr 'd'
-                            FuncCallExpr
-                                IdentExpr 'e'
-                                FuncCallExpr
-                                    IdentExpr 'f'
+            IntExpr 43
+        ExprStmt
+            AssignExpr
+                IdentExpr 'b'
+                IntExpr 23
+        ExprStmt
+            AssignExpr
+                IdentExpr 'b'
+                IntExpr 32
+    IfStmt
+        RelatExpr EQ
+            IdentExpr 'f'
+            IntExpr 103
+        ExprStmt
+            AssignExpr
+                IdentExpr 'j'
+                IntExpr 423
+        IfStmt
+            RelatExpr EQ
+                IdentExpr 'k'
+                IntExpr 32
+            ExprStmt
+                AssignExpr
+                    IdentExpr 'm'
+                    IntExpr 392
+            ExprStmt
+                AssignExpr
+                    IdentExpr 'n'
+                    IntExpr 0
     ReturnStmt
         IdentExpr 'e'
