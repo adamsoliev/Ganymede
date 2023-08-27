@@ -15,4 +15,9 @@ int n = 34 | 2;
 int o = 32 && 92;
 int p = 32 || 12;
 int q = 32 == 12 ? a + 32 : b > 4;
+int r = ++a + --b;
+int s = +a + -b;
+int t = !a - ~b;
+int u = *a;
+int v = sizeof a;
 int main() { return e; }

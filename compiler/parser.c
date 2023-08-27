@@ -77,6 +77,7 @@ struct expr *inc_or_expression();
 struct expr *logic_and_expression();
 struct expr *logic_or_expression();
 struct expr *conditional_expression();
+struct expr *unary_expression();
 
 void consume(enum Kind kind) {
         if (ct->kind != kind) {
@@ -273,11 +274,38 @@ struct expr *additive_expression() {
 };
 
 struct expr *multiplicative_expression() {
-        struct expr *expr = primary_expression();
+        struct expr *expr = unary_expression();
         HANDLE_BINOP(MUL, multiplicative_expression());
         HANDLE_BINOP(DIV, multiplicative_expression());
         return expr;
 };
+
+struct expr *unary_expression() {
+        if (ct->kind == INCR) {
+                consume(INCR);
+                return new_expr(INCR, unary_expression(), NULL);
+        }
+        if (ct->kind == DECR) {
+                consume(DECR);
+                return new_expr(DECR, unary_expression(), NULL);
+        }
+        if (ct->kind == AND || ct->kind == MUL || ct->kind == ADD || ct->kind == SUB ||
+            ct->kind == TILDA || ct->kind == NOT) {
+                enum Kind kind = ct->kind;
+                consume(kind);
+                return new_expr(kind, unary_expression(), NULL);
+        }
+        if (ct->kind == SIZEOF) {
+                if (ct->next->kind == OPAR) {
+                        error("sizeof (type-name) not implemented\n");
+                } else {
+                        consume(SIZEOF);
+                        struct expr *expr = unary_expression();
+                        return new_expr(SIZEOF, expr, NULL);
+                }
+        }
+        return primary_expression();
+}
 
 struct expr *primary_expression() {
         struct expr *expr = calloc(1, sizeof(struct expr));
@@ -393,7 +421,17 @@ void printExpr(struct expr *expr, int level) {
                 case SUB:
                 case MUL:
                 case DIV: {
-                        printf("%*sArithExpr %s\n", level * INDENT, "", token_names[expr->kind]);
+                        if (expr->rhs == NULL) {
+                                printf("%*sUnaryExpr %s\n",
+                                       level * INDENT,
+                                       "",
+                                       token_names[expr->kind]);
+                        } else {
+                                printf("%*sArithExpr %s\n",
+                                       level * INDENT,
+                                       "",
+                                       token_names[expr->kind]);
+                        }
                         printExpr(expr->lhs, level + 1);
                         printExpr(expr->rhs, level + 1);
                         break;
@@ -436,6 +474,15 @@ void printExpr(struct expr *expr, int level) {
                         printExpr(expr->lhs, level + 1);
                         printExpr(expr->rhs->lhs, level + 1);
                         printExpr(expr->rhs->rhs, level + 1);
+                        break;
+                }
+                case INCR:
+                case DECR:
+                case NOT:
+                case TILDA:
+                case SIZEOF: {
+                        printf("%*sUnaryExpr %s\n", level * INDENT, "", token_names[expr->kind]);
+                        printExpr(expr->lhs, level + 1);
                         break;
                 }
                 default: error("Unknown expression kind\n");
