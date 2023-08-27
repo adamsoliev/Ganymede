@@ -69,6 +69,13 @@ struct expr *additive_expression();
 struct expr *multiplicative_expression();
 struct expr *shift_expression();
 struct expr *relational_expression();
+struct expr *equality_expression();
+struct expr *equality_expression();
+struct expr *and_expression();
+struct expr *exc_or_expression();
+struct expr *inc_or_expression();
+struct expr *logic_and_expression();
+struct expr *logic_or_expression();
 
 void consume(enum Kind kind) {
         if (ct->kind != kind) {
@@ -183,7 +190,7 @@ struct decltor *declarator() {
         return decltor;
 };
 
-struct expr *expr() { return relational_expression(); }
+struct expr *expr() { return logic_or_expression(); }
 
 #define HANDLE_BINOP(opEnum, func)                  \
         if (ct->kind == opEnum) {                   \
@@ -191,6 +198,43 @@ struct expr *expr() { return relational_expression(); }
                 struct expr *rhs = func;            \
                 return new_expr(opEnum, expr, rhs); \
         }
+
+struct expr *logic_or_expression() {
+        struct expr *expr = logic_and_expression();
+        HANDLE_BINOP(OROR, logic_or_expression());
+        return expr;
+}
+
+struct expr *logic_and_expression() {
+        struct expr *expr = inc_or_expression();
+        HANDLE_BINOP(ANDAND, logic_and_expression());
+        return expr;
+}
+
+struct expr *inc_or_expression() {
+        struct expr *expr = exc_or_expression();
+        HANDLE_BINOP(OR, inc_or_expression());
+        return expr;
+}
+
+struct expr *exc_or_expression() {
+        struct expr *expr = and_expression();
+        HANDLE_BINOP(XOR, exc_or_expression());
+        return expr;
+}
+
+struct expr *and_expression() {
+        struct expr *expr = equality_expression();
+        HANDLE_BINOP(AND, and_expression());
+        return expr;
+}
+
+struct expr *equality_expression() {
+        struct expr *expr = relational_expression();
+        HANDLE_BINOP(EQ, equality_expression());
+        HANDLE_BINOP(NEQ, equality_expression());
+        return expr;
+}
 
 struct expr *relational_expression() {
         struct expr *expr = shift_expression();
@@ -335,14 +379,41 @@ void printExpr(struct expr *expr, int level) {
                 case ADD:
                 case SUB:
                 case MUL:
-                case DIV:
+                case DIV: {
+                        printf("%*sArithExpr %s\n", level * INDENT, "", token_names[expr->kind]);
+                        printExpr(expr->lhs, level + 1);
+                        printExpr(expr->rhs, level + 1);
+                        break;
+                }
                 case LSHIFT:
-                case RSHIFT:
+                case RSHIFT: {
+                        printf("%*sShiftExpr %s\n", level * INDENT, "", token_names[expr->kind]);
+                        printExpr(expr->lhs, level + 1);
+                        printExpr(expr->rhs, level + 1);
+                        break;
+                }
                 case LT:
                 case GT:
                 case LEQ:
-                case GEQ: {
-                        printf("%*sBinExpr %s\n", level * INDENT, "", token_names[expr->kind]);
+                case GEQ:
+                case EQ:
+                case NEQ: {
+                        printf("%*sRelatExpr %s\n", level * INDENT, "", token_names[expr->kind]);
+                        printExpr(expr->lhs, level + 1);
+                        printExpr(expr->rhs, level + 1);
+                        break;
+                }
+                case AND:
+                case OR:
+                case XOR: {
+                        printf("%*sBitExpr %s\n", level * INDENT, "", token_names[expr->kind]);
+                        printExpr(expr->lhs, level + 1);
+                        printExpr(expr->rhs, level + 1);
+                        break;
+                }
+                case ANDAND:
+                case OROR: {
+                        printf("%*sLogicExpr %s\n", level * INDENT, "", token_names[expr->kind]);
                         printExpr(expr->lhs, level + 1);
                         printExpr(expr->rhs, level + 1);
                         break;
