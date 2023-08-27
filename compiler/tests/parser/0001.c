@@ -14,4 +14,5 @@ int m = 93 ^ 2;
 int n = 34 | 2;
 int o = 32 && 92;
 int p = 32 || 12;
+int q = 32 == 12 ? a + 32 : b > 4;
 int main() { return e; }

@@ -76,6 +76,7 @@ struct expr *exc_or_expression();
 struct expr *inc_or_expression();
 struct expr *logic_and_expression();
 struct expr *logic_or_expression();
+struct expr *conditional_expression();
 
 void consume(enum Kind kind) {
         if (ct->kind != kind) {
@@ -190,7 +191,7 @@ struct decltor *declarator() {
         return decltor;
 };
 
-struct expr *expr() { return logic_or_expression(); }
+struct expr *expr() { return conditional_expression(); }
 
 #define HANDLE_BINOP(opEnum, func)                  \
         if (ct->kind == opEnum) {                   \
@@ -198,6 +199,18 @@ struct expr *expr() { return logic_or_expression(); }
                 struct expr *rhs = func;            \
                 return new_expr(opEnum, expr, rhs); \
         }
+
+struct expr *conditional_expression() {
+        struct expr *cond_expr = logic_or_expression();
+        if (ct->kind == QMARK) {
+                consume(QMARK);
+                struct expr *true_expr = expr();
+                consume(COLON);
+                struct expr *false_expr = conditional_expression();
+                return new_expr(QMARK, cond_expr, new_expr(COLON, true_expr, false_expr));
+        }
+        return cond_expr;
+}
 
 struct expr *logic_or_expression() {
         struct expr *expr = logic_and_expression();
@@ -416,6 +429,13 @@ void printExpr(struct expr *expr, int level) {
                         printf("%*sLogicExpr %s\n", level * INDENT, "", token_names[expr->kind]);
                         printExpr(expr->lhs, level + 1);
                         printExpr(expr->rhs, level + 1);
+                        break;
+                }
+                case QMARK: {
+                        printf("%*sCondExpr\n", level * INDENT, "");
+                        printExpr(expr->lhs, level + 1);
+                        printExpr(expr->rhs->lhs, level + 1);
+                        printExpr(expr->rhs->rhs, level + 1);
                         break;
                 }
                 default: error("Unknown expression kind\n");
