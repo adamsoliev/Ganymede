@@ -1,0 +1,114 @@
+INT DeclExlDecl 'a'
+    IntExpr 23
+INT DeclExlDecl 'b'
+    ArithExpr ADD
+        IntExpr 23
+        ArithExpr ADD
+            IntExpr 32
+            ArithExpr SUB
+                IntExpr 23
+                ArithExpr SUB
+                    IntExpr 43
+                    IntExpr 32
+INT DeclExlDecl 'c'
+    ArithExpr ADD
+        IntExpr 82
+        ArithExpr SUB
+            ArithExpr MUL
+                IntExpr 23
+                IntExpr 32
+            ArithExpr DIV
+                IntExpr 600
+                IntExpr 20
+INT DeclExlDecl 'd'
+    ShiftExpr LSHIFT
+        IntExpr 54
+        IntExpr 2
+INT DeclExlDecl 'e'
+    ShiftExpr RSHIFT
+        IntExpr 24
+        IntExpr 2
+INT DeclExlDecl 'f'
+    RelatExpr LT
+        IntExpr 94
+        IntExpr 2
+INT DeclExlDecl 'g'
+    RelatExpr GT
+        IntExpr 74
+        IntExpr 2
+INT DeclExlDecl 'h'
+    RelatExpr LEQ
+        IntExpr 13
+        IntExpr 2
+INT DeclExlDecl 'i'
+    RelatExpr GEQ
+        IntExpr 94
+        IntExpr 2
+INT DeclExlDecl 'j'
+    RelatExpr EQ
+        IntExpr 51
+        IntExpr 2
+INT DeclExlDecl 'k'
+    RelatExpr NEQ
+        IntExpr 18
+        IntExpr 2
+INT DeclExlDecl 'l'
+    BitExpr AND
+        IntExpr 43
+        IntExpr 2
+INT DeclExlDecl 'm'
+    BitExpr XOR
+        IntExpr 93
+        IntExpr 2
+INT DeclExlDecl 'n'
+    BitExpr OR
+        IntExpr 34
+        IntExpr 2
+INT DeclExlDecl 'o'
+    LogicExpr ANDAND
+        IntExpr 32
+        IntExpr 92
+INT DeclExlDecl 'p'
+    LogicExpr OROR
+        IntExpr 32
+        IntExpr 12
+INT DeclExlDecl 'v'
+    UnaryExpr SIZEOF
+        IdentExpr 'a'
+INT FuncExcDecl 'main'
+    INT DeclExlDecl 'a'
+        CondExpr
+            RelatExpr EQ
+                IdentExpr 'b'
+                IntExpr 23
+            IntExpr 32
+            IntExpr 43
+    ExprStmt
+        AssignExpr
+            IdentExpr 'a'
+            CondExpr
+                RelatExpr NEQ
+                    IdentExpr 'b'
+                    IntExpr 23
+                IntExpr 32
+                IntExpr 43
+    INT DeclExlDecl 'aa'
+        UnaryExpr INCR
+            IdentExpr 'b'
+    ExprStmt
+        UnaryExpr DECR
+            IdentExpr 'c'
+    ExprStmt
+        UnaryExpr ADD
+            IdentExpr 'd'
+    ExprStmt
+        UnaryExpr SUB
+            IdentExpr 'e'
+    ExprStmt
+        UnaryExpr NOT
+            IdentExpr 'f'
+    ExprStmt
+        UnaryExpr TILDA
+            IdentExpr 'g'
+    ReturnStmt
+        IdentExpr 'e'

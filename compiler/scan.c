@@ -17,7 +17,7 @@ char *token_names[] = {
         "GOTO",      "LONG",         "REGISTER",     "RETURN",    "SHORT",     "SIGNED",
         "SIZEOF",    "STATIC",       "STRUCT",       "SWITCH",    "TYPEDEF",   "UNION",
         "UNSIGNED",  "VOID",         "VOLATILE",     "WHILE",     "DOT",       "BREAK",
-        "COLON",     "RSHIFTASSIGN", "LSHIFTASSIGN", "INCLUDE",   "DEFINE",    "BACKSLASH"};
+        "COLON",     "RSHIFTASSIGN", "LSHIFTASSIGN", "INCLUDE",   "DEFINE",    "BACKSLASH", "STMT_EXPR"};
 
 static unsigned char map[256] = {
         /* 000 nul */ 0,

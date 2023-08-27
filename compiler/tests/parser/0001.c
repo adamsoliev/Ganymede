@@ -14,10 +14,16 @@ int m = 93 ^ 2;
 int n = 34 | 2;
 int o = 32 && 92;
 int p = 32 || 12;
-int q = 32 == 12 ? a + 32 : b > 4;
-int r = ++a + --b;
-int s = +a + -b;
-int t = !a - ~b;
-int u = *a;
 int v = sizeof a;
-int main() { return e; }
+
+int main() {
+        int a = b == 23 ? 32 : 43;
+        a = b != 23 ? 32 : 43;
+        int aa = ++b;
+        --c;
+        +d;
+        -e;
+        !f;
+        ~g;
+        return e;
+}

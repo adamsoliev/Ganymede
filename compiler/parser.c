@@ -50,7 +50,7 @@ struct block {
 };
 
 struct stmt {
-        struct expr *expr;
+        struct expr *expr;  // return expr | expr-stmt
         enum Kind kind;
 };
 
@@ -78,6 +78,7 @@ struct expr *logic_and_expression();
 struct expr *logic_or_expression();
 struct expr *conditional_expression();
 struct expr *unary_expression();
+struct expr *assignment_expression();
 
 void consume(enum Kind kind) {
         if (ct->kind != kind) {
@@ -100,7 +101,17 @@ struct ExtDecl *function(struct declspec **declspec, struct decltor **decltor) {
                 while (ct->kind != CCBR) {
                         // declaration or statement
                         switch (ct->kind) {
+                                case INT: {
+                                        struct declspec *declspec = declaration_specifiers();
+                                        struct decltor *decltor = declarator();
+                                        cur = cur->next = calloc(1, sizeof(struct block));
+                                        cur->decl = calloc(1, sizeof(struct ExtDecl));
+                                        cur->decl = declaration(&declspec, &decltor);
+                                        break;
+                                }
                                 case IDENT:
+                                        // handle other statements
+                                        goto stmt_expr;
                                 case CASE:
                                 case DEFAULT:
                                 case IF:
@@ -122,14 +133,14 @@ struct ExtDecl *function(struct declspec **declspec, struct decltor **decltor) {
                                         consume(SEMIC);
                                         break;
                                 default:
-                                        // declaration
-                                        {
-                                                struct declspec *declspec =
-                                                        declaration_specifiers();
-                                                struct decltor *decltor = declarator();
-                                                func = func->next =
-                                                        declaration(&declspec, &decltor);
-                                        }
+                                stmt_expr : {
+                                        // expression-statement
+                                        cur = cur->next = calloc(1, sizeof(struct block));
+                                        cur->stmt = calloc(1, sizeof(struct stmt));
+                                        cur->stmt->expr = expr();
+                                        cur->stmt->kind = STMT_EXPR;
+                                        consume(SEMIC);
+                                }
                         }
                 }
                 consume(CCBR);
@@ -149,7 +160,7 @@ struct ExtDecl *declaration(struct declspec **declspec, struct decltor **decltor
         while (ct->kind != SEMIC) {
                 if (ct->kind == ASSIGN) {
                         consume(ASSIGN);
-                        cur->expr = expr();
+                        cur->expr = expr();  // initializer
                 }
                 if (ct->kind == COMMA) {
                         consume(COMMA);
@@ -192,7 +203,7 @@ struct decltor *declarator() {
         return decltor;
 };
 
-struct expr *expr() { return conditional_expression(); }
+struct expr *expr() { return assignment_expression(); }
 
 #define HANDLE_BINOP(opEnum, func)                  \
         if (ct->kind == opEnum) {                   \
@@ -200,6 +211,33 @@ struct expr *expr() { return conditional_expression(); }
                 struct expr *rhs = func;            \
                 return new_expr(opEnum, expr, rhs); \
         }
+
+struct expr *assignment_expression() {
+#define HANDLE_OPASSIGN(opAssign, op)                                                     \
+        if (ct->kind == opAssign) {                                                       \
+                consume(opAssign);                                                        \
+                struct expr *assign_expr = assignment_expression();                       \
+                return new_expr(ASSIGN, cond_expr, new_expr(op, cond_expr, assign_expr)); \
+        }
+
+        struct expr *cond_expr = conditional_expression();
+        if (ct->kind == ASSIGN) {
+                consume(ASSIGN);
+                struct expr *assign_expr = assignment_expression();
+                return new_expr(ASSIGN, cond_expr, assign_expr);
+        }
+        HANDLE_OPASSIGN(MULASSIGN, MUL);
+        HANDLE_OPASSIGN(DIVASSIGN, DIV);
+        HANDLE_OPASSIGN(MODASSIGN, MOD);
+        HANDLE_OPASSIGN(ADDASSIGN, ADD);
+        HANDLE_OPASSIGN(SUBASSIGN, SUB);
+        HANDLE_OPASSIGN(LSHIFTASSIGN, LSHIFT);
+        HANDLE_OPASSIGN(RSHIFTASSIGN, RSHIFT);
+        HANDLE_OPASSIGN(ANDASSIGN, AND);
+        HANDLE_OPASSIGN(XORASSIGN, XOR);
+        HANDLE_OPASSIGN(ORASSIGN, OR);
+        return cond_expr;
+}
 
 struct expr *conditional_expression() {
         struct expr *cond_expr = logic_or_expression();
@@ -403,6 +441,11 @@ void printBlock(struct block *block, int level) {
 void printStmt(struct stmt *stmt, int level) {
         if (stmt == NULL) return;
         switch (stmt->kind) {
+                case STMT_EXPR: {
+                        printf("%*sExprStmt\n", level * INDENT, "");
+                        printExpr(stmt->expr, level + 1);
+                        break;
+                }
                 case RETURN: {
                         printf("%*sReturnStmt\n", level * INDENT, "");
                         printExpr(stmt->expr, level + 1);
@@ -483,6 +526,12 @@ void printExpr(struct expr *expr, int level) {
                 case SIZEOF: {
                         printf("%*sUnaryExpr %s\n", level * INDENT, "", token_names[expr->kind]);
                         printExpr(expr->lhs, level + 1);
+                        break;
+                }
+                case ASSIGN: {
+                        printf("%*sAssignExpr\n", level * INDENT, "");
+                        printExpr(expr->lhs, level + 1);
+                        printExpr(expr->rhs, level + 1);
                         break;
                 }
                 default: error("Unknown expression kind\n");
