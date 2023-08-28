@@ -350,5 +350,31 @@ INT FuncExcDecl 'main'
         RelatExpr LT
             IdentExpr 'a'
             IntExpr 10
+    SwitchStmt
+        IdentExpr 'a'
+        CompoundStmt
+            CaseStmt
+                IntExpr 23
+                CompoundStmt
+                    ExprStmt
+                        AssignExpr
+                            IdentExpr 'a'
+                            IntExpr 32
+                    BreakStmt
+            CaseStmt
+                IntExpr 43
+                CompoundStmt
+                    ExprStmt
+                        AssignExpr
+                            IdentExpr 'b'
+                            IntExpr 23
+                    BreakStmt
+            DefaultStmt
+                CompoundStmt
+                    ExprStmt
+                        AssignExpr
+                            IdentExpr 'c'
+                            IntExpr 0
+                    BreakStmt
     ReturnStmt
         IdentExpr 'e'

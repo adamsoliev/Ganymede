@@ -122,8 +122,21 @@ struct stmt *stmt() {
                 case IDENT:
                         // handle other statements
                         goto stmt_expr;
-                case CASE:
-                case DEFAULT:
+                case CASE: {
+                        consume(CASE);
+                        statement->kind = CASE;
+                        statement->expr = conditional_expression();
+                        consume(COLON);
+                        statement->then = stmt();
+                        break;
+                }
+                case DEFAULT: {
+                        consume(DEFAULT);
+                        statement->kind = DEFAULT;
+                        consume(COLON);
+                        statement->then = stmt();
+                        break;
+                }
                 case IF:
                         statement->kind = IF;
                         consume(IF);
@@ -149,6 +162,13 @@ struct stmt *stmt() {
                         }
                         break;
                 case SWITCH:
+                        statement->kind = SWITCH;
+                        consume(SWITCH);
+                        consume(OPAR);
+                        statement->cond = expr();
+                        consume(CPAR);
+                        statement->then = stmt();
+                        break;
                 case WHILE:
                         statement->kind = WHILE;
                         consume(WHILE);
@@ -189,11 +209,17 @@ struct stmt *stmt() {
                         // inc
                         statement->inc = expr();
                         consume(CPAR);
+                        // stmt
                         statement->then = stmt();
                         break;
-                case GOTO:
-                case CONTINUE:
-                case BREAK: break;
+                case GOTO: break;
+                case CONTINUE: break;
+                case BREAK: {
+                        statement->kind = BREAK;
+                        consume(BREAK);
+                        consume(SEMIC);
+                        break;
+                }
                 case RETURN:
                         statement->kind = RETURN;
                         consume(RETURN);
@@ -596,6 +622,27 @@ void printBlock(struct block *block, int level) {
 void printStmt(struct stmt *stmt, int level) {
         if (stmt == NULL) return;
         switch (stmt->kind) {
+                case BREAK: {
+                        fprintf(outfile, "%*sBreakStmt\n", level * INDENT, "");
+                        break;
+                }
+                case DEFAULT: {
+                        fprintf(outfile, "%*sDefaultStmt\n", level * INDENT, "");
+                        printStmt(stmt->then, level + 1);
+                        break;
+                }
+                case CASE: {
+                        fprintf(outfile, "%*sCaseStmt\n", level * INDENT, "");
+                        printExpr(stmt->expr, level + 1);
+                        printStmt(stmt->then, level + 1);
+                        break;
+                }
+                case SWITCH: {
+                        fprintf(outfile, "%*sSwitchStmt\n", level * INDENT, "");
+                        printExpr(stmt->cond, level + 1);
+                        printStmt(stmt->then, level + 1);
+                        break;
+                }
                 case DO: {
                         fprintf(outfile, "%*sDoStmt\n", level * INDENT, "");
                         printStmt(stmt->then, level + 1);

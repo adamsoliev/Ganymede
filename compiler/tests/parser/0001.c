@@ -96,5 +96,20 @@ int main() {
         do js--;
         while (a < 10);
 
+        switch(a) {
+                case 23: {
+                        a = 32;
+                        break;
+                }
+                case 43: {
+                        b = 23;
+                        break;
+                }
+                default: {
+                        c = 0;
+                        break;
+                }
+        }
+
         return e;
 }
