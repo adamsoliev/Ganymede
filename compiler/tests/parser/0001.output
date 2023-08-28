@@ -233,6 +233,16 @@ INT FuncExcDecl 'main'
                 ArithExpr ADD
                     IdentExpr 'a'
                     IdentExpr 'b'
+        IfStmt
+            RelatExpr EQ
+                IdentExpr 'a'
+                IntExpr 23
+            ExprStmt
+                AssignExpr
+                    IdentExpr 'c'
+                    ArithExpr ADD
+                        IdentExpr 'c'
+                        IdentExpr 'd'
     ForStmt
         INT DeclExlDecl 'i'
             IntExpr 0
@@ -247,5 +257,9 @@ INT FuncExcDecl 'main'
                 ArithExpr ADD
                     IdentExpr 'a'
                     IdentExpr 'b'
+        INT DeclExlDecl 'c'
+            ArithExpr MUL
+                IntExpr 23
+                IdentExpr 'b'
     ReturnStmt
         IdentExpr 'e'

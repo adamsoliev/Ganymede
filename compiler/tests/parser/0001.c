@@ -58,9 +58,13 @@ int main() {
         }
         for (i = 0; i < 10; i++) {
                 a += b;
+                if (a == 23) {
+                        c += d;
+                }
         }
         for (int i = 0; i < 10; i++) {
                 a += b;
+                int c = 23 * b;
         }
         return e;
 }
