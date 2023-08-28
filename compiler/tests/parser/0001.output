@@ -376,5 +376,24 @@ INT FuncExcDecl 'main'
                             IdentExpr 'c'
                             IntExpr 0
                     BreakStmt
+    ForStmt
+        INT DeclExlDecl 'i'
+            IntExpr 0
+        RelatExpr LT
+            IdentExpr 'i'
+            IntExpr 10
+        UnaryExpr INCR
+            IdentExpr 'i'
+        CompoundStmt
+            IfStmt
+                RelatExpr EQ
+                    IdentExpr 'i'
+                    IntExpr 3
+                ContinueStmt
+            IfStmt
+                RelatExpr EQ
+                    IdentExpr 'i'
+                    IntExpr 5
+                BreakStmt
     ReturnStmt
         IdentExpr 'e'

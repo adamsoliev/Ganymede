@@ -96,7 +96,7 @@ int main() {
         do js--;
         while (a < 10);
 
-        switch(a) {
+        switch (a) {
                 case 23: {
                         a = 32;
                         break;
@@ -109,6 +109,11 @@ int main() {
                         c = 0;
                         break;
                 }
+        }
+
+        for (int i = 0; i < 10; i++) {
+                if (i == 3) continue;
+                if (i == 5) break;
         }
 
         return e;

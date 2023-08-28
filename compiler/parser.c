@@ -212,8 +212,19 @@ struct stmt *stmt() {
                         // stmt
                         statement->then = stmt();
                         break;
-                case GOTO: break;
-                case CONTINUE: break;
+                case GOTO: {
+                        statement->kind = GOTO;
+                        consume(GOTO);
+                        statement->expr = primary_expression();  // identifier
+                        consume(SEMIC);
+                        break;
+                }
+                case CONTINUE: {
+                        statement->kind = CONTINUE;
+                        consume(CONTINUE);
+                        consume(SEMIC);
+                        break;
+                }
                 case BREAK: {
                         statement->kind = BREAK;
                         consume(BREAK);
@@ -228,7 +239,7 @@ struct stmt *stmt() {
                         }
                         consume(SEMIC);
                         break;
-                case OCBR:
+                case OCBR:  // compound statement
                         statement->kind = STMT_COMPOUND;
                         statement->body = compound_stmt();
                         break;
@@ -622,6 +633,15 @@ void printBlock(struct block *block, int level) {
 void printStmt(struct stmt *stmt, int level) {
         if (stmt == NULL) return;
         switch (stmt->kind) {
+                case CONTINUE: {
+                        fprintf(outfile, "%*sContinueStmt\n", level * INDENT, "");
+                        break;
+                }
+                case GOTO: {
+                        fprintf(outfile, "%*sGotoStmt\n", level * INDENT, "");
+                        printExpr(stmt->expr, level + 1);
+                        break;
+                }
                 case BREAK: {
                         fprintf(outfile, "%*sBreakStmt\n", level * INDENT, "");
                         break;
