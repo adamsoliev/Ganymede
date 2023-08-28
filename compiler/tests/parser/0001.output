@@ -272,5 +272,44 @@ INT FuncExcDecl 'main'
         ExprStmt
             UnaryExpr DECR
                 IdentExpr 'a'
+    WhileStmt
+        RelatExpr GT
+            IdentExpr 'a'
+            IntExpr 10
+        ForStmt
+            INT DeclExlDecl 'i'
+                IntExpr 0
+            RelatExpr LT
+                IdentExpr 'i'
+                IntExpr 10
+            UnaryExpr INCR
+                IdentExpr 'i'
+            ExprStmt
+                AssignExpr
+                    IdentExpr 'a'
+                    ArithExpr ADD
+                        IdentExpr 'a'
+                        IdentExpr 'b'
+            IfStmt
+                RelatExpr EQ
+                    IdentExpr 'a'
+                    IntExpr 23
+                ExprStmt
+                    AssignExpr
+                        IdentExpr 'c'
+                        ArithExpr ADD
+                            IdentExpr 'c'
+                            IdentExpr 'd'
+            INT DeclExlDecl 'c'
+                ArithExpr MUL
+                    IntExpr 23
+                    IdentExpr 'b'
+        ExprStmt
+            ShiftExpr RSHIFT
+                IdentExpr 'j'
+                IntExpr 2
+        ExprStmt
+            UnaryExpr DECR
+                IdentExpr 'a'
     ReturnStmt
         IdentExpr 'e'

@@ -70,5 +70,16 @@ int main() {
                 j >> 2;
                 a--;
         }
+        while (a > 10) {
+                for (int i = 0; i < 10; i++) {
+                        a += b;
+                        if (a == 23) {
+                                c += d;
+                        }
+                        int c = 23 * b;
+                }
+                j >> 2;
+                a--;
+        }
         return e;
 }
