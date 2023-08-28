@@ -105,7 +105,8 @@ enum Kind {
         INCLUDE,
         DEFINE,
         BACKSLASH,
-        STMT_EXPR, // different from other stmt types
+        STMT_EXPR,  // different from other stmt types
+        STMT_COMPOUND,
 };
 
 struct Token {

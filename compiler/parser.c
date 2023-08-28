@@ -125,35 +125,52 @@ struct stmt *stmt() {
                 case CASE:
                 case DEFAULT:
                 case IF:
+                        statement->kind = IF;
                         consume(IF);
                         consume(OPAR);
-                        statement->kind = IF;
                         statement->cond = expr();
                         consume(CPAR);
-                        if (ct->kind == OCBR) consume(OCBR);
+                        int matchfirstCBR = 0;
+                        if (ct->kind == OCBR) {
+                                consume(OCBR);
+                                matchfirstCBR = 1;
+                        }
                         statement->then = stmt();
-                        if (ct->kind == CCBR) consume(CCBR);
+                        if (ct->kind == CCBR && matchfirstCBR) consume(CCBR);
                         if (ct->kind == ELSE) {
                                 consume(ELSE);
-                                if (ct->kind == OCBR) consume(OCBR);
+                                int matchsecondCBR = 0;
+                                if (ct->kind == OCBR) {
+                                        consume(OCBR);
+                                        matchsecondCBR = 1;
+                                }
                                 statement->els = stmt();
-                                if (ct->kind == CCBR) consume(CCBR);
+                                if (ct->kind == CCBR && matchsecondCBR) consume(CCBR);
                         }
                         break;
                 case SWITCH:
                 case WHILE:
+                        statement->kind = WHILE;
                         consume(WHILE);
                         consume(OPAR);
-                        statement->kind = WHILE;
                         statement->cond = expr();
                         consume(CPAR);
-                        statement->body = compound_stmt();
+                        statement->then = stmt();
                         break;
                 case DO:
+                        statement->kind = DO;
+                        consume(DO);
+                        statement->then = stmt();
+                        consume(WHILE);
+                        consume(OPAR);
+                        statement->cond = expr();
+                        consume(CPAR);
+                        consume(SEMIC);
+                        break;
                 case FOR:
+                        statement->kind = FOR;
                         consume(FOR);
                         consume(OPAR);
-                        statement->kind = FOR;
                         // init
                         if (ct->kind == INT) {
                                 struct declspec *declspec = declaration_specifiers();
@@ -172,24 +189,28 @@ struct stmt *stmt() {
                         // inc
                         statement->inc = expr();
                         consume(CPAR);
-                        statement->body = compound_stmt();
+                        statement->then = stmt();
                         break;
                 case GOTO:
                 case CONTINUE:
                 case BREAK: break;
                 case RETURN:
-                        consume(RETURN);
                         statement->kind = RETURN;
+                        consume(RETURN);
                         if (ct->kind != SEMIC) {
                                 statement->expr = expr();
                         }
                         consume(SEMIC);
                         break;
+                case OCBR:
+                        statement->kind = STMT_COMPOUND;
+                        statement->body = compound_stmt();
+                        break;
                 default:
                 stmt_expr : {
                         // expression-statement
-                        statement->expr = expr();
                         statement->kind = STMT_EXPR;
+                        statement->expr = expr();
                         consume(SEMIC);
                 }
         }
@@ -575,10 +596,21 @@ void printBlock(struct block *block, int level) {
 void printStmt(struct stmt *stmt, int level) {
         if (stmt == NULL) return;
         switch (stmt->kind) {
+                case DO: {
+                        fprintf(outfile, "%*sDoStmt\n", level * INDENT, "");
+                        printStmt(stmt->then, level + 1);
+                        printExpr(stmt->cond, level + 1);
+                        break;
+                }
+                case STMT_COMPOUND: {
+                        fprintf(outfile, "%*sCompoundStmt\n", level * INDENT, "");
+                        printBlock(stmt->body, level + 1);
+                        break;
+                }
                 case WHILE: {
                         fprintf(outfile, "%*sWhileStmt\n", level * INDENT, "");
                         printExpr(stmt->cond, level + 1);
-                        printBlock(stmt->body, level + 1);
+                        printStmt(stmt->then, level + 1);
                         break;
                 }
                 case FOR: {
@@ -590,7 +622,7 @@ void printStmt(struct stmt *stmt, int level) {
                         }
                         printExpr(stmt->cond, level + 1);
                         printExpr(stmt->inc, level + 1);
-                        printBlock(stmt->body, level + 1);
+                        printStmt(stmt->then, level + 1);
                         break;
                 }
                 case IF: {

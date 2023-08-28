@@ -227,63 +227,7 @@ INT FuncExcDecl 'main'
             IntExpr 10
         UnaryExpr INCR
             IdentExpr 'i'
-        ExprStmt
-            AssignExpr
-                IdentExpr 'a'
-                ArithExpr ADD
-                    IdentExpr 'a'
-                    IdentExpr 'b'
-        IfStmt
-            RelatExpr EQ
-                IdentExpr 'a'
-                IntExpr 23
-            ExprStmt
-                AssignExpr
-                    IdentExpr 'c'
-                    ArithExpr ADD
-                        IdentExpr 'c'
-                        IdentExpr 'd'
-    ForStmt
-        INT DeclExlDecl 'i'
-            IntExpr 0
-        RelatExpr LT
-            IdentExpr 'i'
-            IntExpr 10
-        UnaryExpr INCR
-            IdentExpr 'i'
-        ExprStmt
-            AssignExpr
-                IdentExpr 'a'
-                ArithExpr ADD
-                    IdentExpr 'a'
-                    IdentExpr 'b'
-        INT DeclExlDecl 'c'
-            ArithExpr MUL
-                IntExpr 23
-                IdentExpr 'b'
-    WhileStmt
-        RelatExpr GT
-            IdentExpr 'a'
-            IntExpr 10
-        ExprStmt
-            ShiftExpr RSHIFT
-                IdentExpr 'j'
-                IntExpr 2
-        ExprStmt
-            UnaryExpr DECR
-                IdentExpr 'a'
-    WhileStmt
-        RelatExpr GT
-            IdentExpr 'a'
-            IntExpr 10
-        ForStmt
-            INT DeclExlDecl 'i'
-                IntExpr 0
-            RelatExpr LT
-                IdentExpr 'i'
-                IntExpr 10
-            UnaryExpr INCR
-                IdentExpr 'i'
+        CompoundStmt
             ExprStmt
                 AssignExpr
                     IdentExpr 'a'
@@ -300,16 +244,111 @@ INT FuncExcDecl 'main'
                         ArithExpr ADD
                             IdentExpr 'c'
                             IdentExpr 'd'
+    ForStmt
+        INT DeclExlDecl 'i'
+            IntExpr 0
+        RelatExpr LT
+            IdentExpr 'i'
+            IntExpr 10
+        UnaryExpr INCR
+            IdentExpr 'i'
+        CompoundStmt
+            ExprStmt
+                AssignExpr
+                    IdentExpr 'a'
+                    ArithExpr ADD
+                        IdentExpr 'a'
+                        IdentExpr 'b'
             INT DeclExlDecl 'c'
                 ArithExpr MUL
                     IntExpr 23
                     IdentExpr 'b'
-        ExprStmt
-            ShiftExpr RSHIFT
-                IdentExpr 'j'
-                IntExpr 2
+    WhileStmt
+        RelatExpr GT
+            IdentExpr 'a'
+            IntExpr 10
+        CompoundStmt
+            ExprStmt
+                ShiftExpr RSHIFT
+                    IdentExpr 'j'
+                    IntExpr 2
+            ExprStmt
+                UnaryExpr DECR
+                    IdentExpr 'a'
+    WhileStmt
+        RelatExpr LT
+            IdentExpr 'aaa'
+            IntExpr 10
         ExprStmt
             UnaryExpr DECR
-                IdentExpr 'a'
+                IdentExpr 'bbb'
+    WhileStmt
+        RelatExpr GT
+            IdentExpr 'a'
+            IntExpr 10
+        CompoundStmt
+            ForStmt
+                INT DeclExlDecl 'i'
+                    IntExpr 0
+                RelatExpr LT
+                    IdentExpr 'i'
+                    IntExpr 10
+                UnaryExpr INCR
+                    IdentExpr 'i'
+                CompoundStmt
+                    ExprStmt
+                        AssignExpr
+                            IdentExpr 'a'
+                            ArithExpr ADD
+                                IdentExpr 'a'
+                                IdentExpr 'b'
+                    IfStmt
+                        RelatExpr EQ
+                            IdentExpr 'a'
+                            IntExpr 23
+                        ExprStmt
+                            AssignExpr
+                                IdentExpr 'c'
+                                ArithExpr ADD
+                                    IdentExpr 'c'
+                                    IdentExpr 'd'
+                    INT DeclExlDecl 'c'
+                        ArithExpr MUL
+                            IntExpr 23
+                            IdentExpr 'b'
+            ExprStmt
+                ShiftExpr RSHIFT
+                    IdentExpr 'j'
+                    IntExpr 2
+            ExprStmt
+                UnaryExpr DECR
+                    IdentExpr 'a'
+    DoStmt
+        CompoundStmt
+            ExprStmt
+                UnaryExpr INCR
+                    IdentExpr 'a'
+            IfStmt
+                RelatExpr EQ
+                    IdentExpr 'a'
+                    IntExpr 43
+                ExprStmt
+                    AssignExpr
+                        IdentExpr 'b'
+                        IntExpr 23
+                ExprStmt
+                    AssignExpr
+                        IdentExpr 'b'
+                        IntExpr 32
+        RelatExpr LT
+            IdentExpr 'a'
+            IntExpr 10
+    DoStmt
+        ExprStmt
+            UnaryExpr DECR
+                IdentExpr 'js'
+        RelatExpr LT
+            IdentExpr 'a'
+            IntExpr 10
     ReturnStmt
         IdentExpr 'e'

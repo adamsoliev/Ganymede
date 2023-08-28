@@ -56,6 +56,7 @@ int main() {
         } else {
                 n = 0;
         }
+
         for (i = 0; i < 10; i++) {
                 a += b;
                 if (a == 23) {
@@ -66,10 +67,12 @@ int main() {
                 a += b;
                 int c = 23 * b;
         }
+
         while (a > 10) {
                 j >> 2;
                 a--;
         }
+        while (aaa < 10) bbb--;
         while (a > 10) {
                 for (int i = 0; i < 10; i++) {
                         a += b;
@@ -81,5 +84,17 @@ int main() {
                 j >> 2;
                 a--;
         }
+
+        do {
+                a++;
+                if (a == 43)
+                        b = 23;
+                else
+                        b = 32;
+        } while (a < 10);
+
+        do js--;
+        while (a < 10);
+
         return e;
 }
