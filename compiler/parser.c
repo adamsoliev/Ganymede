@@ -57,7 +57,13 @@ struct stmt {
         struct expr *cond;
         struct stmt *then;
         struct stmt *els;
-        struct expr *init;
+        union {
+                struct expr *expr;     // for (i = 0; ...)
+                struct ExtDecl *decl;  // for (int i = 0; ...)
+        } init;
+        struct expr *inc;
+
+        struct block *body;  // compound statement
 
         enum Kind kind;
 };
@@ -90,6 +96,7 @@ struct expr *assignment_expression();
 struct expr *postfix_expression();
 struct expr *arg_expr_list();
 struct stmt *stmt();
+struct block *compound_stmt();
 
 void consume(enum Kind kind) {
         if (ct->kind != kind) {
@@ -104,26 +111,7 @@ struct ExtDecl *function(struct declspec **declspec, struct decltor **decltor) {
         struct ExtDecl *func = calloc(1, sizeof(struct ExtDecl));
         func->declspec = *declspec;
         func->decltor = *decltor;
-
-        struct block head = {};
-        struct block *cur = &head;
-        if (ct->kind == OCBR) {
-                consume(OCBR);
-                while (ct->kind != CCBR) {
-                        // declaration or statement
-                        cur = cur->next = calloc(1, sizeof(struct block));
-                        if (ct->kind == INT) {
-                                struct declspec *declspec = declaration_specifiers();
-                                struct decltor *decltor = declarator();
-                                cur->decl = calloc(1, sizeof(struct ExtDecl));
-                                cur->decl = declaration(&declspec, &decltor);
-                        } else {
-                                cur->stmt = stmt();
-                        }
-                }
-                consume(CCBR);
-        }
-        func->block = head.next;
+        func->block = compound_stmt();
         return func;
 };
 
@@ -175,6 +163,28 @@ struct stmt *stmt() {
                 }
         }
         return statement;
+}
+
+struct block *compound_stmt() {
+        struct block head = {};
+        struct block *cur = &head;
+        if (ct->kind == OCBR) {
+                consume(OCBR);
+                while (ct->kind != CCBR) {
+                        // declaration or statement
+                        cur = cur->next = calloc(1, sizeof(struct block));
+                        if (ct->kind == INT) {
+                                struct declspec *declspec = declaration_specifiers();
+                                struct decltor *decltor = declarator();
+                                cur->decl = calloc(1, sizeof(struct ExtDecl));
+                                cur->decl = declaration(&declspec, &decltor);
+                        } else {
+                                cur->stmt = stmt();
+                        }
+                }
+                consume(CCBR);
+        }
+        return head.next;
 }
 
 // declaration ::=
