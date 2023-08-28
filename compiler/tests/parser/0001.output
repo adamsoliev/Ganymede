@@ -218,5 +218,34 @@ INT FuncExcDecl 'main'
                 AssignExpr
                     IdentExpr 'n'
                     IntExpr 0
+    ForStmt
+        AssignExpr
+            IdentExpr 'i'
+            IntExpr 0
+        RelatExpr LT
+            IdentExpr 'i'
+            IntExpr 10
+        UnaryExpr INCR
+            IdentExpr 'i'
+        ExprStmt
+            AssignExpr
+                IdentExpr 'a'
+                ArithExpr ADD
+                    IdentExpr 'a'
+                    IdentExpr 'b'
+    ForStmt
+        INT DeclExlDecl 'i'
+            IntExpr 0
+        RelatExpr LT
+            IdentExpr 'i'
+            IntExpr 10
+        UnaryExpr INCR
+            IdentExpr 'i'
+        ExprStmt
+            AssignExpr
+                IdentExpr 'a'
+                ArithExpr ADD
+                    IdentExpr 'a'
+                    IdentExpr 'b'
     ReturnStmt
         IdentExpr 'e'

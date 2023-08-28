@@ -61,6 +61,7 @@ struct stmt {
                 struct expr *expr;     // for (i = 0; ...)
                 struct ExtDecl *decl;  // for (int i = 0; ...)
         } init;
+        int init_kind;  // 0 for expr, 1 for decl
         struct expr *inc;
 
         struct block *body;  // compound statement
@@ -143,6 +144,29 @@ struct stmt *stmt() {
                 case WHILE:
                 case DO:
                 case FOR:
+                        consume(FOR);
+                        consume(OPAR);
+                        statement->kind = FOR;
+                        // init
+                        if (ct->kind == INT) {
+                                struct declspec *declspec = declaration_specifiers();
+                                struct decltor *decltor = declarator();
+                                statement->init.decl = calloc(1, sizeof(struct ExtDecl));
+                                statement->init.decl = declaration(&declspec, &decltor);
+                                statement->init_kind = 1;
+                        } else {
+                                statement->init.expr = expr();
+                                statement->init_kind = 0;
+                                consume(SEMIC);
+                        }
+                        // cond
+                        statement->cond = expr();
+                        consume(SEMIC);
+                        // inc
+                        statement->inc = expr();
+                        consume(CPAR);
+                        statement->body = compound_stmt();
+                        break;
                 case GOTO:
                 case CONTINUE:
                 case BREAK: break;
@@ -544,6 +568,18 @@ void printBlock(struct block *block, int level) {
 void printStmt(struct stmt *stmt, int level) {
         if (stmt == NULL) return;
         switch (stmt->kind) {
+                case FOR: {
+                        fprintf(outfile, "%*sForStmt\n", level * INDENT, "");
+                        if (stmt->init_kind == 1) {
+                                printExtDecl(stmt->init.decl, level + 1);
+                        } else {
+                                printExpr(stmt->init.expr, level + 1);
+                        }
+                        printExpr(stmt->cond, level + 1);
+                        printExpr(stmt->inc, level + 1);
+                        printBlock(stmt->body, level + 1);
+                        break;
+                }
                 case IF: {
                         fprintf(outfile, "%*sIfStmt\n", level * INDENT, "");
                         printExpr(stmt->cond, level + 1);
