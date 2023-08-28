@@ -66,5 +66,9 @@ int main() {
                 a += b;
                 int c = 23 * b;
         }
+        while (a > 10) {
+                j >> 2;
+                a--;
+        }
         return e;
 }

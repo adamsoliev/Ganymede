@@ -9,6 +9,17 @@ Design principles
   2. Modularity
   3. Testability
 
+## FIXMES:
+- Scan
+  - Complete handling of numeric types in scan.c
+- Parser
+  - add special expr types (e_funcall, etc) instead of enum kind (opar, etc) 
+  - improve error reporting in parser
+    - add line number to error messages
+  - improve AST printing 
+    - rename nodes to better reflect subtree structure's meaning
+    - refactor
+
 ## Build
 ```bash
 $ git clone https://github.com/adamsoliev/Ganymede.git

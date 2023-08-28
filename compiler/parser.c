@@ -142,6 +142,13 @@ struct stmt *stmt() {
                         break;
                 case SWITCH:
                 case WHILE:
+                        consume(WHILE);
+                        consume(OPAR);
+                        statement->kind = WHILE;
+                        statement->cond = expr();
+                        consume(CPAR);
+                        statement->body = compound_stmt();
+                        break;
                 case DO:
                 case FOR:
                         consume(FOR);
@@ -568,6 +575,12 @@ void printBlock(struct block *block, int level) {
 void printStmt(struct stmt *stmt, int level) {
         if (stmt == NULL) return;
         switch (stmt->kind) {
+                case WHILE: {
+                        fprintf(outfile, "%*sWhileStmt\n", level * INDENT, "");
+                        printExpr(stmt->cond, level + 1);
+                        printBlock(stmt->body, level + 1);
+                        break;
+                }
                 case FOR: {
                         fprintf(outfile, "%*sForStmt\n", level * INDENT, "");
                         if (stmt->init_kind == 1) {
