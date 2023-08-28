@@ -120,7 +120,13 @@ struct stmt *stmt() {
         struct stmt *statement = calloc(1, sizeof(struct stmt));
         switch (ct->kind) {
                 case IDENT:
-                        // handle other statements
+                        if (ct->next->kind == COLON) {
+                                statement->kind = IDENT;
+                                statement->expr = primary_expression();
+                                consume(COLON);
+                                statement->then = stmt();
+                                break;
+                        }
                         goto stmt_expr;
                 case CASE: {
                         consume(CASE);
@@ -633,6 +639,12 @@ void printBlock(struct block *block, int level) {
 void printStmt(struct stmt *stmt, int level) {
         if (stmt == NULL) return;
         switch (stmt->kind) {
+                case IDENT: {
+                        fprintf(outfile, "%*sLabelStmt\n", level * INDENT, "");
+                        printExpr(stmt->expr, level + 1);
+                        printStmt(stmt->then, level + 1);
+                        break;
+                }
                 case CONTINUE: {
                         fprintf(outfile, "%*sContinueStmt\n", level * INDENT, "");
                         break;

@@ -114,7 +114,11 @@ int main() {
         for (int i = 0; i < 10; i++) {
                 if (i == 3) continue;
                 if (i == 5) break;
+                if (i == 7) goto end_loop;
         }
+
+end_loop:
+        return 23;
 
         return e;
 }

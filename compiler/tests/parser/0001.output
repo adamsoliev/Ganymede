@@ -395,5 +395,15 @@ INT FuncExcDecl 'main'
                     IdentExpr 'i'
                     IntExpr 5
                 BreakStmt
+            IfStmt
+                RelatExpr EQ
+                    IdentExpr 'i'
+                    IntExpr 7
+                GotoStmt
+                    IdentExpr 'end_loop'
+    LabelStmt
+        IdentExpr 'end_loop'
+        ReturnStmt
+            IntExpr 23
     ReturnStmt
         IdentExpr 'e'
