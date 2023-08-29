@@ -1,410 +1,418 @@
-INT DeclExlDecl 'a'
-    IntExpr 23
-INT DeclExlDecl 'b'
+VariableDecl INT 'a'
+    IntegerLiteral 23
+VariableDecl INT 'b'
     ArithExpr ADD
-        IntExpr 23
+        IntegerLiteral 23
         ArithExpr ADD
-            IntExpr 32
+            IntegerLiteral 32
             ArithExpr SUB
-                IntExpr 23
+                IntegerLiteral 23
                 ArithExpr SUB
-                    IntExpr 43
-                    IntExpr 32
-INT DeclExlDecl 'c'
+                    IntegerLiteral 43
+                    IntegerLiteral 32
+VariableDecl INT 'c'
     ArithExpr ADD
-        IntExpr 82
+        IntegerLiteral 82
         ArithExpr SUB
             ArithExpr MUL
-                IntExpr 23
-                IntExpr 32
+                IntegerLiteral 23
+                IntegerLiteral 32
             ArithExpr DIV
-                IntExpr 600
-                IntExpr 20
-INT DeclExlDecl 'd'
+                IntegerLiteral 600
+                IntegerLiteral 20
+VariableDecl INT 'd'
     ShiftExpr LSHIFT
-        IntExpr 54
-        IntExpr 2
-INT DeclExlDecl 'e'
+        IntegerLiteral 54
+        IntegerLiteral 2
+VariableDecl INT 'e'
     ShiftExpr RSHIFT
-        IntExpr 24
-        IntExpr 2
-INT DeclExlDecl 'f'
+        IntegerLiteral 24
+        IntegerLiteral 2
+VariableDecl INT 'f'
     RelatExpr LT
-        IntExpr 94
-        IntExpr 2
-INT DeclExlDecl 'g'
+        IntegerLiteral 94
+        IntegerLiteral 2
+VariableDecl INT 'g'
     RelatExpr GT
-        IntExpr 74
-        IntExpr 2
-INT DeclExlDecl 'h'
+        IntegerLiteral 74
+        IntegerLiteral 2
+VariableDecl INT 'h'
     RelatExpr LEQ
-        IntExpr 13
-        IntExpr 2
-INT DeclExlDecl 'i'
+        IntegerLiteral 13
+        IntegerLiteral 2
+VariableDecl INT 'i'
     RelatExpr GEQ
-        IntExpr 94
-        IntExpr 2
-INT DeclExlDecl 'j'
+        IntegerLiteral 94
+        IntegerLiteral 2
+VariableDecl INT 'j'
     RelatExpr EQ
-        IntExpr 51
-        IntExpr 2
-INT DeclExlDecl 'k'
+        IntegerLiteral 51
+        IntegerLiteral 2
+VariableDecl INT 'k'
     RelatExpr NEQ
-        IntExpr 18
-        IntExpr 2
-INT DeclExlDecl 'l'
+        IntegerLiteral 18
+        IntegerLiteral 2
+VariableDecl INT 'l'
     BitExpr AND
-        IntExpr 43
-        IntExpr 2
-INT DeclExlDecl 'm'
+        IntegerLiteral 43
+        IntegerLiteral 2
+VariableDecl INT 'm'
     BitExpr XOR
-        IntExpr 93
-        IntExpr 2
-INT DeclExlDecl 'n'
+        IntegerLiteral 93
+        IntegerLiteral 2
+VariableDecl INT 'n'
     BitExpr OR
-        IntExpr 34
-        IntExpr 2
-INT DeclExlDecl 'o'
+        IntegerLiteral 34
+        IntegerLiteral 2
+VariableDecl INT 'o'
     LogicExpr ANDAND
-        IntExpr 32
-        IntExpr 92
-INT DeclExlDecl 'p'
+        IntegerLiteral 32
+        IntegerLiteral 92
+VariableDecl INT 'p'
     LogicExpr OROR
-        IntExpr 32
-        IntExpr 12
-INT DeclExlDecl 'v'
+        IntegerLiteral 32
+        IntegerLiteral 12
+VariableDecl INT 'v'
     UnaryExpr SIZEOF
-        IdentExpr 'a'
-INT FuncExcDecl 'main'
+        Identifier 'a'
+FunctionDecl INT 'main'
     CompoundStmt
-        INT DeclExlDecl 'a'
+        VariableDecl INT 'a'
             CondExpr
                 RelatExpr EQ
-                    IdentExpr 'b'
-                    IntExpr 23
-                IntExpr 32
-                IntExpr 43
+                    Identifier 'b'
+                    IntegerLiteral 23
+                IntegerLiteral 32
+                IntegerLiteral 43
         ExprStmt
             AssignExpr
-                IdentExpr 'a'
+                Identifier 'a'
                 CondExpr
                     RelatExpr NEQ
-                        IdentExpr 'b'
-                        IntExpr 23
-                    IntExpr 32
-                    IntExpr 43
-        INT DeclExlDecl 'aa'
+                        Identifier 'b'
+                        IntegerLiteral 23
+                    IntegerLiteral 32
+                    IntegerLiteral 43
+        VariableDecl INT 'aa'
             UnaryExpr INCR
-                IdentExpr 'b'
+                Identifier 'b'
         ExprStmt
             UnaryExpr DECR
-                IdentExpr 'c'
+                Identifier 'c'
         ExprStmt
             UnaryExpr ADD
-                IdentExpr 'd'
+                Identifier 'd'
         ExprStmt
             UnaryExpr SUB
-                IdentExpr 'e'
+                Identifier 'e'
         ExprStmt
             UnaryExpr NOT
-                IdentExpr 'f'
+                Identifier 'f'
         ExprStmt
             UnaryExpr TILDA
-                IdentExpr 'g'
+                Identifier 'g'
         ExprStmt
             UnaryExpr INCR
-                IdentExpr 'g'
+                Identifier 'g'
         ExprStmt
             UnaryExpr DECR
-                IdentExpr 'g'
+                Identifier 'g'
         ExprStmt
             StructExpr
-                IdentExpr 'g'
-                IdentExpr 'b'
+                Identifier 'g'
+                Identifier 'b'
         ExprStmt
             DerefExpr
-                IdentExpr 'g'
-                IdentExpr 'a'
+                Identifier 'g'
+                Identifier 'a'
         ExprStmt
             ArrayExpr
-                IdentExpr 'g'
-                IntExpr 2
+                Identifier 'g'
+                IntegerLiteral 2
         ExprStmt
             FuncCallExpr
-                IdentExpr 'g'
+                Identifier 'g'
         ExprStmt
             FuncCallExpr
-                IdentExpr 'g'
+                Identifier 'g'
                 FuncCallExpr
-                    IdentExpr 'a'
+                    Identifier 'a'
         ExprStmt
             FuncCallExpr
-                IdentExpr 'g'
+                Identifier 'g'
                 FuncCallExpr
-                    IdentExpr 'a'
+                    Identifier 'a'
                     FuncCallExpr
-                        IdentExpr 'b'
+                        Identifier 'b'
         ExprStmt
             FuncCallExpr
-                IdentExpr 'g'
+                Identifier 'g'
                 FuncCallExpr
-                    IdentExpr 'a'
+                    Identifier 'a'
                     FuncCallExpr
-                        IdentExpr 'b'
+                        Identifier 'b'
                         FuncCallExpr
-                            IdentExpr 'c'
+                            Identifier 'c'
                             FuncCallExpr
-                                IdentExpr 'd'
+                                Identifier 'd'
                                 FuncCallExpr
-                                    IdentExpr 'e'
+                                    Identifier 'e'
                                     FuncCallExpr
-                                        IdentExpr 'f'
+                                        Identifier 'f'
         IfStmt
             RelatExpr EQ
-                IdentExpr 'a'
-                IntExpr 23
-            ExprStmt
-                AssignExpr
-                    IdentExpr 'a'
-                    IntExpr 32
+                Identifier 'a'
+                IntegerLiteral 23
+            CompoundStmt
+                ExprStmt
+                    AssignExpr
+                        Identifier 'a'
+                        IntegerLiteral 32
         IfStmt
             RelatExpr EQ
-                IdentExpr 'a'
-                IntExpr 43
+                Identifier 'a'
+                IntegerLiteral 43
             ExprStmt
                 AssignExpr
-                    IdentExpr 'b'
-                    IntExpr 23
+                    Identifier 'b'
+                    IntegerLiteral 23
         IfStmt
             RelatExpr EQ
-                IdentExpr 'c'
-                IntExpr 23
-            ExprStmt
-                AssignExpr
-                    IdentExpr 'g'
-                    IntExpr 32
-            ExprStmt
-                AssignExpr
-                    IdentExpr 'g'
-                    IntExpr 0
+                Identifier 'c'
+                IntegerLiteral 23
+            CompoundStmt
+                ExprStmt
+                    AssignExpr
+                        Identifier 'g'
+                        IntegerLiteral 32
+            CompoundStmt
+                ExprStmt
+                    AssignExpr
+                        Identifier 'g'
+                        IntegerLiteral 0
         IfStmt
             RelatExpr EQ
-                IdentExpr 'a'
-                IntExpr 43
+                Identifier 'a'
+                IntegerLiteral 43
             ExprStmt
                 AssignExpr
-                    IdentExpr 'b'
-                    IntExpr 23
+                    Identifier 'b'
+                    IntegerLiteral 23
             ExprStmt
                 AssignExpr
-                    IdentExpr 'b'
-                    IntExpr 32
+                    Identifier 'b'
+                    IntegerLiteral 32
         IfStmt
             RelatExpr EQ
-                IdentExpr 'f'
-                IntExpr 103
-            ExprStmt
-                AssignExpr
-                    IdentExpr 'j'
-                    IntExpr 423
+                Identifier 'f'
+                IntegerLiteral 103
+            CompoundStmt
+                ExprStmt
+                    AssignExpr
+                        Identifier 'j'
+                        IntegerLiteral 423
             IfStmt
                 RelatExpr EQ
-                    IdentExpr 'k'
-                    IntExpr 32
-                ExprStmt
-                    AssignExpr
-                        IdentExpr 'm'
-                        IntExpr 392
-                ExprStmt
-                    AssignExpr
-                        IdentExpr 'n'
-                        IntExpr 0
+                    Identifier 'k'
+                    IntegerLiteral 32
+                CompoundStmt
+                    ExprStmt
+                        AssignExpr
+                            Identifier 'm'
+                            IntegerLiteral 392
+                CompoundStmt
+                    ExprStmt
+                        AssignExpr
+                            Identifier 'n'
+                            IntegerLiteral 0
         ForStmt
             AssignExpr
-                IdentExpr 'i'
-                IntExpr 0
+                Identifier 'i'
+                IntegerLiteral 0
             RelatExpr LT
-                IdentExpr 'i'
-                IntExpr 10
+                Identifier 'i'
+                IntegerLiteral 10
             UnaryExpr INCR
-                IdentExpr 'i'
+                Identifier 'i'
             CompoundStmt
                 ExprStmt
                     AssignExpr
-                        IdentExpr 'a'
+                        Identifier 'a'
                         ArithExpr ADD
-                            IdentExpr 'a'
-                            IdentExpr 'b'
+                            Identifier 'a'
+                            Identifier 'b'
                 IfStmt
                     RelatExpr EQ
-                        IdentExpr 'a'
-                        IntExpr 23
-                    ExprStmt
-                        AssignExpr
-                            IdentExpr 'c'
-                            ArithExpr ADD
-                                IdentExpr 'c'
-                                IdentExpr 'd'
+                        Identifier 'a'
+                        IntegerLiteral 23
+                    CompoundStmt
+                        ExprStmt
+                            AssignExpr
+                                Identifier 'c'
+                                ArithExpr ADD
+                                    Identifier 'c'
+                                    Identifier 'd'
         ForStmt
-            INT DeclExlDecl 'i'
-                IntExpr 0
+            VariableDecl INT 'i'
+                IntegerLiteral 0
             RelatExpr LT
-                IdentExpr 'i'
-                IntExpr 10
+                Identifier 'i'
+                IntegerLiteral 10
             UnaryExpr INCR
-                IdentExpr 'i'
+                Identifier 'i'
             CompoundStmt
                 ExprStmt
                     AssignExpr
-                        IdentExpr 'a'
+                        Identifier 'a'
                         ArithExpr ADD
-                            IdentExpr 'a'
-                            IdentExpr 'b'
-                INT DeclExlDecl 'c'
+                            Identifier 'a'
+                            Identifier 'b'
+                VariableDecl INT 'c'
                     ArithExpr MUL
-                        IntExpr 23
-                        IdentExpr 'b'
+                        IntegerLiteral 23
+                        Identifier 'b'
         WhileStmt
             RelatExpr GT
-                IdentExpr 'a'
-                IntExpr 10
+                Identifier 'a'
+                IntegerLiteral 10
             CompoundStmt
                 ExprStmt
                     ShiftExpr RSHIFT
-                        IdentExpr 'j'
-                        IntExpr 2
+                        Identifier 'j'
+                        IntegerLiteral 2
                 ExprStmt
                     UnaryExpr DECR
-                        IdentExpr 'a'
+                        Identifier 'a'
         WhileStmt
             RelatExpr LT
-                IdentExpr 'aaa'
-                IntExpr 10
+                Identifier 'aaa'
+                IntegerLiteral 10
             ExprStmt
                 UnaryExpr DECR
-                    IdentExpr 'bbb'
+                    Identifier 'bbb'
         WhileStmt
             RelatExpr GT
-                IdentExpr 'a'
-                IntExpr 10
+                Identifier 'a'
+                IntegerLiteral 10
             CompoundStmt
                 ForStmt
-                    INT DeclExlDecl 'i'
-                        IntExpr 0
+                    VariableDecl INT 'i'
+                        IntegerLiteral 0
                     RelatExpr LT
-                        IdentExpr 'i'
-                        IntExpr 10
+                        Identifier 'i'
+                        IntegerLiteral 10
                     UnaryExpr INCR
-                        IdentExpr 'i'
+                        Identifier 'i'
                     CompoundStmt
                         ExprStmt
                             AssignExpr
-                                IdentExpr 'a'
+                                Identifier 'a'
                                 ArithExpr ADD
-                                    IdentExpr 'a'
-                                    IdentExpr 'b'
+                                    Identifier 'a'
+                                    Identifier 'b'
                         IfStmt
                             RelatExpr EQ
-                                IdentExpr 'a'
-                                IntExpr 23
-                            ExprStmt
-                                AssignExpr
-                                    IdentExpr 'c'
-                                    ArithExpr ADD
-                                        IdentExpr 'c'
-                                        IdentExpr 'd'
-                        INT DeclExlDecl 'c'
+                                Identifier 'a'
+                                IntegerLiteral 23
+                            CompoundStmt
+                                ExprStmt
+                                    AssignExpr
+                                        Identifier 'c'
+                                        ArithExpr ADD
+                                            Identifier 'c'
+                                            Identifier 'd'
+                        VariableDecl INT 'c'
                             ArithExpr MUL
-                                IntExpr 23
-                                IdentExpr 'b'
+                                IntegerLiteral 23
+                                Identifier 'b'
                 ExprStmt
                     ShiftExpr RSHIFT
-                        IdentExpr 'j'
-                        IntExpr 2
+                        Identifier 'j'
+                        IntegerLiteral 2
                 ExprStmt
                     UnaryExpr DECR
-                        IdentExpr 'a'
+                        Identifier 'a'
         DoStmt
             CompoundStmt
                 ExprStmt
                     UnaryExpr INCR
-                        IdentExpr 'a'
+                        Identifier 'a'
                 IfStmt
                     RelatExpr EQ
-                        IdentExpr 'a'
-                        IntExpr 43
+                        Identifier 'a'
+                        IntegerLiteral 43
                     ExprStmt
                         AssignExpr
-                            IdentExpr 'b'
-                            IntExpr 23
+                            Identifier 'b'
+                            IntegerLiteral 23
                     ExprStmt
                         AssignExpr
-                            IdentExpr 'b'
-                            IntExpr 32
+                            Identifier 'b'
+                            IntegerLiteral 32
             RelatExpr LT
-                IdentExpr 'a'
-                IntExpr 10
+                Identifier 'a'
+                IntegerLiteral 10
         DoStmt
             ExprStmt
                 UnaryExpr DECR
-                    IdentExpr 'js'
+                    Identifier 'js'
             RelatExpr LT
-                IdentExpr 'a'
-                IntExpr 10
+                Identifier 'a'
+                IntegerLiteral 10
         SwitchStmt
-            IdentExpr 'a'
+            Identifier 'a'
             CompoundStmt
                 CaseStmt
-                    IntExpr 23
+                    IntegerLiteral 23
                     CompoundStmt
                         ExprStmt
                             AssignExpr
-                                IdentExpr 'a'
-                                IntExpr 32
+                                Identifier 'a'
+                                IntegerLiteral 32
                         BreakStmt
                 CaseStmt
-                    IntExpr 43
+                    IntegerLiteral 43
                     CompoundStmt
                         ExprStmt
                             AssignExpr
-                                IdentExpr 'b'
-                                IntExpr 23
+                                Identifier 'b'
+                                IntegerLiteral 23
                         BreakStmt
                 DefaultStmt
                     CompoundStmt
                         ExprStmt
                             AssignExpr
-                                IdentExpr 'c'
-                                IntExpr 0
+                                Identifier 'c'
+                                IntegerLiteral 0
                         BreakStmt
         ForStmt
-            INT DeclExlDecl 'i'
-                IntExpr 0
+            VariableDecl INT 'i'
+                IntegerLiteral 0
             RelatExpr LT
-                IdentExpr 'i'
-                IntExpr 10
+                Identifier 'i'
+                IntegerLiteral 10
             UnaryExpr INCR
-                IdentExpr 'i'
+                Identifier 'i'
             CompoundStmt
                 IfStmt
                     RelatExpr EQ
-                        IdentExpr 'i'
-                        IntExpr 3
+                        Identifier 'i'
+                        IntegerLiteral 3
                     ContinueStmt
                 IfStmt
                     RelatExpr EQ
-                        IdentExpr 'i'
-                        IntExpr 5
+                        Identifier 'i'
+                        IntegerLiteral 5
                     BreakStmt
                 IfStmt
                     RelatExpr EQ
-                        IdentExpr 'i'
-                        IntExpr 7
+                        Identifier 'i'
+                        IntegerLiteral 7
                     GotoStmt
-                        IdentExpr 'end_loop'
+                        Identifier 'end_loop'
         LabelStmt
-            IdentExpr 'end_loop'
+            Identifier 'end_loop'
             ReturnStmt
-                IntExpr 23
+                IntegerLiteral 23
         ReturnStmt
-            IdentExpr 'e'
+            Identifier 'e'

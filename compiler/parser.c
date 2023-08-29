@@ -174,22 +174,10 @@ struct stmt *stmt() {
                         consume(OPAR);
                         statement->cond = expr();
                         consume(CPAR);
-                        int matchfirstCBR = 0;
-                        if (ct->kind == OCBR) {
-                                consume(OCBR);
-                                matchfirstCBR = 1;
-                        }
                         statement->then = stmt();
-                        if (ct->kind == CCBR && matchfirstCBR) consume(CCBR);
                         if (ct->kind == ELSE) {
                                 consume(ELSE);
-                                int matchsecondCBR = 0;
-                                if (ct->kind == OCBR) {
-                                        consume(OCBR);
-                                        matchsecondCBR = 1;
-                                }
                                 statement->els = stmt();
-                                if (ct->kind == CCBR && matchsecondCBR) consume(CCBR);
                         }
                         break;
                 case SWITCH:
@@ -627,7 +615,7 @@ void printExtDecl(struct ExtDecl *extDecl, int level) {
         switch (extDecl->decltor->kind) {
                 case FUNCTION: {
                         fprintf(outfile,
-                                "%*s%s FuncExcDecl '%s'\n",
+                                "%*sFunctionDecl %s '%s'\n",
                                 level * INDENT,
                                 "",
                                 token_names[extDecl->declspec->type],
@@ -637,7 +625,7 @@ void printExtDecl(struct ExtDecl *extDecl, int level) {
                 }
                 case DECLARATION: {
                         fprintf(outfile,
-                                "%*s%s DeclExlDecl '%s'\n",
+                                "%*sVariableDecl %s '%s'\n",
                                 level * INDENT,
                                 "",
                                 token_names[extDecl->declspec->type],
@@ -755,10 +743,10 @@ void printExpr(struct expr *expr, int level) {
         if (expr == NULL) return;
         switch (expr->kind) {
                 case INT:
-                        fprintf(outfile, "%*sIntExpr %d\n", level * INDENT, "", expr->value);
+                        fprintf(outfile, "%*sIntegerLiteral %d\n", level * INDENT, "", expr->value);
                         break;
                 case IDENT:
-                        fprintf(outfile, "%*sIdentExpr '%s'\n", level * INDENT, "", expr->strLit);
+                        fprintf(outfile, "%*sIdentifier '%s'\n", level * INDENT, "", expr->strLit);
                         break;
                 case ADD:
                 case SUB:
