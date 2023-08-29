@@ -8,8 +8,8 @@ struct ExtDecl {
         struct ExtDecl *next;
         struct declspec *declspec;
         struct decltor *decltor;
-        struct expr *expr;    // for declaration
-        struct block *block;  // for function
+        struct expr *expr;      // for declaration
+        struct stmt *compStmt;  // for function
 };
 
 struct declspec {
@@ -49,24 +49,49 @@ struct block {
         struct stmt *stmt;
 };
 
-struct stmt {
-        // return expr | expr-stmt
-        struct expr *expr;
+/*
+label_stmt
+    ident ':' stmt                              | value then
+    'case' expr ':' stmt                        | cond then
+    'default' ':' stmt                          | then
 
-        // 'if' or 'for' stmt
+compound_stmt
+    '{' block '}'                               | body
+
+expression_stmt
+    expr ';'                                    | value 
+
+selection_stmt
+    'if' '(' expr ')' stmt                      | cond then
+    'if' '(' expr ')' stmt 'else' stmt          | cond then els
+    'switch' '(' expr ')' stmt                  | cond then
+
+iteration_stmt
+    'while' '(' expr ')' stmt                   | cond then
+    'do' stmt 'while' '(' expr ')' ';'          | then cond
+    'for' '(' expr ';' expr ';' expr ')' stmt   | init cond inc then
+    'for' '(' decl expr ';' expr ')' stmt       | init cond inc then
+
+jump_stmt
+    'goto' ident ';'                            | value
+    'continue' ';'                              | 
+    'break' ';'                                 | 
+    'return' expr ';'                           | value
+*/
+
+struct stmt {
+        enum Kind kind;
         struct expr *cond;
         struct stmt *then;
         struct stmt *els;
         union {
-                struct expr *expr;     // for (i = 0; ...)
-                struct ExtDecl *decl;  // for (int i = 0; ...)
+                struct expr *expr;
+                struct ExtDecl *decl;
         } init;
         int init_kind;  // 0 for expr, 1 for decl
         struct expr *inc;
-
-        struct block *body;  // compound statement
-
-        enum Kind kind;
+        struct expr *value;
+        struct block *body;
 };
 
 void copystr(char **dest, char **src, int len);
@@ -97,7 +122,7 @@ struct expr *assignment_expression();
 struct expr *postfix_expression();
 struct expr *arg_expr_list();
 struct stmt *stmt();
-struct block *compound_stmt();
+struct stmt *compound_stmt();
 
 void consume(enum Kind kind) {
         if (ct->kind != kind) {
@@ -107,12 +132,12 @@ void consume(enum Kind kind) {
 }
 
 // function-definition ::=
-//      declarator ("{" declaration* or statement* "}")? ;
+//      declarator compount-statement? ;
 struct ExtDecl *function(struct declspec **declspec, struct decltor **decltor) {
         struct ExtDecl *func = calloc(1, sizeof(struct ExtDecl));
         func->declspec = *declspec;
         func->decltor = *decltor;
-        func->block = compound_stmt();
+        func->compStmt = compound_stmt();
         return func;
 };
 
@@ -121,8 +146,8 @@ struct stmt *stmt() {
         switch (ct->kind) {
                 case IDENT:
                         if (ct->next->kind == COLON) {
-                                statement->kind = IDENT;
-                                statement->expr = primary_expression();
+                                statement->kind = IDENT;  // label statement
+                                statement->value = primary_expression();
                                 consume(COLON);
                                 statement->then = stmt();
                                 break;
@@ -131,7 +156,7 @@ struct stmt *stmt() {
                 case CASE: {
                         consume(CASE);
                         statement->kind = CASE;
-                        statement->expr = conditional_expression();
+                        statement->cond = conditional_expression();  // constant-expression
                         consume(COLON);
                         statement->then = stmt();
                         break;
@@ -221,7 +246,7 @@ struct stmt *stmt() {
                 case GOTO: {
                         statement->kind = GOTO;
                         consume(GOTO);
-                        statement->expr = primary_expression();  // identifier
+                        statement->value = primary_expression();  // identifier
                         consume(SEMIC);
                         break;
                 }
@@ -241,26 +266,26 @@ struct stmt *stmt() {
                         statement->kind = RETURN;
                         consume(RETURN);
                         if (ct->kind != SEMIC) {
-                                statement->expr = expr();
+                                statement->value = expr();
                         }
                         consume(SEMIC);
                         break;
                 case OCBR:  // compound statement
-                        statement->kind = STMT_COMPOUND;
-                        statement->body = compound_stmt();
-                        break;
+                        return compound_stmt();
                 default:
                 stmt_expr : {
                         // expression-statement
                         statement->kind = STMT_EXPR;
-                        statement->expr = expr();
+                        statement->value = expr();
                         consume(SEMIC);
                 }
         }
         return statement;
 }
 
-struct block *compound_stmt() {
+struct stmt *compound_stmt() {
+        struct stmt *comp_stmt = calloc(1, sizeof(struct stmt));
+        comp_stmt->kind = STMT_COMPOUND;
         struct block head = {};
         struct block *cur = &head;
         if (ct->kind == OCBR) {
@@ -279,7 +304,8 @@ struct block *compound_stmt() {
                 }
                 consume(CCBR);
         }
-        return head.next;
+        comp_stmt->body = head.next;
+        return comp_stmt;
 }
 
 // declaration ::=
@@ -606,7 +632,7 @@ void printExtDecl(struct ExtDecl *extDecl, int level) {
                                 "",
                                 token_names[extDecl->declspec->type],
                                 extDecl->decltor->name);
-                        printBlock(extDecl->block, level + 1);
+                        printStmt(extDecl->compStmt, level + 1);
                         break;
                 }
                 case DECLARATION: {
@@ -641,7 +667,7 @@ void printStmt(struct stmt *stmt, int level) {
         switch (stmt->kind) {
                 case IDENT: {
                         fprintf(outfile, "%*sLabelStmt\n", level * INDENT, "");
-                        printExpr(stmt->expr, level + 1);
+                        printExpr(stmt->value, level + 1);
                         printStmt(stmt->then, level + 1);
                         break;
                 }
@@ -651,7 +677,7 @@ void printStmt(struct stmt *stmt, int level) {
                 }
                 case GOTO: {
                         fprintf(outfile, "%*sGotoStmt\n", level * INDENT, "");
-                        printExpr(stmt->expr, level + 1);
+                        printExpr(stmt->value, level + 1);
                         break;
                 }
                 case BREAK: {
@@ -665,7 +691,7 @@ void printStmt(struct stmt *stmt, int level) {
                 }
                 case CASE: {
                         fprintf(outfile, "%*sCaseStmt\n", level * INDENT, "");
-                        printExpr(stmt->expr, level + 1);
+                        printExpr(stmt->cond, level + 1);
                         printStmt(stmt->then, level + 1);
                         break;
                 }
@@ -713,12 +739,12 @@ void printStmt(struct stmt *stmt, int level) {
                 }
                 case STMT_EXPR: {
                         fprintf(outfile, "%*sExprStmt\n", level * INDENT, "");
-                        printExpr(stmt->expr, level + 1);
+                        printExpr(stmt->value, level + 1);
                         break;
                 }
                 case RETURN: {
                         fprintf(outfile, "%*sReturnStmt\n", level * INDENT, "");
-                        printExpr(stmt->expr, level + 1);
+                        printExpr(stmt->value, level + 1);
                         break;
                 }
                 default: error("Unknown statement kind\n");
