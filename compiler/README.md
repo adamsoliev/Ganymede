@@ -19,6 +19,8 @@ Design principles
   - improve AST printing 
     - rename nodes to better reflect subtree structure's meaning
     - refactor
+  - make 'consume(token)' dynamic so that you can optionally mass error message
+    - e.g. consume(INTCONST, "size of array has non-integer type %s", type_to_string(expr->type))
 
 ## Build
 ```bash

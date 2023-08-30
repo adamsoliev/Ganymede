@@ -26,7 +26,7 @@ int sum10(int a, int b, int c, int d, int e, int f, int g, int h, int i) {
         return a + b + c + d + e + f + g + h + i;
 }
 
-int a[10];
+int a[4] = {1, 2, 3, 9};
 float b[10][10];
 
 int main() {

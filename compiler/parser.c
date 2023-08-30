@@ -8,8 +8,9 @@ struct ExtDecl {
         struct ExtDecl *next;
         struct declspec *declspec;
         struct decltor *decltor;
-        struct expr *expr;      // for declaration
-        struct stmt *compStmt;  // for function
+        struct expr *expr;         // for declaration
+        struct initializer *init;  // for array declaration
+        struct stmt *compStmt;     // for function
 };
 
 struct declspec {
@@ -32,6 +33,15 @@ struct params {
         struct params *next;
         struct declspec *declspec;
         struct decltor *decltor;
+};
+
+struct initializer {
+        struct initializer *next;
+        struct initializer *children;
+        union {
+                int ivalue;
+        } value;
+        enum Kind type;
 };
 
 struct expr {
@@ -115,6 +125,7 @@ void printBlock(struct block *block, int level);
 void printStmt(struct stmt *stmt, int level);
 void printExpr(struct expr *expr, int level);
 void printParams(struct params *params, int level);
+void printInitializer(struct initializer *initializer, int level);
 struct expr *primary_expression();
 struct expr *additive_expression();
 struct expr *multiplicative_expression();
@@ -134,6 +145,7 @@ struct expr *postfix_expression();
 struct expr *arg_expr_list();
 struct stmt *stmt();
 struct stmt *compound_stmt();
+struct initializer *initializer_list();
 
 void consume(enum Kind kind) {
         if (ct->kind != kind) {
@@ -318,7 +330,16 @@ struct ExtDecl *declaration(struct declspec **declspec, struct decltor **decltor
         while (ct->kind != SEMIC) {
                 if (ct->kind == ASSIGN) {
                         consume(ASSIGN);
-                        cur->expr = expr();  // initializer
+                        if (ct->kind == OCBR) {
+                                cur->init = calloc(1, sizeof(struct initializer));
+                                cur->init->type = (*declspec)->type;
+                                cur->init->children = calloc(1, sizeof(struct initializer));
+                                consume(OCBR);
+                                cur->init->children = initializer_list();
+                                consume(CCBR);
+                        } else {
+                                cur->expr = expr();  // initializer
+                        }
                 }
                 if (ct->kind == COMMA) {
                         consume(COMMA);
@@ -328,6 +349,30 @@ struct ExtDecl *declaration(struct declspec **declspec, struct decltor **decltor
                 }
         }
         consume(SEMIC);
+        return head.next;
+};
+
+struct initializer *initializer_list() {
+        struct initializer head = {};
+        struct initializer *cur = &head;
+        while (ct->kind != CCBR) {
+                if (ct->kind == OCBR) {
+                        consume(OCBR);
+                        cur = cur->next = calloc(1, sizeof(struct initializer));
+                        cur->type = INT;
+                        cur->children = initializer_list();
+                } else if (ct->kind == INTCONST) {
+                        cur = cur->next = calloc(1, sizeof(struct initializer));
+                        cur->type = INT;
+                        cur->value.ivalue = ct->value;
+                        consume(INTCONST);
+                } else {
+                        error("Initializer list not implemented\n");
+                }
+                if (ct->kind == COMMA) {
+                        consume(COMMA);
+                }
+        }
         return head.next;
 };
 
@@ -694,15 +739,41 @@ void printExtDecl(struct ExtDecl *extDecl, int level) {
                                 printExpr(extDecl->expr, level + 1);
                                 break;
                         } else {
-                                fprintf(outfile,
-                                        "%*sArrayDecl %s '%s'[%d][%d]\n",
-                                        level * INDENT,
-                                        "",
-                                        token_names[extDecl->declspec->type],
-                                        extDecl->decltor->name,
-                                        extDecl->decltor->row,
-                                        extDecl->decltor->col);
-                                printExpr(extDecl->expr, level + 1);
+                                if (extDecl->decltor->col == 0 && extDecl->decltor->row == 0)
+                                        fprintf(outfile,
+                                                "%*sArrayDecl %s '%s'[]\n",
+                                                level * INDENT,
+                                                "",
+                                                token_names[extDecl->declspec->type],
+                                                extDecl->decltor->name);
+                                else if (extDecl->decltor->col == 0 && extDecl->decltor->row != 0)
+                                        fprintf(outfile,
+                                                "%*sArrayDecl %s '%s'[%d]\n",
+                                                level * INDENT,
+                                                "",
+                                                token_names[extDecl->declspec->type],
+                                                extDecl->decltor->name,
+                                                extDecl->decltor->row);
+                                else if (extDecl->decltor->row != 0 && extDecl->decltor->col != 0)
+                                        fprintf(outfile,
+                                                "%*sArrayDecl %s '%s'[%d][%d]\n",
+                                                level * INDENT,
+                                                "",
+                                                token_names[extDecl->declspec->type],
+                                                extDecl->decltor->name,
+                                                extDecl->decltor->row,
+                                                extDecl->decltor->col);
+                                if (extDecl->expr != NULL)
+                                        printExpr(extDecl->expr, level + 1);
+                                else if (extDecl->init != NULL) {
+                                        fprintf(outfile,
+                                                "%*sInitializer\n",
+                                                (level + 1) * INDENT,
+                                                "");
+                                        printInitializer(extDecl->init, level + 2);
+                                } else {
+                                        // zero initialized array
+                                }
                                 break;
                         }
                 }
@@ -954,4 +1025,19 @@ void printParams(struct params *params, int level) {
                 token_names[params->declspec->type],
                 params->decltor->name);
         printParams(params->next, level);
+};
+
+void printInitializer(struct initializer *initializer, int level) {
+        if (initializer == NULL) return;
+        struct initializer *head = initializer;
+        initializer = initializer->children;
+        fprintf(outfile, "%*s", level * INDENT, "");
+        while (initializer != NULL) {
+                fprintf(outfile,
+                        "%d%s",
+                        initializer->value.ivalue,
+                        initializer->next == NULL ? "\n" : ", ");
+                initializer = initializer->next;
+        }
+        printInitializer(head->next, level);
 };

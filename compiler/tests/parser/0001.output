@@ -124,7 +124,9 @@ FunctionDecl INT 'sum10'
                                         ArithExpr ADD
                                             Identifier 'h'
                                             Identifier 'i'
-ArrayDecl INT 'a'[10][0]
+ArrayDecl INT 'a'[4]
+    Initializer
+        1, 2, 3, 9
 ArrayDecl FLOAT 'b'[10][10]
 FunctionDecl INT 'main'
     CompoundStmt
