@@ -23,6 +23,13 @@ struct decltor {
                 FUNCTION,
                 DECLARATION,
         } kind;
+        struct params *params;
+};
+
+struct params {
+        struct params *next;
+        struct declspec *declspec;
+        struct decltor *decltor;
 };
 
 struct expr {
@@ -104,6 +111,7 @@ struct decltor *declarator();
 void printBlock(struct block *block, int level);
 void printStmt(struct stmt *stmt, int level);
 void printExpr(struct expr *expr, int level);
+void printParams(struct params *params, int level);
 struct expr *primary_expression();
 struct expr *additive_expression();
 struct expr *multiplicative_expression();
@@ -338,8 +346,15 @@ struct decltor *declarator() {
                 copystr(&decltor->name, &ct->start, ct->len);
                 consume(IDENT);
                 if (ct->kind == OPAR) {
-                        consume(OPAR);
                         decltor->kind = FUNCTION;
+                        consume(OPAR);
+                        struct params *params = NULL;
+                        if (ct->kind != CPAR) {
+                                params = calloc(1, sizeof(struct params));
+                                params->declspec = declaration_specifiers();
+                                params->decltor = declarator();
+                        }
+                        decltor->params = params;
                         consume(CPAR);
                         return decltor;
                 } else {
@@ -620,6 +635,7 @@ void printExtDecl(struct ExtDecl *extDecl, int level) {
                                 "",
                                 token_names[extDecl->declspec->type],
                                 extDecl->decltor->name);
+                        printParams(extDecl->decltor->params, level + 1);
                         printStmt(extDecl->compStmt, level + 1);
                         break;
                 }
@@ -870,4 +886,16 @@ void printExpr(struct expr *expr, int level) {
                 }
                 default: error("Unknown expression kind\n");
         }
+};
+
+void printParams(struct params *params, int level) {
+        if (params == NULL) return;
+        fprintf(outfile, "%*sParameters\n", level * INDENT, "");
+        fprintf(outfile,
+                "%*s%s '%s'\n",
+                (level + 1) * INDENT,
+                "",
+                token_names[params->declspec->type],
+                params->decltor->name);
+        printParams(params->next, level);
 };

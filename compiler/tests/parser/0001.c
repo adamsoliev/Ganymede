@@ -16,6 +16,8 @@ int o = 32 && 92;
 int p = 32 || 12;
 int v = sizeof a;
 
+int sum(int a) { return a + 23; }
+
 int main() {
         int a = b == 23 ? 32 : 43;
         a = b != 23 ? 32 : 43;
@@ -120,5 +122,5 @@ int main() {
 end_loop:
         return 23;
 
-        return e;
+        return 0;
 }
