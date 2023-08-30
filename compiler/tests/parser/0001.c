@@ -16,7 +16,15 @@ int o = 32 && 92;
 int p = 32 || 12;
 int v = sizeof a;
 
-int sum(int a) { return a + 23; }
+int sum0() { return 0; }
+
+int sum1(int a) { return a; }
+
+int sum2(int a, int b) { return a + b; }
+
+int sum10(int a, int b, int c, int d, int e, int f, int g, int h, int i) {
+        return a + b + c + d + e + f + g + h + i;
+}
 
 int main() {
         int a = b == 23 ? 32 : 43;

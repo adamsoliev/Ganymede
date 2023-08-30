@@ -108,6 +108,7 @@ struct ExtDecl *declaration(struct declspec **declspec, struct decltor **decltor
 struct expr *expr();
 struct declspec *declaration_specifiers();
 struct decltor *declarator();
+struct params *parameters();
 void printBlock(struct block *block, int level);
 void printStmt(struct stmt *stmt, int level);
 void printExpr(struct expr *expr, int level);
@@ -348,13 +349,7 @@ struct decltor *declarator() {
                 if (ct->kind == OPAR) {
                         decltor->kind = FUNCTION;
                         consume(OPAR);
-                        struct params *params = NULL;
-                        if (ct->kind != CPAR) {
-                                params = calloc(1, sizeof(struct params));
-                                params->declspec = declaration_specifiers();
-                                params->decltor = declarator();
-                        }
-                        decltor->params = params;
+                        decltor->params = parameters();
                         consume(CPAR);
                         return decltor;
                 } else {
@@ -363,6 +358,29 @@ struct decltor *declarator() {
                 }
         }
         return decltor;
+};
+
+struct params *parameters() {
+        if (ct->kind == CPAR) return NULL;
+        struct params head = {};
+        struct params *cur = &head;
+        int maxParams = 10;
+        while (1) {
+                if (maxParams == 0) {
+                        error("Too many parameters\n");
+                }
+
+                cur = cur->next = calloc(1, sizeof(struct params));
+                cur->declspec = declaration_specifiers();
+                cur->decltor = declarator();
+                if (ct->kind != COMMA) {
+                        break;
+                }
+                consume(COMMA);
+
+                maxParams--;
+        }
+        return head.next;
 };
 
 struct expr *expr() { return assignment_expression(); }
@@ -635,7 +653,10 @@ void printExtDecl(struct ExtDecl *extDecl, int level) {
                                 "",
                                 token_names[extDecl->declspec->type],
                                 extDecl->decltor->name);
-                        printParams(extDecl->decltor->params, level + 1);
+                        if (extDecl->decltor->params != NULL) {
+                                fprintf(outfile, "%*sParams\n", (level + 1) * INDENT, "");
+                                printParams(extDecl->decltor->params, level + 1);
+                        }
                         printStmt(extDecl->compStmt, level + 1);
                         break;
                 }
@@ -890,7 +911,6 @@ void printExpr(struct expr *expr, int level) {
 
 void printParams(struct params *params, int level) {
         if (params == NULL) return;
-        fprintf(outfile, "%*sParameters\n", level * INDENT, "");
         fprintf(outfile,
                 "%*s%s '%s'\n",
                 (level + 1) * INDENT,

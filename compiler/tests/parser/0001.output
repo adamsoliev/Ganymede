@@ -75,14 +75,55 @@ VariableDecl INT 'p'
 VariableDecl INT 'v'
     UnaryExpr SIZEOF
         Identifier 'a'
-FunctionDecl INT 'sum'
-    Parameters
+FunctionDecl INT 'sum0'
+    CompoundStmt
+        ReturnStmt
+            IntegerLiteral 0
+FunctionDecl INT 'sum1'
+    Params
         INT 'a'
+    CompoundStmt
+        ReturnStmt
+            Identifier 'a'
+FunctionDecl INT 'sum2'
+    Params
+        INT 'a'
+        INT 'b'
     CompoundStmt
         ReturnStmt
             ArithExpr ADD
                 Identifier 'a'
-                IntegerLiteral 23
+                Identifier 'b'
+FunctionDecl INT 'sum10'
+    Params
+        INT 'a'
+        INT 'b'
+        INT 'c'
+        INT 'd'
+        INT 'e'
+        INT 'f'
+        INT 'g'
+        INT 'h'
+        INT 'i'
+    CompoundStmt
+        ReturnStmt
+            ArithExpr ADD
+                Identifier 'a'
+                ArithExpr ADD
+                    Identifier 'b'
+                    ArithExpr ADD
+                        Identifier 'c'
+                        ArithExpr ADD
+                            Identifier 'd'
+                            ArithExpr ADD
+                                Identifier 'e'
+                                ArithExpr ADD
+                                    Identifier 'f'
+                                    ArithExpr ADD
+                                        Identifier 'g'
+                                        ArithExpr ADD
+                                            Identifier 'h'
+                                            Identifier 'i'
 FunctionDecl INT 'main'
     CompoundStmt
         VariableDecl INT 'a'
