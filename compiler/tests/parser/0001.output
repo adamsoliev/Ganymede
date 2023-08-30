@@ -127,7 +127,11 @@ FunctionDecl INT 'sum10'
 ArrayDecl INT 'a'[4]
     Initializer
         1, 2, 3, 9
-ArrayDecl FLOAT 'b'[10][10]
+ArrayDecl INT 'b'[3][4]
+    Initializer
+        1, 2, 3, 4
+        5, 6, 7, 8
+        9, 0, 1, 2
 FunctionDecl INT 'main'
     CompoundStmt
         VariableDecl INT 'a'

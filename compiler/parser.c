@@ -361,6 +361,7 @@ struct initializer *initializer_list() {
                         cur = cur->next = calloc(1, sizeof(struct initializer));
                         cur->type = INT;
                         cur->children = initializer_list();
+                        consume(CCBR);
                 } else if (ct->kind == INTCONST) {
                         cur = cur->next = calloc(1, sizeof(struct initializer));
                         cur->type = INT;
@@ -765,7 +766,13 @@ void printExtDecl(struct ExtDecl *extDecl, int level) {
                                                 extDecl->decltor->col);
                                 if (extDecl->expr != NULL)
                                         printExpr(extDecl->expr, level + 1);
-                                else if (extDecl->init != NULL) {
+                                else if (extDecl->init != NULL && extDecl->init->children->children != NULL) {
+                                        fprintf(outfile,
+                                                "%*sInitializer\n",
+                                                (level + 1) * INDENT,
+                                                "");
+                                        printInitializer(extDecl->init->children, level + 2);
+                                } else if (extDecl->init != NULL) {
                                         fprintf(outfile,
                                                 "%*sInitializer\n",
                                                 (level + 1) * INDENT,
