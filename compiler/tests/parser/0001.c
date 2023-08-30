@@ -26,6 +26,9 @@ int sum10(int a, int b, int c, int d, int e, int f, int g, int h, int i) {
         return a + b + c + d + e + f + g + h + i;
 }
 
+int a[10];
+float b[10][10];
+
 int main() {
         int a = b == 23 ? 32 : 43;
         a = b != 23 ? 32 : 43;

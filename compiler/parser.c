@@ -23,7 +23,9 @@ struct decltor {
                 FUNCTION,
                 DECLARATION,
         } kind;
-        struct params *params;
+        struct params *params;  // function
+        int row;                // array
+        int col;                // array
 };
 
 struct params {
@@ -336,6 +338,11 @@ struct declspec *declaration_specifiers() {
                 declspec->type = INT;
                 return declspec;
         }
+        if (ct->kind == FLOAT) {
+                consume(FLOAT);
+                declspec->type = FLOAT;
+                return declspec;
+        }
         return declspec;
 };
 
@@ -351,6 +358,22 @@ struct decltor *declarator() {
                         consume(OPAR);
                         decltor->params = parameters();
                         consume(CPAR);
+                        return decltor;
+                } else if (ct->kind == OBR) {
+                        decltor->kind = DECLARATION;
+                        consume(OBR);
+                        if (ct->kind == INTCONST) {
+                                decltor->row = ct->value;
+                                consume(INTCONST);
+                        }
+                        if (ct->kind == CBR && ct->next->kind == OBR &&
+                            ct->next->next->kind == INTCONST) {
+                                consume(CBR);
+                                consume(OBR);
+                                decltor->col = ct->value;
+                                consume(INTCONST);
+                        }
+                        consume(CBR);
                         return decltor;
                 } else {
                         decltor->kind = DECLARATION;
@@ -661,14 +684,27 @@ void printExtDecl(struct ExtDecl *extDecl, int level) {
                         break;
                 }
                 case DECLARATION: {
-                        fprintf(outfile,
-                                "%*sVariableDecl %s '%s'\n",
-                                level * INDENT,
-                                "",
-                                token_names[extDecl->declspec->type],
-                                extDecl->decltor->name);
-                        printExpr(extDecl->expr, level + 1);
-                        break;
+                        if (extDecl->decltor->row == 0 && extDecl->decltor->col == 0) {
+                                fprintf(outfile,
+                                        "%*sVariableDecl %s '%s'\n",
+                                        level * INDENT,
+                                        "",
+                                        token_names[extDecl->declspec->type],
+                                        extDecl->decltor->name);
+                                printExpr(extDecl->expr, level + 1);
+                                break;
+                        } else {
+                                fprintf(outfile,
+                                        "%*sArrayDecl %s '%s'[%d][%d]\n",
+                                        level * INDENT,
+                                        "",
+                                        token_names[extDecl->declspec->type],
+                                        extDecl->decltor->name,
+                                        extDecl->decltor->row,
+                                        extDecl->decltor->col);
+                                printExpr(extDecl->expr, level + 1);
+                                break;
+                        }
                 }
         }
         printExtDecl(extDecl->next, level);
