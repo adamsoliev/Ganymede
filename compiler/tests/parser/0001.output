@@ -134,6 +134,71 @@ ArrayDecl INT 'b'[3][4]
         9, 0, 1, 2
 FunctionDecl INT 'main'
     CompoundStmt
+        ExprStmt
+            FuncCallExpr
+                Identifier 'printf'
+                FuncCallExpr
+                    Identifier 'a'
+                    FuncCallExpr
+                        Identifier 'b'
+        ExprStmt
+            FuncCallExpr
+                Identifier 'printf'
+                FuncCallExpr
+                    StringLiteral '"a"'
+                    FuncCallExpr
+                        Identifier 'b'
+        ExprStmt
+            FuncCallExpr
+                Identifier 'printf'
+                FuncCallExpr
+                    StringLiteral '"squared: %d\n"'
+                    FuncCallExpr
+                        ArithExpr MUL
+                            Identifier 'a'
+                            Identifier 'a'
+        ExprStmt
+            FuncCallExpr
+                Identifier 'printf'
+                FuncCallExpr
+                    StringLiteral '"escape char: %c\n"'
+                    FuncCallExpr
+                        CharLiteral '\n'
+        ExprStmt
+            FuncCallExpr
+                Identifier 'printf'
+                FuncCallExpr
+                    StringLiteral '"escape char: %c\n"'
+                    FuncCallExpr
+                        CharLiteral '\\'
+        ExprStmt
+            FuncCallExpr
+                Identifier 'printf'
+                FuncCallExpr
+                    StringLiteral '"escape char: %c\n"'
+                    FuncCallExpr
+                        CharLiteral '\?'
+        ExprStmt
+            FuncCallExpr
+                Identifier 'printf'
+                FuncCallExpr
+                    StringLiteral '"escape char: %c\n"'
+                    FuncCallExpr
+                        CharLiteral '\''
+        ExprStmt
+            FuncCallExpr
+                Identifier 'printf'
+                FuncCallExpr
+                    StringLiteral '"escape char: %c\n"'
+                    FuncCallExpr
+                        CharLiteral '\"'
+        ExprStmt
+            FuncCallExpr
+                Identifier 'printf'
+                FuncCallExpr
+                    StringLiteral '"normal char: %c\n"'
+                    FuncCallExpr
+                        CharLiteral 'a'
         VariableDecl INT 'a'
             CondExpr
                 RelatExpr EQ

@@ -30,6 +30,15 @@ int a[4] = {1, 2, 3, 9};
 int b[3][4] = {{1, 2, 3, 4}, {5, 6, 7, 8}, {9, 0, 1, 2}};
 
 int main() {
+        printf(a, b);
+        printf("a", b);
+        printf("squared: %d\n", a * a);
+        printf("escape char: %c\n", '\n');
+        printf("escape char: %c\n", '\\');
+        printf("escape char: %c\n", '\?');
+        printf("escape char: %c\n", '\'');
+        printf("escape char: %c\n", '\"');
+        printf("normal char: %c\n", 'a');
         int a = b == 23 ? 32 : 43;
         a = b != 23 ? 32 : 43;
         int aa = ++b;

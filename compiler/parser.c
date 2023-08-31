@@ -679,6 +679,41 @@ struct expr *primary_expression() {
                 consume(INTCONST);
                 return expr;
         }
+        if (ct->kind == STRCONST) {
+                expr->kind = STRCONST;
+                copystr(&expr->strLit, &ct->start, ct->len);
+                consume(STRCONST);
+                return expr;
+        }
+        if (ct->kind == CHARCONST) {
+                expr->kind = CHARCONST;
+                if (ct->len == 3) {
+                        expr->strLit = &ct->start[0];
+                } else if (ct->len == 4) {
+                        if (ct->start[1] == '\\') {
+                                switch (ct->start[2]) {
+                                        case 'n': expr->strLit = "\\n"; break;
+                                        case 't': expr->strLit = "\\t"; break;
+                                        case 'r': expr->strLit = "\\r"; break;
+                                        case 'v': expr->strLit = "\\v"; break;
+                                        case 'f': expr->strLit = "\\f"; break;
+                                        case 'b': expr->strLit = "\\b"; break;
+                                        case 'a': expr->strLit = "\\a"; break;
+                                        case '\\': expr->strLit = "\\\\"; break;
+                                        case '?': expr->strLit = "\\?"; break;
+                                        case '\'': expr->strLit = "\\'"; break;
+                                        case '\"': expr->strLit = "\\\""; break;
+                                        default: error("Char literal not implemented\n");
+                                }
+                        } else {
+                                error("Char literal not implemented\n");
+                        }
+                } else {
+                        error("Char literal not implemented\n");
+                }
+                consume(CHARCONST);
+                return expr;
+        }
         return expr;
 };
 
@@ -1002,6 +1037,23 @@ void printExpr(struct expr *expr, int level) {
                 case DEREF: {
                         fprintf(outfile, "%*sDerefExpr\n", level * INDENT, "");
                         PRINT_EXPR_LR();
+                }
+                case STRCONST: {
+                        fprintf(outfile,
+                                "%*sStringLiteral '%s'\n",
+                                level * INDENT,
+                                "",
+                                expr->strLit);
+                        break;
+                }
+                case CHARCONST: {
+                        const char *frmSpec = expr->strLit[0] == '\\' ? "%*sCharLiteral '%s'\n"
+                                                                      : "%*sCharLiteral '%c'\n";
+                        if (expr->strLit[0] == '\\')
+                                fprintf(outfile, frmSpec, level * INDENT, "", expr->strLit);
+                        else
+                                fprintf(outfile, frmSpec, level * INDENT, "", expr->strLit[1]);
+                        break;
                 }
                 default: error("Unknown expression kind\n");
         }
