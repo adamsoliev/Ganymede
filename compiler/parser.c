@@ -35,6 +35,31 @@ struct params {
         struct decltor *decltor;
 };
 
+/*
+int array[4] = {1, 2, 3, 4}
+                   -------------               
+ExcDecl --init--> | INITIALIZER | --chilren--> 1 --> 2 --> 3 --> 4
+                   -------------               
+
+int array[3][4] = {{1, 2, 3, 4}, {5, 6, 7, 8}, {9, 10, 11, 12}}
+                   -------------                -------------
+ExcDecl --init--> | INITIALIZER | --chilren--> | INITIALIZER | --children--> 1 --> 2 --> 3 --> 4
+                   -------------                -------------
+                                                      |
+                                                     next
+                                                      |
+                                                      V
+                                                ------------- 
+                                               | INITIALIZER | --children--> 5 --> 6 --> 7 --> 8
+                                                ------------- 
+                                                      |
+                                                     next
+                                                      |
+                                                      V
+                                                ------------- 
+                                               | INITIALIZER | --children--> 9 --> 10 --> 11 --> 12
+                                                ------------- 
+*/
 struct initializer {
         struct initializer *next;
         struct initializer *children;
@@ -97,7 +122,6 @@ jump_stmt
     'break' ';'                                 | 
     'return' expr ';'                           | value
 */
-
 struct stmt {
         enum Kind kind;
         struct expr *cond;
@@ -766,7 +790,8 @@ void printExtDecl(struct ExtDecl *extDecl, int level) {
                                                 extDecl->decltor->col);
                                 if (extDecl->expr != NULL)
                                         printExpr(extDecl->expr, level + 1);
-                                else if (extDecl->init != NULL && extDecl->init->children->children != NULL) {
+                                else if (extDecl->init != NULL &&
+                                         extDecl->init->children->children != NULL) {
                                         fprintf(outfile,
                                                 "%*sInitializer\n",
                                                 (level + 1) * INDENT,
@@ -891,6 +916,14 @@ void printStmt(struct stmt *stmt, int level) {
 };
 
 void printExpr(struct expr *expr, int level) {
+#define PRINT_EXPR_NAME(name) \
+        fprintf(outfile, "%*s" name " %s\n", level *INDENT, "", token_names[expr->kind]);
+
+#define PRINT_EXPR_LR()                  \
+        printExpr(expr->lhs, level + 1); \
+        printExpr(expr->rhs, level + 1); \
+        break;
+
         if (expr == NULL) return;
         switch (expr->kind) {
                 case INT:
@@ -904,32 +937,16 @@ void printExpr(struct expr *expr, int level) {
                 case MUL:
                 case DIV: {
                         if (expr->rhs == NULL) {
-                                fprintf(outfile,
-                                        "%*sUnaryExpr %s\n",
-                                        level * INDENT,
-                                        "",
-                                        token_names[expr->kind]);
+                                PRINT_EXPR_NAME("UnaryExpr");
                         } else {
-                                fprintf(outfile,
-                                        "%*sArithExpr %s\n",
-                                        level * INDENT,
-                                        "",
-                                        token_names[expr->kind]);
+                                PRINT_EXPR_NAME("ArithExpr");
                         }
-                        printExpr(expr->lhs, level + 1);
-                        printExpr(expr->rhs, level + 1);
-                        break;
+                        PRINT_EXPR_LR();
                 }
                 case LSHIFT:
                 case RSHIFT: {
-                        fprintf(outfile,
-                                "%*sShiftExpr %s\n",
-                                level * INDENT,
-                                "",
-                                token_names[expr->kind]);
-                        printExpr(expr->lhs, level + 1);
-                        printExpr(expr->rhs, level + 1);
-                        break;
+                        PRINT_EXPR_NAME("ShiftExpr");
+                        PRINT_EXPR_LR();
                 }
                 case LT:
                 case GT:
@@ -937,37 +954,19 @@ void printExpr(struct expr *expr, int level) {
                 case GEQ:
                 case EQ:
                 case NEQ: {
-                        fprintf(outfile,
-                                "%*sRelatExpr %s\n",
-                                level * INDENT,
-                                "",
-                                token_names[expr->kind]);
-                        printExpr(expr->lhs, level + 1);
-                        printExpr(expr->rhs, level + 1);
-                        break;
+                        PRINT_EXPR_NAME("RelatExpr");
+                        PRINT_EXPR_LR();
                 }
                 case AND:
                 case OR:
                 case XOR: {
-                        fprintf(outfile,
-                                "%*sBitExpr %s\n",
-                                level * INDENT,
-                                "",
-                                token_names[expr->kind]);
-                        printExpr(expr->lhs, level + 1);
-                        printExpr(expr->rhs, level + 1);
-                        break;
+                        PRINT_EXPR_NAME("BitExpr");
+                        PRINT_EXPR_LR();
                 }
                 case ANDAND:
                 case OROR: {
-                        fprintf(outfile,
-                                "%*sLogicExpr %s\n",
-                                level * INDENT,
-                                "",
-                                token_names[expr->kind]);
-                        printExpr(expr->lhs, level + 1);
-                        printExpr(expr->rhs, level + 1);
-                        break;
+                        PRINT_EXPR_NAME("LogicExpr");
+                        PRINT_EXPR_LR();
                 }
                 case QMARK: {
                         fprintf(outfile, "%*sCondExpr\n", level * INDENT, "");
@@ -981,43 +980,28 @@ void printExpr(struct expr *expr, int level) {
                 case NOT:
                 case TILDA:
                 case SIZEOF: {
-                        fprintf(outfile,
-                                "%*sUnaryExpr %s\n",
-                                level * INDENT,
-                                "",
-                                token_names[expr->kind]);
-                        printExpr(expr->lhs, level + 1);
-                        break;
+                        PRINT_EXPR_NAME("UnaryExpr");
+                        PRINT_EXPR_LR();
                 }
                 case ASSIGN: {
                         fprintf(outfile, "%*sAssignExpr\n", level * INDENT, "");
-                        printExpr(expr->lhs, level + 1);
-                        printExpr(expr->rhs, level + 1);
-                        break;
+                        PRINT_EXPR_LR();
                 }
                 case OPAR: {  // func call
                         fprintf(outfile, "%*sFuncCallExpr\n", level * INDENT, "");
-                        printExpr(expr->lhs, level + 1);
-                        printExpr(expr->rhs, level + 1);
-                        break;
+                        PRINT_EXPR_LR();
                 }
                 case OBR: {  // array access
                         fprintf(outfile, "%*sArrayExpr\n", level * INDENT, "");
-                        printExpr(expr->lhs, level + 1);
-                        printExpr(expr->rhs, level + 1);
-                        break;
+                        PRINT_EXPR_LR();
                 }
                 case DOT: {
                         fprintf(outfile, "%*sStructExpr\n", level * INDENT, "");
-                        printExpr(expr->lhs, level + 1);
-                        printExpr(expr->rhs, level + 1);
-                        break;
+                        PRINT_EXPR_LR();
                 }
                 case DEREF: {
                         fprintf(outfile, "%*sDerefExpr\n", level * INDENT, "");
-                        printExpr(expr->lhs, level + 1);
-                        printExpr(expr->rhs, level + 1);
-                        break;
+                        PRINT_EXPR_LR();
                 }
                 default: error("Unknown expression kind\n");
         }
