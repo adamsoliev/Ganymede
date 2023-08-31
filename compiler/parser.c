@@ -692,6 +692,7 @@ struct expr *primary_expression() {
                 } else if (ct->len == 4) {
                         if (ct->start[1] == '\\') {
                                 switch (ct->start[2]) {
+                                                // other forms (plain char?) vs convenient-for-printing form
                                         case 'n': expr->strLit = "\\n"; break;
                                         case 't': expr->strLit = "\\t"; break;
                                         case 'r': expr->strLit = "\\r"; break;
@@ -776,7 +777,7 @@ void printExtDecl(struct ExtDecl *extDecl, int level) {
         switch (extDecl->decltor->kind) {
                 case FUNCTION: {
                         fprintf(outfile,
-                                "%*sFunctionDecl %s '%s'\n",
+                                "%*sFunctionDecl %s %s\n",
                                 level * INDENT,
                                 "",
                                 token_names[extDecl->declspec->type],
@@ -791,7 +792,7 @@ void printExtDecl(struct ExtDecl *extDecl, int level) {
                 case DECLARATION: {
                         if (extDecl->decltor->row == 0 && extDecl->decltor->col == 0) {
                                 fprintf(outfile,
-                                        "%*sVariableDecl %s '%s'\n",
+                                        "%*sVariableDecl %s %s\n",
                                         level * INDENT,
                                         "",
                                         token_names[extDecl->declspec->type],
@@ -801,14 +802,14 @@ void printExtDecl(struct ExtDecl *extDecl, int level) {
                         } else {
                                 if (extDecl->decltor->col == 0 && extDecl->decltor->row == 0)
                                         fprintf(outfile,
-                                                "%*sArrayDecl %s '%s'[]\n",
+                                                "%*sArrayDecl %s %s[]\n",
                                                 level * INDENT,
                                                 "",
                                                 token_names[extDecl->declspec->type],
                                                 extDecl->decltor->name);
                                 else if (extDecl->decltor->col == 0 && extDecl->decltor->row != 0)
                                         fprintf(outfile,
-                                                "%*sArrayDecl %s '%s'[%d]\n",
+                                                "%*sArrayDecl %s %s[%d]\n",
                                                 level * INDENT,
                                                 "",
                                                 token_names[extDecl->declspec->type],
@@ -816,7 +817,7 @@ void printExtDecl(struct ExtDecl *extDecl, int level) {
                                                 extDecl->decltor->row);
                                 else if (extDecl->decltor->row != 0 && extDecl->decltor->col != 0)
                                         fprintf(outfile,
-                                                "%*sArrayDecl %s '%s'[%d][%d]\n",
+                                                "%*sArrayDecl %s %s[%d][%d]\n",
                                                 level * INDENT,
                                                 "",
                                                 token_names[extDecl->declspec->type],
@@ -965,7 +966,7 @@ void printExpr(struct expr *expr, int level) {
                         fprintf(outfile, "%*sIntegerLiteral %d\n", level * INDENT, "", expr->value);
                         break;
                 case IDENT:
-                        fprintf(outfile, "%*sIdentifier '%s'\n", level * INDENT, "", expr->strLit);
+                        fprintf(outfile, "%*sIdentifier %s\n", level * INDENT, "", expr->strLit);
                         break;
                 case ADD:
                 case SUB:
@@ -1039,11 +1040,7 @@ void printExpr(struct expr *expr, int level) {
                         PRINT_EXPR_LR();
                 }
                 case STRCONST: {
-                        fprintf(outfile,
-                                "%*sStringLiteral '%s'\n",
-                                level * INDENT,
-                                "",
-                                expr->strLit);
+                        fprintf(outfile, "%*sStringLiteral %s\n", level * INDENT, "", expr->strLit);
                         break;
                 }
                 case CHARCONST: {
@@ -1062,7 +1059,7 @@ void printExpr(struct expr *expr, int level) {
 void printParams(struct params *params, int level) {
         if (params == NULL) return;
         fprintf(outfile,
-                "%*s%s '%s'\n",
+                "%*s%s %s\n",
                 (level + 1) * INDENT,
                 "",
                 token_names[params->declspec->type],
