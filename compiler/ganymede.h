@@ -1,18 +1,22 @@
 
+#ifndef HEADER_FILE
+#define HEADER_FILE
+
 #include <assert.h>
 #include <ctype.h>
 #include <fcntl.h>
 #include <getopt.h>
 #include <stdarg.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 // scan.c
-extern FILE *outfile;
-extern char *limit;
+extern FILE* outfile;
+extern char* limit;
 
 enum Kind {
         LT,      // <
@@ -111,17 +115,52 @@ enum Kind {
 
 struct Token {
         enum Kind kind;
-        char *start;  // for IDENT
+        char* start;  // for IDENT
         int len;      // for IDENT
-        struct Token *next;
+        struct Token* next;
         int value;  // for INTCONST
 };
 
-extern char *token_names[];
-void error(char *fmt, ...);
-void printTokens(struct Token *head, FILE *outfile);
-struct Token *scan(char *stream);
+extern char* token_names[];
+void error(char* fmt, ...);
+void printTokens(struct Token* head, FILE* outfile);
+struct Token* scan(char* stream);
 
 // parser
-struct ExtDecl *parse(struct Token *tokens);
-void printExtDecl(struct ExtDecl *extDecl, int level);
+struct ExtDecl* parse(struct Token* tokens);
+void printExtDecl(struct ExtDecl* extDecl, int level);
+
+// hashmap.c
+
+typedef struct ht ht;
+
+typedef struct {
+        const char* key;  // current key
+        void* value;      // current value
+
+        ht* _table;     // reference to hash table being iterated
+        size_t _index;  // current index into ht._entries
+} hti;
+
+typedef struct {
+        const char* key;  // key is NULL if this slot is empty
+        void* value;
+} ht_entry;
+
+struct ht {
+        ht_entry* entries;  // hash slots
+        size_t capacity;    // size of _entries array
+        size_t length;      // number of items in hash table
+};
+
+ht* ht_create(void);
+void ht_destroy(ht* table);
+void* ht_get(ht* table, const char* key);
+const char* ht_set(ht* table, const char* key, void* value);
+size_t ht_length(ht* table);
+hti ht_iterator(ht* table);
+bool ht_next(hti* it);
+void ht_test(void);
+char* strdup(const char* s);
+
+#endif
