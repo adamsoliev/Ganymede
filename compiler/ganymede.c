@@ -58,7 +58,7 @@ int main(int argc, char **argv) {
         int opt;
         char *optstring = "hvf:o:s:t:";
         char *input = NULL;
-        FILE *infile;
+        // FILE *infile;
 
         while ((opt = getopt(argc, argv, optstring)) != -1) {
                 switch (opt) {
@@ -124,5 +124,6 @@ int main(int argc, char **argv) {
         // printTokens(tokens, outfile);
         struct ExtDecl *program = parse(tokens);
         printExtDecl(program, 0);
+
         return 0;
 }

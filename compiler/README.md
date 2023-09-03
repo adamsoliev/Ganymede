@@ -21,6 +21,7 @@ Design principles
     - refactor
   - make 'consume(token)' dynamic so that you can optionally mass error message
     - e.g. consume(INTCONST, "size of array has non-integer type %s", type_to_string(expr->type))
+  - ensure precedence of operators is correct (e.g., a + b[i], *a-- + 23)
 
 ## Build
 ```bash
