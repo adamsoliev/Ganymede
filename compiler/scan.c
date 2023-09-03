@@ -1,5 +1,7 @@
-#include "ganymede.h"
+#pragma clang diagnostic ignored "-Wchar-subscripts"
+#pragma clang diagnostic ignored "-Wgnu-empty-initializer"
 
+#include "ganymede.h"
 enum { BLANK = 01, NEWLINE = 02, LETTER = 04, DIGIT = 010, HEX = 020, OTHER = 040 };
 
 char *token_names[] = {
@@ -17,7 +19,8 @@ char *token_names[] = {
         "GOTO",      "LONG",         "REGISTER",     "RETURN",    "SHORT",     "SIGNED",
         "SIZEOF",    "STATIC",       "STRUCT",       "SWITCH",    "TYPEDEF",   "UNION",
         "UNSIGNED",  "VOID",         "VOLATILE",     "WHILE",     "DOT",       "BREAK",
-        "COLON",     "RSHIFTASSIGN", "LSHIFTASSIGN", "INCLUDE",   "DEFINE",    "BACKSLASH", "STMT_EXPR"};
+        "COLON",     "RSHIFTASSIGN", "LSHIFTASSIGN", "INCLUDE",   "DEFINE",    "BACKSLASH",
+        "STMT_EXPR"};
 
 static unsigned char map[256] = {
         /* 000 nul */ 0,
@@ -420,10 +423,10 @@ struct Token *scan(char *cp) {
                                                       start,
                                                       line);
 
-                                        if ((*rcp == 'u' || *rcp == 'U') &&
-                                                    (rcp[1] == 'l' || rcp[1] == 'L') ||
-                                            (*rcp == 'l' || *rcp == 'L') &&
-                                                    (rcp[1] == 'u' || rcp[1] == 'U')) {
+                                        if (((*rcp == 'u' || *rcp == 'U') &&
+                                             (rcp[1] == 'l' || rcp[1] == 'L')) ||
+                                            ((*rcp == 'l' || *rcp == 'L') &&
+                                             (rcp[1] == 'u' || rcp[1] == 'U'))) {
                                                 rcp += 2;
                                         }
                                         if (*rcp == 'u' || *rcp == 'U') {
@@ -447,10 +450,10 @@ struct Token *scan(char *cp) {
                                                 cp = rcp;
                                                 goto next;
                                         }
-                                        if ((*rcp == 'u' || *rcp == 'U') &&
-                                                    (rcp[1] == 'l' || rcp[1] == 'L') ||
-                                            (*rcp == 'l' || *rcp == 'L') &&
-                                                    (rcp[1] == 'u' || rcp[1] == 'U')) {
+                                        if (((*rcp == 'u' || *rcp == 'U') &&
+                                             (rcp[1] == 'l' || rcp[1] == 'L')) ||
+                                            ((*rcp == 'l' || *rcp == 'L') &&
+                                             (rcp[1] == 'u' || rcp[1] == 'U'))) {
                                                 rcp += 2;
                                         }
                                         if (*rcp == 'u' || *rcp == 'U') {
@@ -738,7 +741,7 @@ void floatconst(char **start) {
         }  // else {
            // double type
         // }
-};
+}
 
 void error(char *fmt, ...) {
         va_list args;

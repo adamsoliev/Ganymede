@@ -1,3 +1,5 @@
+#pragma clang diagnostic ignored "-Wgnu-empty-initializer"
+
 #include "ganymede.h"
 
 static struct Token *ct;
@@ -141,35 +143,35 @@ void copystr(char **dest, char **src, int len);
 void consume(enum Kind kind);
 struct ExtDecl *function(struct declspec **declspec, struct decltor **decltor);
 struct ExtDecl *declaration(struct declspec **declspec, struct decltor **decltor);
-struct expr *expr();
-struct declspec *declaration_specifiers();
-struct decltor *declarator();
-struct params *parameters();
+struct expr *expr(void);
+struct declspec *declaration_specifiers(void);
+struct decltor *declarator(void);
+struct params *parameters(void);
 void printBlock(struct block *block, int level);
 void printStmt(struct stmt *stmt, int level);
 void printExpr(struct expr *expr, int level);
 void printParams(struct params *params, int level);
 void printInitializer(struct initializer *initializer, int level);
-struct expr *primary_expression();
-struct expr *additive_expression();
-struct expr *multiplicative_expression();
-struct expr *shift_expression();
-struct expr *relational_expression();
-struct expr *equality_expression();
-struct expr *equality_expression();
-struct expr *and_expression();
-struct expr *exc_or_expression();
-struct expr *inc_or_expression();
-struct expr *logic_and_expression();
-struct expr *logic_or_expression();
-struct expr *conditional_expression();
-struct expr *unary_expression();
-struct expr *assignment_expression();
-struct expr *postfix_expression();
-struct expr *arg_expr_list();
-struct stmt *stmt();
-struct stmt *compound_stmt();
-struct initializer *initializer_list();
+struct expr *primary_expression(void);
+struct expr *additive_expression(void);
+struct expr *multiplicative_expression(void);
+struct expr *shift_expression(void);
+struct expr *relational_expression(void);
+struct expr *equality_expression(void);
+struct expr *equality_expression(void);
+struct expr *and_expression(void);
+struct expr *exc_or_expression(void);
+struct expr *inc_or_expression(void);
+struct expr *logic_and_expression(void);
+struct expr *logic_or_expression(void);
+struct expr *conditional_expression(void);
+struct expr *unary_expression(void);
+struct expr *assignment_expression(void);
+struct expr *postfix_expression(void);
+struct expr *arg_expr_list(void);
+struct stmt *stmt(void);
+struct stmt *compound_stmt(void);
+struct initializer *initializer_list(void);
 
 void consume(enum Kind kind) {
         if (ct->kind != kind) {
@@ -186,9 +188,9 @@ struct ExtDecl *function(struct declspec **declspec, struct decltor **decltor) {
         func->decltor = *decltor;
         func->compStmt = compound_stmt();
         return func;
-};
+}
 
-struct stmt *stmt() {
+struct stmt *stmt(void) {
         struct stmt *statement = calloc(1, sizeof(struct stmt));
         switch (ct->kind) {
                 case IDENT:
@@ -318,7 +320,7 @@ struct stmt *stmt() {
         return statement;
 }
 
-struct stmt *compound_stmt() {
+struct stmt *compound_stmt(void) {
         struct stmt *comp_stmt = calloc(1, sizeof(struct stmt));
         comp_stmt->kind = STMT_COMPOUND;
         struct block head = {};
@@ -374,9 +376,9 @@ struct ExtDecl *declaration(struct declspec **declspec, struct decltor **decltor
         }
         consume(SEMIC);
         return head.next;
-};
+}
 
-struct initializer *initializer_list() {
+struct initializer *initializer_list(void) {
         struct initializer head = {};
         struct initializer *cur = &head;
         while (ct->kind != CCBR) {
@@ -399,9 +401,9 @@ struct initializer *initializer_list() {
                 }
         }
         return head.next;
-};
+}
 
-struct declspec *declaration_specifiers() {
+struct declspec *declaration_specifiers(void) {
         struct declspec *declspec = calloc(1, sizeof(struct declspec));
         if (ct->kind == INT) {
                 consume(INT);
@@ -414,11 +416,11 @@ struct declspec *declaration_specifiers() {
                 return declspec;
         }
         return declspec;
-};
+}
 
 // declarator ::=
 // 	    pointer? (identifier or "(" declarator ")")
-struct decltor *declarator() {
+struct decltor *declarator(void) {
         struct decltor *decltor = calloc(1, sizeof(struct decltor));
         if (ct->kind == IDENT) {
                 copystr(&decltor->name, &ct->start, ct->len);
@@ -451,9 +453,9 @@ struct decltor *declarator() {
                 }
         }
         return decltor;
-};
+}
 
-struct params *parameters() {
+struct params *parameters(void) {
         if (ct->kind == CPAR) return NULL;
         struct params head = {};
         struct params *cur = &head;
@@ -474,9 +476,9 @@ struct params *parameters() {
                 maxParams--;
         }
         return head.next;
-};
+}
 
-struct expr *expr() { return assignment_expression(); }
+struct expr *expr(void) { return assignment_expression(); }
 
 #define HANDLE_BINOP(opEnum, func)                  \
         if (ct->kind == opEnum) {                   \
@@ -485,7 +487,7 @@ struct expr *expr() { return assignment_expression(); }
                 return new_expr(opEnum, expr, rhs); \
         }
 
-struct expr *assignment_expression() {
+struct expr *assignment_expression(void) {
 #define HANDLE_OPASSIGN(opAssign, op)                                                     \
         if (ct->kind == opAssign) {                                                       \
                 consume(opAssign);                                                        \
@@ -512,7 +514,7 @@ struct expr *assignment_expression() {
         return cond_expr;
 }
 
-struct expr *conditional_expression() {
+struct expr *conditional_expression(void) {
         struct expr *cond_expr = logic_or_expression();
         if (ct->kind == QMARK) {
                 consume(QMARK);
@@ -524,44 +526,44 @@ struct expr *conditional_expression() {
         return cond_expr;
 }
 
-struct expr *logic_or_expression() {
+struct expr *logic_or_expression(void) {
         struct expr *expr = logic_and_expression();
         HANDLE_BINOP(OROR, logic_or_expression());
         return expr;
 }
 
-struct expr *logic_and_expression() {
+struct expr *logic_and_expression(void) {
         struct expr *expr = inc_or_expression();
         HANDLE_BINOP(ANDAND, logic_and_expression());
         return expr;
 }
 
-struct expr *inc_or_expression() {
+struct expr *inc_or_expression(void) {
         struct expr *expr = exc_or_expression();
         HANDLE_BINOP(OR, inc_or_expression());
         return expr;
 }
 
-struct expr *exc_or_expression() {
+struct expr *exc_or_expression(void) {
         struct expr *expr = and_expression();
         HANDLE_BINOP(XOR, exc_or_expression());
         return expr;
 }
 
-struct expr *and_expression() {
+struct expr *and_expression(void) {
         struct expr *expr = equality_expression();
         HANDLE_BINOP(AND, and_expression());
         return expr;
 }
 
-struct expr *equality_expression() {
+struct expr *equality_expression(void) {
         struct expr *expr = relational_expression();
         HANDLE_BINOP(EQ, equality_expression());
         HANDLE_BINOP(NEQ, equality_expression());
         return expr;
 }
 
-struct expr *relational_expression() {
+struct expr *relational_expression(void) {
         struct expr *expr = shift_expression();
         HANDLE_BINOP(LT, relational_expression());
         HANDLE_BINOP(GT, relational_expression());
@@ -570,28 +572,28 @@ struct expr *relational_expression() {
         return expr;
 }
 
-struct expr *shift_expression() {
+struct expr *shift_expression(void) {
         struct expr *expr = additive_expression();
         HANDLE_BINOP(LSHIFT, shift_expression());
         HANDLE_BINOP(RSHIFT, shift_expression());
         return expr;
 }
 
-struct expr *additive_expression() {
+struct expr *additive_expression(void) {
         struct expr *expr = multiplicative_expression();
         HANDLE_BINOP(ADD, additive_expression());
         HANDLE_BINOP(SUB, additive_expression());
         return expr;
-};
+}
 
-struct expr *multiplicative_expression() {
+struct expr *multiplicative_expression(void) {
         struct expr *expr = unary_expression();
         HANDLE_BINOP(MUL, multiplicative_expression());
         HANDLE_BINOP(DIV, multiplicative_expression());
         return expr;
-};
+}
 
-struct expr *unary_expression() {
+struct expr *unary_expression(void) {
         if (ct->kind == INCR) {
                 consume(INCR);
                 return new_expr(INCR, unary_expression(), NULL);
@@ -628,7 +630,7 @@ struct expr *unary_expression() {
 // 	    postfix-expression "--"                                             -- decrement
 // 	    "(" type-name ")" "{" initializer-list "}"                          -- compound literal
 // 	    "(" type-name ")" "{" initializer-list "," "}"                      -- compound literal
-struct expr *postfix_expression() {
+struct expr *postfix_expression(void) {
         if (ct->kind == OPAR) {
                 error("postfix_expression not implemented\n");
         }
@@ -665,7 +667,7 @@ struct expr *postfix_expression() {
         return prim_expr;
 }
 
-struct expr *primary_expression() {
+struct expr *primary_expression(void) {
         struct expr *expr = calloc(1, sizeof(struct expr));
         if (ct->kind == IDENT) {
                 expr->kind = IDENT;
@@ -716,12 +718,12 @@ struct expr *primary_expression() {
                 return expr;
         }
         return expr;
-};
+}
 
 // argument-expression-list ::=
 // 	    assignment-expression
 // 	    argument-expression-list "," assignment-expression
-struct expr *arg_expr_list() {
+struct expr *arg_expr_list(void) {
         if (ct->kind != CPAR) {
                 struct expr *arg_list = expr();
                 if (ct->kind == COMMA) {
@@ -758,7 +760,7 @@ struct ExtDecl *parse(struct Token *tokens) {
                 }
         }
         return head.next;
-};
+}
 
 // UTILS
 void copystr(char **dest, char **src, int len) {
@@ -767,7 +769,7 @@ void copystr(char **dest, char **src, int len) {
         }
         strncpy(*dest, *src, len);
         (*dest)[len] = '\0';
-};
+}
 
 // prints AST
 void printExtDecl(struct ExtDecl *extDecl, int level) {
@@ -847,7 +849,7 @@ void printExtDecl(struct ExtDecl *extDecl, int level) {
                 }
         }
         printExtDecl(extDecl->next, level);
-};
+}
 
 void printBlock(struct block *block, int level) {
         if (block == NULL) return;
@@ -860,7 +862,7 @@ void printBlock(struct block *block, int level) {
                 error("Empty block\n");
         }
         printBlock(block->next, level);
-};
+}
 
 void printStmt(struct stmt *stmt, int level) {
         if (stmt == NULL) return;
@@ -949,7 +951,7 @@ void printStmt(struct stmt *stmt, int level) {
                 }
                 default: error("Unknown statement kind\n");
         }
-};
+}
 
 void printExpr(struct expr *expr, int level) {
 #define PRINT_EXPR_NAME(name) \
@@ -1054,7 +1056,7 @@ void printExpr(struct expr *expr, int level) {
                 }
                 default: error("Unknown expression kind\n");
         }
-};
+}
 
 void printParams(struct params *params, int level) {
         if (params == NULL) return;
@@ -1065,7 +1067,7 @@ void printParams(struct params *params, int level) {
                 token_names[params->declspec->type],
                 params->decltor->name);
         printParams(params->next, level);
-};
+}
 
 void printInitializer(struct initializer *initializer, int level) {
         if (initializer == NULL) return;
@@ -1080,4 +1082,4 @@ void printInitializer(struct initializer *initializer, int level) {
                 initializer = initializer->next;
         }
         printInitializer(head->next, level);
-};
+}
