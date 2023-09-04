@@ -2,8 +2,10 @@
 
 #include "ganymede.h"
 
-static struct Token *ct;
-static int INDENT = 4;
+struct scope {
+        struct scope *next;
+        ht *vars;  // key: name, value: declspec
+};
 
 // either function or declaration
 struct ExtDecl {
@@ -139,6 +141,10 @@ struct stmt {
         struct block *body;
 };
 
+static struct Token *ct;
+static int INDENT = 4;
+static struct scope *scope = &(struct scope){};
+
 void copystr(char **dest, char **src, int len);
 void consume(enum Kind kind);
 struct ExtDecl *function(struct declspec **declspec, struct decltor **decltor);
@@ -172,6 +178,10 @@ struct expr *arg_expr_list(void);
 struct stmt *stmt(void);
 struct stmt *compound_stmt(void);
 struct initializer *initializer_list(void);
+void enter_scope(void);
+void leave_scope(void);
+void typecheck(struct declspec *declspec, struct expr *expr);
+bool is_type(enum Kind kind);
 
 void consume(enum Kind kind) {
         if (ct->kind != kind) {
@@ -179,6 +189,37 @@ void consume(enum Kind kind) {
         }
         ct = ct->next;
 }
+
+void enter_scope(void) {
+        struct scope *new_scope = calloc(1, sizeof(struct scope));
+        new_scope->next = scope;
+        new_scope->vars = ht_create();
+        scope = new_scope;
+}
+
+void leave_scope(void) {
+        struct scope *old_scope = scope;
+        scope = scope->next;
+        ht_destroy(old_scope->vars);
+        free(old_scope);
+}
+
+void typecheck(struct declspec *declspec, struct expr *expr) {
+        if (expr == NULL) {
+                return;
+        }
+        switch (expr->kind) {
+                case INT:
+                        if (declspec->type != INT) {
+                                error("Type mismatch\n");
+                        }
+                        break;
+                case ASSIGN: typecheck(declspec, expr->rhs); break;
+                default: error("Typecheck not implemented for %s\n", token_names[expr->kind]);
+        }
+}
+
+bool is_type(enum Kind kind) { return kind == INT || kind == FLOAT; }
 
 // function-definition ::=
 //      declarator compount-statement? ;
@@ -310,10 +351,15 @@ struct stmt *stmt(void) {
                 case OCBR:  // compound statement
                         return compound_stmt();
                 default:
-                stmt_expr : {
+                stmt_expr: {
                         // expression-statement
+                        char *name = calloc(ct->len, sizeof(char));
+                        strncpy(name, ct->start, ct->len);
+                        struct declspec *declspec = ht_get(scope->vars, name);
+
                         statement->kind = STMT_EXPR;
                         statement->value = expr();
+                        typecheck(declspec, statement->value);
                         consume(SEMIC);
                 }
         }
@@ -326,13 +372,27 @@ struct stmt *compound_stmt(void) {
         struct block head = {};
         struct block *cur = &head;
         if (ct->kind == OCBR) {
+                enter_scope();
                 consume(OCBR);
                 while (ct->kind != CCBR) {
                         // declaration or statement
                         cur = cur->next = calloc(1, sizeof(struct block));
-                        if (ct->kind == INT) {
+                        if (is_type(ct->kind)) {
                                 struct declspec *declspec = declaration_specifiers();
                                 struct decltor *decltor = declarator();
+
+                                // type checking
+                                struct declspec *prev_declspec = ht_get(scope->vars, decltor->name);
+                                if (prev_declspec != NULL) {
+                                        error("redefinition of '%s' with a different type: '%s' vs "
+                                              "'%s'\n",
+                                              decltor->name,
+                                              token_names[declspec->type],
+                                              token_names[prev_declspec->type]);
+                                } else {  // new variable
+                                        ht_set(scope->vars, decltor->name, declspec);
+                                }
+
                                 cur->decl = calloc(1, sizeof(struct ExtDecl));
                                 cur->decl = declaration(&declspec, &decltor);
                         } else {
@@ -340,6 +400,7 @@ struct stmt *compound_stmt(void) {
                         }
                 }
                 consume(CCBR);
+                leave_scope();
         }
         comp_stmt->body = head.next;
         return comp_stmt;

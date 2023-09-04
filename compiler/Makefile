@@ -1,5 +1,5 @@
 CC=clang-15
-CFLAGS=-Wall -Wpedantic
+CFLAGS=-g -fno-common -Wall -Wpedantic
 SRCS=$(wildcard *.c)
 OBJS=$(addprefix build/,$(notdir $(SRCS:.c=.o)))
 EXECUTABLE=build/ganymede
