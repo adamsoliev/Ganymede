@@ -18,9 +18,17 @@ FunctionDecl INT main
             FloatLiteral 1250.000000
         VariableDecl FLOAT a7
             FloatLiteral 1250.000000
+        VariableDecl DOUBLE a8
+            DoubleLiteral 1250.000000
+        VariableDecl DOUBLE a9
+            DoubleLiteral 1250.000000
         ExprStmt
             AssignExpr
                 Identifier a
                 FloatLiteral 32.939999
+        ExprStmt
+            AssignExpr
+                Identifier a9
+                DoubleLiteral 120.340000
         ReturnStmt
             IntegerLiteral 0

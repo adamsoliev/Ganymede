@@ -8,6 +8,9 @@ int main() {
         float a5 = 12500.e-01f;
         float a6 = 125000e-2f;
         float a7 = 1250.f;
+        double a8 = 1250.;
+        double a9 = 12500.e-01;
         a = 32.94f;
+        a9 = 120.34;
         return 0;
 }

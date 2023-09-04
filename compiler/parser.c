@@ -184,7 +184,7 @@ struct stmt *compound_stmt(void);
 struct initializer *initializer_list(void);
 void enter_scope(void);
 void leave_scope(void);
-void typecheck(char *name, struct declspec *declspec, struct expr *expr);
+bool typecheck(struct declspec *declspec, struct expr *expr);
 bool is_type(enum Kind kind);
 
 void consume(enum Kind kind) {
@@ -208,24 +208,22 @@ void leave_scope(void) {
         free(old_scope);
 }
 
-void typecheck(char *name, struct declspec *declspec, struct expr *expr) {
+bool typecheck(struct declspec *declspec, struct expr *expr) {
         if (expr == NULL) {
-                return;
+                return false;
         }
         switch (expr->kind) {
                 case INT:
                 case FLOAT:
                 case DOUBLE:
-                        if (declspec->type != expr->kind) {
-                                error("reassignment of '%s' with different type: '%s' vs '%s'\n",
-                                      name,
-                                      token_names[expr->kind],
-                                      token_names[declspec->type]);
-                        }
-                        break;
-                case ASSIGN: typecheck(name, declspec, expr->rhs); break;
+                        if (declspec->type != expr->kind)
+                                return false;
+                        else
+                                return true;
+                case ASSIGN: return typecheck(declspec, expr->rhs);
                 default: error("Typecheck not implemented for %s\n", token_names[expr->kind]);
         }
+        return false;
 }
 
 bool is_type(enum Kind kind) { return kind == INT || kind == FLOAT || kind == DOUBLE; }
@@ -365,10 +363,15 @@ struct stmt *stmt(void) {
                         char *name = calloc(ct->len, sizeof(char));
                         strncpy(name, ct->start, ct->len);
                         struct declspec *declspec = ht_get(scope->vars, name);
-
                         statement->kind = STMT_EXPR;
                         statement->value = expr();
-                        typecheck(name, declspec, statement->value);
+
+                        if (!typecheck(declspec, statement->value)) {
+                                error("redefinition of '%s' with a different type: '%s' vs '%s'\n",
+                                      name,
+                                      token_names[declspec->type],
+                                      token_names[statement->value->kind]);
+                        }
                         consume(SEMIC);
                 }
         }
@@ -435,6 +438,13 @@ struct ExtDecl *declaration(struct declspec **declspec, struct decltor **decltor
                                 consume(CCBR);
                         } else {
                                 cur->expr = expr();  // initializer
+
+                                if (!typecheck(*declspec, cur->expr)) {
+                                        error("type mismatch in '%s' declaration: '%s' vs '%s' \n",
+                                              (*decltor)->name,
+                                              token_names[(*declspec)->type],
+                                              token_names[cur->expr->kind]);
+                                }
                         }
                 }
                 if (ct->kind == COMMA) {
@@ -752,6 +762,12 @@ struct expr *primary_expression(void) {
                 consume(FLOATCONST);
                 return expr;
         }
+        if (ct->kind == DOUBLECONST) {
+                expr->kind = DOUBLE;
+                expr->dvalue = ct->dvalue;
+                consume(DOUBLECONST);
+                return expr;
+        }
         if (ct->kind == STRCONST) {
                 expr->kind = STRCONST;
                 copystr(&expr->strLit, &ct->start, ct->len);
@@ -1044,6 +1060,9 @@ void printExpr(struct expr *expr, int level) {
                         break;
                 case FLOAT:
                         fprintf(outfile, "%*sFloatLiteral %f\n", level * INDENT, "", expr->fvalue);
+                        break;
+                case DOUBLE:
+                        fprintf(outfile, "%*sDoubleLiteral %f\n", level * INDENT, "", expr->dvalue);
                         break;
                 case IDENT:
                         fprintf(outfile, "%*sIdentifier %s\n", level * INDENT, "", expr->strLit);
