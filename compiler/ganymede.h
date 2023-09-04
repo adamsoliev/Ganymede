@@ -118,7 +118,11 @@ struct Token {
         char* start;  // for IDENT
         int len;      // for IDENT
         struct Token* next;
-        int value;  // for INTCONST
+        union {
+                int ivalue;
+                float fvalue;
+                double dvalue;
+        };
 };
 
 extern char* token_names[];

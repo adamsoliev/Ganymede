@@ -363,14 +363,14 @@ struct Token *scan(char *cp) {
                         case 'X':
                         case 'Y':
                         case 'Z':
-                        id : {
+                        id: {
                                 char *start = rcp - 1;
                                 while (map[*rcp] & (DIGIT | LETTER)) rcp++;
                                 ck = new_token(IDENT, start, rcp - start);
                                 cp = rcp;
                                 goto next;
                         }
-                        next : {
+                        next: {
                                 cur = cur->next = ck;
                                 continue;
                         }
@@ -403,7 +403,7 @@ struct Token *scan(char *cp) {
                                         }
                                         if (*rcp == 'l' || *rcp == 'L') rcp++;
                                         ck = new_token(INTCONST, start, rcp - start);
-                                        ck->value = n;
+                                        ck->ivalue = n;
                                         cp = rcp;
                                         goto next;
                                 } else if (*start == '0') {
@@ -434,7 +434,7 @@ struct Token *scan(char *cp) {
                                         }
                                         if (*rcp == 'l' || *rcp == 'L') rcp++;
                                         ck = new_token(INTCONST, start, rcp - start);
-                                        ck->value = n;
+                                        ck->ivalue = n;
                                         cp = rcp;
                                         goto next;
                                 } else {
@@ -446,7 +446,7 @@ struct Token *scan(char *cp) {
                                         if (*rcp == '.' || *rcp == 'e' || *rcp == 'E') {
                                                 floatconst(&rcp);
                                                 ck = new_token(FLOATCONST, start, rcp - start);
-                                                ck->value = n;
+                                                ck->fvalue = strtof(start, NULL);
                                                 cp = rcp;
                                                 goto next;
                                         }
@@ -463,7 +463,7 @@ struct Token *scan(char *cp) {
                                                 rcp++;
                                         }
                                         ck = new_token(INTCONST, start, rcp - start);
-                                        ck->value = n;
+                                        ck->ivalue = n;
                                         cp = rcp;
                                         goto next;
                                 }
@@ -480,6 +480,7 @@ struct Token *scan(char *cp) {
                                         char *start = --rcp;
                                         floatconst(&rcp);
                                         ck = new_token(FLOATCONST, start, rcp - start);
+                                        ck->fvalue = strtof(start, NULL);
                                         cp = rcp;
                                         goto next;
                                 }
@@ -746,7 +747,7 @@ void floatconst(char **start) {
 void error(char *fmt, ...) {
         va_list args;
         va_start(args, fmt);
-        vprintf(fmt, args);
+        vfprintf(outfile, fmt, args);
         va_end(args);
         exit(1);
 }

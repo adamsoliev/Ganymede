@@ -75,7 +75,11 @@ struct initializer {
 
 struct expr {
         enum Kind kind;
-        int value;
+        union {
+                int ivalue;
+                float fvalue;
+                double dvalue;
+        };
         char *strLit;
 
         struct expr *lhs;
@@ -210,7 +214,9 @@ void typecheck(struct declspec *declspec, struct expr *expr) {
         }
         switch (expr->kind) {
                 case INT:
-                        if (declspec->type != INT) {
+                case FLOAT:
+                case DOUBLE:
+                        if (declspec->type != expr->kind) {
                                 error("Type mismatch\n");
                         }
                         break;
@@ -219,7 +225,7 @@ void typecheck(struct declspec *declspec, struct expr *expr) {
         }
 }
 
-bool is_type(enum Kind kind) { return kind == INT || kind == FLOAT; }
+bool is_type(enum Kind kind) { return kind == INT || kind == FLOAT || kind == DOUBLE; }
 
 // function-definition ::=
 //      declarator compount-statement? ;
@@ -452,7 +458,7 @@ struct initializer *initializer_list(void) {
                 } else if (ct->kind == INTCONST) {
                         cur = cur->next = calloc(1, sizeof(struct initializer));
                         cur->type = INT;
-                        cur->value.ivalue = ct->value;
+                        cur->value.ivalue = ct->ivalue;
                         consume(INTCONST);
                 } else {
                         error("Initializer list not implemented\n");
@@ -466,14 +472,9 @@ struct initializer *initializer_list(void) {
 
 struct declspec *declaration_specifiers(void) {
         struct declspec *declspec = calloc(1, sizeof(struct declspec));
-        if (ct->kind == INT) {
-                consume(INT);
-                declspec->type = INT;
-                return declspec;
-        }
-        if (ct->kind == FLOAT) {
-                consume(FLOAT);
-                declspec->type = FLOAT;
+        if (is_type(ct->kind)) {
+                declspec->type = ct->kind;
+                consume(ct->kind);
                 return declspec;
         }
         return declspec;
@@ -496,14 +497,14 @@ struct decltor *declarator(void) {
                         decltor->kind = DECLARATION;
                         consume(OBR);
                         if (ct->kind == INTCONST) {
-                                decltor->row = ct->value;
+                                decltor->row = ct->ivalue;
                                 consume(INTCONST);
                         }
                         if (ct->kind == CBR && ct->next->kind == OBR &&
                             ct->next->next->kind == INTCONST) {
                                 consume(CBR);
                                 consume(OBR);
-                                decltor->col = ct->value;
+                                decltor->col = ct->ivalue;
                                 consume(INTCONST);
                         }
                         consume(CBR);
@@ -738,8 +739,14 @@ struct expr *primary_expression(void) {
         }
         if (ct->kind == INTCONST) {
                 expr->kind = INT;
-                expr->value = ct->value;
+                expr->ivalue = ct->ivalue;
                 consume(INTCONST);
+                return expr;
+        }
+        if (ct->kind == FLOATCONST) {
+                expr->kind = FLOAT;
+                expr->fvalue = ct->fvalue;
+                consume(FLOATCONST);
                 return expr;
         }
         if (ct->kind == STRCONST) {
@@ -1026,7 +1033,14 @@ void printExpr(struct expr *expr, int level) {
         if (expr == NULL) return;
         switch (expr->kind) {
                 case INT:
-                        fprintf(outfile, "%*sIntegerLiteral %d\n", level * INDENT, "", expr->value);
+                        fprintf(outfile,
+                                "%*sIntegerLiteral %d\n",
+                                level * INDENT,
+                                "",
+                                expr->ivalue);
+                        break;
+                case FLOAT:
+                        fprintf(outfile, "%*sFloatLiteral %f\n", level * INDENT, "", expr->fvalue);
                         break;
                 case IDENT:
                         fprintf(outfile, "%*sIdentifier %s\n", level * INDENT, "", expr->strLit);

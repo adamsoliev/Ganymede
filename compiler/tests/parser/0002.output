@@ -1,0 +1,10 @@
+FunctionDecl INT main
+    CompoundStmt
+        VariableDecl FLOAT a
+            FloatLiteral 23.000000
+        ExprStmt
+            AssignExpr
+                Identifier a
+                FloatLiteral 32.750000
+        ReturnStmt
+            IntegerLiteral 0
