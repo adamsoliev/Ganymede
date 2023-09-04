@@ -184,7 +184,7 @@ struct stmt *compound_stmt(void);
 struct initializer *initializer_list(void);
 void enter_scope(void);
 void leave_scope(void);
-void typecheck(struct declspec *declspec, struct expr *expr);
+void typecheck(char *name, struct declspec *declspec, struct expr *expr);
 bool is_type(enum Kind kind);
 
 void consume(enum Kind kind) {
@@ -208,7 +208,7 @@ void leave_scope(void) {
         free(old_scope);
 }
 
-void typecheck(struct declspec *declspec, struct expr *expr) {
+void typecheck(char *name, struct declspec *declspec, struct expr *expr) {
         if (expr == NULL) {
                 return;
         }
@@ -217,10 +217,13 @@ void typecheck(struct declspec *declspec, struct expr *expr) {
                 case FLOAT:
                 case DOUBLE:
                         if (declspec->type != expr->kind) {
-                                error("Type mismatch\n");
+                                error("reassignment of '%s' with different type: '%s' vs '%s'\n",
+                                      name,
+                                      token_names[expr->kind],
+                                      token_names[declspec->type]);
                         }
                         break;
-                case ASSIGN: typecheck(declspec, expr->rhs); break;
+                case ASSIGN: typecheck(name, declspec, expr->rhs); break;
                 default: error("Typecheck not implemented for %s\n", token_names[expr->kind]);
         }
 }
@@ -365,7 +368,7 @@ struct stmt *stmt(void) {
 
                         statement->kind = STMT_EXPR;
                         statement->value = expr();
-                        typecheck(declspec, statement->value);
+                        typecheck(name, declspec, statement->value);
                         consume(SEMIC);
                 }
         }
