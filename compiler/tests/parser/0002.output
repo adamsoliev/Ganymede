@@ -1,1 +1,26 @@
-reassignment of 'a' with different type: 'INT' vs 'FLOAT'
+FunctionDecl INT main
+    CompoundStmt
+        VariableDecl FLOAT a
+            FloatLiteral 0.200000
+        VariableDecl FLOAT a0
+            FloatLiteral 1250.000000
+        VariableDecl FLOAT a1
+            FloatLiteral 1250.000000
+        VariableDecl FLOAT a2
+            FloatLiteral 1250.000000
+        VariableDecl FLOAT a3
+            FloatLiteral 1250.000000
+        VariableDecl FLOAT a4
+            FloatLiteral 1250.000000
+        VariableDecl FLOAT a5
+            FloatLiteral 1250.000000
+        VariableDecl FLOAT a6
+            FloatLiteral 1250.000000
+        VariableDecl FLOAT a7
+            FloatLiteral 1250.000000
+        ExprStmt
+            AssignExpr
+                Identifier a
+                FloatLiteral 32.939999
+        ReturnStmt
+            IntegerLiteral 0
