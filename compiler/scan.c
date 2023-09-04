@@ -4,23 +4,53 @@
 #include "ganymede.h"
 enum { BLANK = 01, NEWLINE = 02, LETTER = 04, DIGIT = 010, HEX = 020, OTHER = 040 };
 
-char *token_names[] = {
-        "LT",        "GT",           "LEQ",          "GEQ",       "LSHIFT",    "RSHIFT",
-        "DEREF",     "DECR",         "EQ",           "NEQ",       "ADD",       "SUB",
-        "MUL",       "DIV",          "MOD",          "ADDASSIGN", "SUBASSIGN", "MULASSIGN",
-        "DIVASSIGN", "MODASSIGN",    "OROR",         "ANDAND",    "INCR",      "EOI",
-        "IF",        "INT",          "OBR",          "CBR",       "OCBR",      "CCBR",
-        "OPAR",      "CPAR",         "SEMIC",        "COMMA",     "TILDA",     "AND",
-        "OR",        "XOR",          "NOT",          "ANDASSIGN", "ORASSIGN",  "XORASSIGN",
-        "NOTASSIGN", "STRGIZE",      "TKPASTE",      "ASSIGN",    "QMARK",     "IDENT",
-        "INTCONST",  "FLOATCONST",   "STRCONST",     "CHARCONST", "ELLIPSIS",  "AUTO",
-        "CASE",      "CHAR",         "CONST",        "CONTINUE",  "DEFAULT",   "DO",
-        "DOUBLE",    "ELSE",         "ENUM",         "EXTERN",    "FLOAT",     "FOR",
-        "GOTO",      "LONG",         "REGISTER",     "RETURN",    "SHORT",     "SIGNED",
-        "SIZEOF",    "STATIC",       "STRUCT",       "SWITCH",    "TYPEDEF",   "UNION",
-        "UNSIGNED",  "VOID",         "VOLATILE",     "WHILE",     "DOT",       "BREAK",
-        "COLON",     "RSHIFTASSIGN", "LSHIFTASSIGN", "INCLUDE",   "DEFINE",    "BACKSLASH",
-        "STMT_EXPR"};
+char *token_names[] = {"LT",           "GT",
+                       "LEQ",          "GEQ",
+                       "LSHIFT",       "RSHIFT",
+                       "DEREF",        "DECR",
+                       "EQ",           "NEQ",
+                       "ADD",          "SUB",
+                       "MUL",          "DIV",
+                       "MOD",          "ADDASSIGN",
+                       "SUBASSIGN",    "MULASSIGN",
+                       "DIVASSIGN",    "MODASSIGN",
+                       "OROR",         "ANDAND",
+                       "INCR",         "EOI",
+                       "IF",           "INT",
+                       "OBR",          "CBR",
+                       "OCBR",         "CCBR",
+                       "OPAR",         "CPAR",
+                       "SEMIC",        "COMMA",
+                       "TILDA",        "AND",
+                       "OR",           "XOR",
+                       "NOT",          "ANDASSIGN",
+                       "ORASSIGN",     "XORASSIGN",
+                       "NOTASSIGN",    "STRGIZE",
+                       "TKPASTE",      "ASSIGN",
+                       "QMARK",        "IDENT",
+                       "INTCONST",     "FLOATCONST",
+                       "STRCONST",     "CHARCONST",
+                       "ELLIPSIS",     "AUTO",
+                       "CASE",         "CHAR",
+                       "CONST",        "CONTINUE",
+                       "DEFAULT",      "DO",
+                       "DOUBLE",       "ELSE",
+                       "ENUM",         "EXTERN",
+                       "FLOAT",        "FOR",
+                       "GOTO",         "LONG",
+                       "REGISTER",     "RETURN",
+                       "SHORT",        "SIGNED",
+                       "SIZEOF",       "STATIC",
+                       "STRUCT",       "SWITCH",
+                       "TYPEDEF",      "UNION",
+                       "UNSIGNED",     "VOID",
+                       "VOLATILE",     "WHILE",
+                       "DOT",          "BREAK",
+                       "COLON",        "RSHIFTASSIGN",
+                       "LSHIFTASSIGN", "INCLUDE",
+                       "DEFINE",       "BACKSLASH",
+                       "STMT_EXPR",    "STMT_COMPOUND",
+                       "DOUBLECONST",  "LONGDOUBLECONST"};
 
 static unsigned char map[256] = {
         /* 000 nul */ 0,
@@ -168,7 +198,7 @@ void printTokens(struct Token *head, FILE *outfile);
 struct Token *scan(char *cp);
 
 static void printTokenKind(enum Kind kind, FILE *outfile);
-static void floatconst(char **rcp);
+static enum Kind floatconst(char **rcp);
 
 struct Token *scan(char *cp) {
 #define CHECK_PUNCTUATION(op, token, incr) \
@@ -444,9 +474,14 @@ struct Token *scan(char *cp) {
                                                 n = n * 10 + d;
                                         }
                                         if (*rcp == '.' || *rcp == 'e' || *rcp == 'E') {
-                                                floatconst(&rcp);
-                                                ck = new_token(FLOATCONST, start, rcp - start);
-                                                ck->fvalue = strtof(start, NULL);
+                                                enum Kind kind = floatconst(&rcp);
+                                                ck = new_token(kind, start, rcp - start);
+                                                if (kind == FLOATCONST)
+                                                        ck->fvalue = strtof(start, NULL);
+                                                else if (kind == DOUBLECONST)
+                                                        ck->dvalue = strtod(start, NULL);
+                                                else
+                                                        ck->ldvalue = strtold(start, NULL);
                                                 cp = rcp;
                                                 goto next;
                                         }
@@ -475,12 +510,18 @@ struct Token *scan(char *cp) {
                                         cp = rcp;
                                         goto next;
                                 }
-                                // HANDLEME: floating point
                                 if ((map[*rcp] & DIGIT)) {
                                         char *start = --rcp;
-                                        floatconst(&rcp);
-                                        ck = new_token(FLOATCONST, start, rcp - start);
-                                        ck->fvalue = strtof(start, NULL);
+
+                                        enum Kind kind = floatconst(&rcp);
+                                        ck = new_token(kind, start, rcp - start);
+                                        if (kind == FLOATCONST)
+                                                ck->fvalue = strtof(start, NULL);
+                                        else if (kind == DOUBLECONST)
+                                                ck->dvalue = strtod(start, NULL);
+                                        else
+                                                ck->ldvalue = strtold(start, NULL);
+
                                         cp = rcp;
                                         goto next;
                                 }
@@ -716,7 +757,8 @@ exit_loop:
         return head.next;
 }
 
-void floatconst(char **start) {
+// float, double and long double
+enum Kind floatconst(char **start) {
         if (**start == '.') {
                 do (*start)++;
                 while (map[**start] & DIGIT);
@@ -736,12 +778,13 @@ void floatconst(char **start) {
         }
         if (**start == 'f' || **start == 'F') {
                 ++(*start);
+                return FLOATCONST;
         } else if (**start == 'l' || **start == 'L') {
-                // long double
-                (*start)++;
-        }  // else {
-           // double type
-        // }
+                ++(*start);
+                return LONGDOUBLECONST;
+        } else {
+                return DOUBLECONST;
+        }
 }
 
 void error(char *fmt, ...) {

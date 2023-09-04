@@ -111,6 +111,8 @@ enum Kind {
         BACKSLASH,
         STMT_EXPR,  // different from other stmt types
         STMT_COMPOUND,
+        DOUBLECONST,
+        LONGDOUBLECONST,
 };
 
 struct Token {
@@ -122,6 +124,7 @@ struct Token {
                 int ivalue;
                 float fvalue;
                 double dvalue;
+                long double ldvalue;
         };
 };
 
