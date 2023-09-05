@@ -208,25 +208,25 @@ void leave_scope(void) {
         free(old_scope);
 }
 
-bool typecheck(struct declspec *declspec, struct expr *expr) {
+enum Kind eval_expr(struct expr *expr) {
         if (expr == NULL) {
-                return false;
+                return NONE;
         }
-        switch (expr->kind) {
-                case INT:
-                case FLOAT:
-                case DOUBLE:
-                        if (declspec->type != expr->kind)
-                                return false;
-                        else
-                                return true;
-                case ASSIGN: return typecheck(declspec, expr->rhs);
-                default: error("Typecheck not implemented for %s\n", token_names[expr->kind]);
-        }
-        return false;
+        if (is_type(expr->kind)) return expr->kind;
+        if (expr->kind == ASSIGN) return eval_expr(expr->rhs);
+        return NONE;
 }
 
-bool is_type(enum Kind kind) { return kind == INT || kind == FLOAT || kind == DOUBLE; }
+bool typecheck(struct declspec *declspec, struct expr *expr) {
+        if (declspec == NULL || expr == NULL) {
+                return false;
+        }
+        return eval_expr(expr) == declspec->type;
+}
+
+bool is_type(enum Kind kind) {
+        return kind == INT || kind == FLOAT || kind == DOUBLE || kind == CHAR;
+}
 
 // function-definition ::=
 //      declarator compount-statement? ;
@@ -367,10 +367,11 @@ struct stmt *stmt(void) {
                         statement->value = expr();
 
                         if (!typecheck(declspec, statement->value)) {
+                                enum Kind kind = eval_expr(statement->value);
                                 error("redefinition of '%s' with a different type: '%s' vs '%s'\n",
                                       name,
                                       token_names[declspec->type],
-                                      token_names[statement->value->kind]);
+                                      token_names[kind]);
                         }
                         consume(SEMIC);
                 }
@@ -775,7 +776,7 @@ struct expr *primary_expression(void) {
                 return expr;
         }
         if (ct->kind == CHARCONST) {
-                expr->kind = CHARCONST;
+                expr->kind = CHAR;
                 if (ct->len == 3) {
                         expr->strLit = &ct->start[0];
                 } else if (ct->len == 4) {
@@ -1063,6 +1064,9 @@ void printExpr(struct expr *expr, int level) {
                         break;
                 case DOUBLE:
                         fprintf(outfile, "%*sDoubleLiteral %f\n", level * INDENT, "", expr->dvalue);
+                        break;
+                case CHAR:
+                        fprintf(outfile, "%*sCharLiteral '%s'\n", level * INDENT, "", expr->strLit);
                         break;
                 case IDENT:
                         fprintf(outfile, "%*sIdentifier %s\n", level * INDENT, "", expr->strLit);

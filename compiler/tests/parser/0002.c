@@ -10,6 +10,8 @@ int main() {
         float a7 = 1250.f;
         double a8 = 1250.;
         double a9 = 12500.e-01;
+        char abc = '\n';
+        // abc = 1;
         a = 32.94f;
         a9 = 120.34;
         return 0;

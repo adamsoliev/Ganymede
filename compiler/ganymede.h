@@ -113,6 +113,7 @@ enum Kind {
         STMT_COMPOUND,
         DOUBLECONST,
         LONGDOUBLECONST,
+        NONE,  // for error handling
 };
 
 struct Token {

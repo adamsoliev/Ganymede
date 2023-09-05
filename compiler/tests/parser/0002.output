@@ -22,6 +22,8 @@ FunctionDecl INT main
             DoubleLiteral 1250.000000
         VariableDecl DOUBLE a9
             DoubleLiteral 1250.000000
+        VariableDecl CHAR abc
+            CharLiteral '\n'
         ExprStmt
             AssignExpr
                 Identifier a
