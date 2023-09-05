@@ -19,6 +19,7 @@ struct ExtDecl {
 
 struct declspec {
         enum Kind type;
+        int array[2];  // row, col
 };
 
 struct decltor {
@@ -184,6 +185,7 @@ struct stmt *compound_stmt(void);
 struct initializer *initializer_list(void);
 void enter_scope(void);
 void leave_scope(void);
+struct declspec eval_expr(struct expr *expr);
 bool typecheck(struct declspec *declspec, struct expr *expr);
 bool is_type(enum Kind kind);
 
@@ -208,20 +210,31 @@ void leave_scope(void) {
         free(old_scope);
 }
 
-enum Kind eval_expr(struct expr *expr) {
+struct declspec eval_expr(struct expr *expr) {
         if (expr == NULL) {
-                return NONE;
+                return (struct declspec){.type = NONE};
         }
-        if (is_type(expr->kind)) return expr->kind;
-        if (expr->kind == ASSIGN) return eval_expr(expr->rhs);
-        return NONE;
+        if (is_type(expr->kind)) return (struct declspec){.type = expr->kind};
+        if (expr->kind == ASSIGN) {
+                return eval_expr(expr->rhs);
+        }
+        if (expr->kind == STRCONST) {
+                return (struct declspec){.type = CHAR, .array = {strlen(expr->strLit), 0}};
+        }
+        return (struct declspec){.type = NONE};
 }
 
 bool typecheck(struct declspec *declspec, struct expr *expr) {
         if (declspec == NULL || expr == NULL) {
                 return false;
         }
-        return eval_expr(expr) == declspec->type;
+        // array types
+        if (declspec->array[0] > 0 || declspec->array[1] > 0) {
+                struct declspec ds = eval_expr(expr);
+                return ds.type == declspec->type && ds.array[0] <= declspec->array[0] &&
+                       ds.array[1] <= declspec->array[1];
+        }
+        return eval_expr(expr).type == declspec->type;
 }
 
 bool is_type(enum Kind kind) {
@@ -367,11 +380,11 @@ struct stmt *stmt(void) {
                         statement->value = expr();
 
                         if (!typecheck(declspec, statement->value)) {
-                                enum Kind kind = eval_expr(statement->value);
+                                struct declspec ds = eval_expr(statement->value);
                                 error("redefinition of '%s' with a different type: '%s' vs '%s'\n",
                                       name,
                                       token_names[declspec->type],
-                                      token_names[kind]);
+                                      token_names[ds.type]);
                         }
                         consume(SEMIC);
                 }
@@ -393,6 +406,11 @@ struct stmt *compound_stmt(void) {
                         if (is_type(ct->kind)) {
                                 struct declspec *declspec = declaration_specifiers();
                                 struct decltor *decltor = declarator();
+                                if (decltor->row > 0 || decltor->col > 0) {
+                                        // array declaration
+                                        declspec->array[0] = decltor->row;
+                                        declspec->array[1] = decltor->col;
+                                }
 
                                 // type checking
                                 struct declspec *prev_declspec = ht_get(scope->vars, decltor->name);
@@ -841,6 +859,11 @@ struct ExtDecl *parse(struct Token *tokens) {
         while (ct->kind != EOI) {
                 struct declspec *declspec = declaration_specifiers();
                 struct decltor *decltor = declarator();  // #1 declarator
+                if (decltor->row > 0 || decltor->col > 0) {
+                        // array declaration
+                        declspec->array[0] = decltor->row;
+                        declspec->array[1] = decltor->col;
+                }
                 if (decltor->kind == FUNCTION) {
                         cur = cur->next = function(&declspec, &decltor);
                 } else {

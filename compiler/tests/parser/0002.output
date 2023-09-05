@@ -24,6 +24,8 @@ FunctionDecl INT main
             DoubleLiteral 1250.000000
         VariableDecl CHAR abc
             CharLiteral '\n'
+        ArrayDecl CHAR str[10]
+            StringLiteral "hello"
         ExprStmt
             AssignExpr
                 Identifier a

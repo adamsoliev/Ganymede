@@ -11,7 +11,7 @@ int main() {
         double a8 = 1250.;
         double a9 = 12500.e-01;
         char abc = '\n';
-        // abc = 1;
+        char str[10] = "hello";
         a = 32.94f;
         a9 = 120.34;
         return 0;
