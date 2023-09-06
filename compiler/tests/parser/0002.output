@@ -302,5 +302,117 @@ FunctionDecl INT main
                     Identifier a
                     FuncCallExpr
                         Identifier b
+        IfStmt
+            RelatExpr EQ
+                Identifier aaa
+                FloatLiteral 23.900000
+            CompoundStmt
+                ExprStmt
+                    AssignExpr
+                        Identifier bbb
+                        IntegerLiteral 32
+        IfStmt
+            RelatExpr EQ
+                Identifier aa
+                IntegerLiteral 43
+            ExprStmt
+                AssignExpr
+                    Identifier bb
+                    IntegerLiteral 23
+        IfStmt
+            RelatExpr EQ
+                Identifier bbb
+                IntegerLiteral 23
+            CompoundStmt
+                ExprStmt
+                    AssignExpr
+                        Identifier aaa
+                        IntegerLiteral 32
+            CompoundStmt
+                ExprStmt
+                    AssignExpr
+                        Identifier aaa
+                        IntegerLiteral 0
+        IfStmt
+            RelatExpr EQ
+                Identifier aaa
+                IntegerLiteral 43
+            ExprStmt
+                AssignExpr
+                    Identifier bbb
+                    IntegerLiteral 23
+            ExprStmt
+                AssignExpr
+                    Identifier bbb
+                    IntegerLiteral 32
+        IfStmt
+            RelatExpr EQ
+                Identifier aaa
+                IntegerLiteral 103
+            CompoundStmt
+                ExprStmt
+                    AssignExpr
+                        Identifier bbb
+                        IntegerLiteral 423
+            IfStmt
+                RelatExpr EQ
+                    Identifier aaa
+                    IntegerLiteral 32
+                CompoundStmt
+                    ExprStmt
+                        AssignExpr
+                            Identifier bbb
+                            IntegerLiteral 392
+                CompoundStmt
+                    ExprStmt
+                        AssignExpr
+                            Identifier bbb
+                            IntegerLiteral 0
+        ForStmt
+            AssignExpr
+                Identifier aaa
+                IntegerLiteral 0
+            RelatExpr LT
+                Identifier aaa
+                IntegerLiteral 10
+            UnaryExpr INCR
+                Identifier aaa
+            CompoundStmt
+                ExprStmt
+                    AssignExpr
+                        Identifier aa
+                        ArithExpr ADD
+                            Identifier aa
+                            Identifier bbb
+                IfStmt
+                    RelatExpr EQ
+                        Identifier aa
+                        IntegerLiteral 23
+                    CompoundStmt
+                        ExprStmt
+                            AssignExpr
+                                Identifier bbb
+                                ArithExpr ADD
+                                    Identifier bbb
+                                    Identifier aa
+        ForStmt
+            VariableDecl INT i
+                IntegerLiteral 0
+            RelatExpr LT
+                Identifier i
+                IntegerLiteral 10
+            UnaryExpr INCR
+                Identifier i
+            CompoundStmt
+                ExprStmt
+                    AssignExpr
+                        Identifier aa
+                        ArithExpr ADD
+                            Identifier aa
+                            Identifier bbb
+                VariableDecl INT aa
+                    ArithExpr MUL
+                        IntegerLiteral 23
+                        Identifier bbb
         ReturnStmt
             IntegerLiteral 0

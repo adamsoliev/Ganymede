@@ -190,6 +190,7 @@ void leave_scope(void);
 struct declspec eval_expr(struct expr *expr);
 bool typecheck(struct declspec *declspec, struct expr *expr);
 bool is_type(enum Kind kind);
+struct declspec *find_var(char *name);
 
 void consume(enum Kind kind) {
         if (ct->kind != kind) {
@@ -220,6 +221,7 @@ struct declspec eval_expr(struct expr *expr) {
                 return eval_expr(expr->lhs);
         }
         if (is_type(expr->kind)) return (struct declspec){.type = expr->kind};
+        if (expr->kind == INTCONST) return (struct declspec){.type = INT};
         if (expr->kind == ASSIGN) {
                 return eval_expr(expr->rhs);
         }
@@ -269,13 +271,23 @@ struct declspec eval_expr(struct expr *expr) {
                 return (struct declspec){.type = expr->lhs->kind};
         }
         if (expr->kind == IDENT) {
-                struct declspec *ds = ht_get(scope->vars, expr->strLit);
+                struct declspec *ds = find_var(expr->strLit);
                 if (ds == NULL) {
                         error("'%s' undeclared\n", expr->strLit);
                 }
                 return *ds;
         }
         return (struct declspec){.type = NONE};
+}
+
+struct declspec *find_var(char *name) {
+        for (struct scope *cur = scope; cur != NULL; cur = cur->next) {
+                struct declspec *ds = ht_get(cur->vars, name);
+                if (ds != NULL) {
+                        return ds;
+                }
+        }
+        return NULL;
 }
 
 bool typecheck(struct declspec *declspec, struct expr *expr) {
