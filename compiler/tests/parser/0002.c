@@ -60,5 +60,7 @@ int main() {
         printf("normal char: %c\n", 'a');
         int aa = b == 23 ? 32 : 43;
         aa = b != 23 ? 32 : 43;
+        int aaa = ++b;
+        --aaa;
         return 0;
 }

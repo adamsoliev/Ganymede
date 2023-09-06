@@ -262,5 +262,11 @@ FunctionDecl INT main
                         IntegerLiteral 23
                     IntegerLiteral 32
                     IntegerLiteral 43
+        VariableDecl INT aaa
+            UnaryExpr INCR
+                Identifier b
+        ExprStmt
+            UnaryExpr DECR
+                Identifier aaa
         ReturnStmt
             IntegerLiteral 0

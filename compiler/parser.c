@@ -216,6 +216,9 @@ struct declspec eval_expr(struct expr *expr) {
         if (expr == NULL) {
                 return (struct declspec){.type = NONE};
         }
+        if (expr->kind == INCR || expr->kind == DECR) {
+                return eval_expr(expr->lhs);
+        }
         if (is_type(expr->kind)) return (struct declspec){.type = expr->kind};
         if (expr->kind == ASSIGN) {
                 return eval_expr(expr->rhs);
@@ -275,6 +278,11 @@ struct declspec eval_expr(struct expr *expr) {
 bool typecheck(struct declspec *declspec, struct expr *expr) {
         if (expr == NULL) {
                 return false;
+        }
+        // FIXME: opcheck for expressions (e.g., --c)?
+        if (declspec == NULL) {
+                eval_expr(expr);
+                return true;
         }
         // funcall
         if (expr->kind == OPAR) {
