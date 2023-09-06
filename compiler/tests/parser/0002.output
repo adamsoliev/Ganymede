@@ -1,0 +1,185 @@
+VariableDecl INT bb
+    ArithExpr ADD
+        IntegerLiteral 23
+        ArithExpr ADD
+            IntegerLiteral 32
+            ArithExpr SUB
+                IntegerLiteral 23
+                ArithExpr SUB
+                    IntegerLiteral 43
+                    IntegerLiteral 32
+VariableDecl INT bc
+    ArithExpr ADD
+        IntegerLiteral 82
+        ArithExpr SUB
+            ArithExpr MUL
+                IntegerLiteral 23
+                IntegerLiteral 32
+            ArithExpr DIV
+                IntegerLiteral 600
+                IntegerLiteral 20
+VariableDecl INT bd
+    ShiftExpr LSHIFT
+        IntegerLiteral 54
+        IntegerLiteral 2
+VariableDecl INT be
+    ShiftExpr RSHIFT
+        IntegerLiteral 24
+        IntegerLiteral 2
+VariableDecl INT bf
+    RelatExpr LT
+        IntegerLiteral 94
+        IntegerLiteral 2
+VariableDecl INT bg
+    RelatExpr GT
+        IntegerLiteral 74
+        IntegerLiteral 2
+VariableDecl INT bh
+    RelatExpr LEQ
+        IntegerLiteral 13
+        IntegerLiteral 2
+VariableDecl INT bi
+    RelatExpr GEQ
+        IntegerLiteral 94
+        IntegerLiteral 2
+VariableDecl INT bj
+    RelatExpr EQ
+        IntegerLiteral 51
+        IntegerLiteral 2
+VariableDecl INT bk
+    RelatExpr NEQ
+        IntegerLiteral 18
+        IntegerLiteral 2
+VariableDecl INT bl
+    BitExpr AND
+        IntegerLiteral 43
+        IntegerLiteral 2
+VariableDecl INT bm
+    BitExpr XOR
+        IntegerLiteral 93
+        IntegerLiteral 2
+VariableDecl INT bn
+    BitExpr OR
+        IntegerLiteral 34
+        IntegerLiteral 2
+VariableDecl INT bo
+    LogicExpr ANDAND
+        IntegerLiteral 32
+        IntegerLiteral 92
+VariableDecl INT bp
+    LogicExpr OROR
+        IntegerLiteral 32
+        IntegerLiteral 12
+VariableDecl INT bv
+    UnaryExpr SIZEOF
+        Identifier bb
+FunctionDecl INT sum0
+    CompoundStmt
+        ReturnStmt
+            IntegerLiteral 0
+FunctionDecl INT sum1
+    Params
+        INT a
+    CompoundStmt
+        ReturnStmt
+            Identifier a
+FunctionDecl INT sum2
+    Params
+        INT a
+        INT b
+    CompoundStmt
+        ReturnStmt
+            ArithExpr ADD
+                Identifier a
+                Identifier b
+FunctionDecl INT sum10
+    Params
+        INT a
+        INT b
+        INT c
+        INT d
+        INT e
+        INT f
+        INT g
+        INT h
+        INT i
+    CompoundStmt
+        ReturnStmt
+            ArithExpr ADD
+                Identifier a
+                ArithExpr ADD
+                    Identifier b
+                    ArithExpr ADD
+                        Identifier c
+                        ArithExpr ADD
+                            Identifier d
+                            ArithExpr ADD
+                                Identifier e
+                                ArithExpr ADD
+                                    Identifier f
+                                    ArithExpr ADD
+                                        Identifier g
+                                        ArithExpr ADD
+                                            Identifier h
+                                            Identifier i
+ArrayDecl INT a[4]
+    Initializer
+        1, 2, 3, 9
+ArrayDecl INT b[3][4]
+    Initializer
+        1, 2, 3, 4
+        5, 6, 7, 8
+        9, 0, 1, 2
+FunctionDecl INT main
+    CompoundStmt
+        VariableDecl FLOAT a
+            FloatLiteral 0.200000
+        VariableDecl FLOAT a0
+            FloatLiteral 1250.000000
+        VariableDecl FLOAT a1
+            FloatLiteral 1250.000000
+        VariableDecl FLOAT a2
+            FloatLiteral 1250.000000
+        VariableDecl FLOAT a3
+            FloatLiteral 1250.000000
+        VariableDecl FLOAT a4
+            FloatLiteral 1250.000000
+        VariableDecl FLOAT a5
+            FloatLiteral 1250.000000
+        VariableDecl FLOAT a6
+            FloatLiteral 1250.000000
+        VariableDecl FLOAT a7
+            FloatLiteral 1250.000000
+        VariableDecl DOUBLE a8
+            DoubleLiteral 1250.000000
+        VariableDecl DOUBLE a9
+            DoubleLiteral 1250.000000
+        VariableDecl CHAR abc
+            CharLiteral '\n'
+        ArrayDecl CHAR str[10]
+            StringLiteral "hello"
+        ExprStmt
+            AssignExpr
+                Identifier a
+                FloatLiteral 32.939999
+        ExprStmt
+            AssignExpr
+                Identifier a9
+                DoubleLiteral 120.340000
+        VariableDecl INT b
+            IntegerLiteral 42
+        VariableDecl INT* ptr
+            AddressExpr AND
+                Identifier b
+        VariableDecl INT** ptrPtr
+            AddressExpr AND
+                Identifier ptr
+        ArrayDecl INT array[5]
+            Initializer
+                1, 2, 3, 4, 5
+        ArrayDecl INT array1[5][4]
+            Initializer
+                1, 2, 3, 4
+                5, 6, 7, 8
+        ReturnStmt
+            IntegerLiteral 0
