@@ -1,4 +1,4 @@
-CC=clang-15
+CC=clang
 CFLAGS=-g -fno-common -Wall -Wpedantic
 SRCS=$(wildcard *.c)
 OBJS=$(addprefix build/,$(notdir $(SRCS:.c=.o)))
