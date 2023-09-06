@@ -62,5 +62,11 @@ int main() {
         aa = b != 23 ? 32 : 43;
         int aaa = ++b;
         --aaa;
+        ++aaa;
+        aaa++;
+        aaa--;
+        int bbb;
+        +bbb;
+        -bbb;
         return 0;
 }

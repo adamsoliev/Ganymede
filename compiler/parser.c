@@ -238,6 +238,9 @@ struct declspec eval_expr(struct expr *expr) {
         if (expr->kind == ADD || expr->kind == SUB || expr->kind == MUL || expr->kind == DIV) {
                 struct declspec lhs = eval_expr(expr->lhs);
                 struct declspec rhs = eval_expr(expr->rhs);
+                if (rhs.type == NONE) {
+                        return lhs;
+                }
                 assert(lhs.type == rhs.type && lhs.array[0] == rhs.array[0] &&
                        lhs.array[1] == rhs.array[1] && lhs.pointer == rhs.pointer);
                 return (struct declspec){.type = lhs.type};
@@ -769,6 +772,7 @@ struct expr *multiplicative_expression(void) {
         return expr;
 }
 
+// FIXME: prefix incr/decr should be different from postfix incr/decr
 struct expr *unary_expression(void) {
         if (ct->kind == INCR) {
                 consume(INCR);
@@ -782,6 +786,16 @@ struct expr *unary_expression(void) {
             ct->kind == TILDA || ct->kind == NOT) {
                 enum Kind kind = ct->kind;
                 consume(kind);
+                if (kind == SUB) {
+                        struct expr *lhs = new_expr(INT, NULL, NULL);
+                        lhs->ivalue = 0;
+                        return new_expr(SUB, lhs, unary_expression());
+                }
+                if (kind == ADD) {
+                        struct expr *lhs = new_expr(INT, NULL, NULL);
+                        lhs->ivalue = 0;
+                        return new_expr(ADD, lhs, unary_expression());
+                }
                 return new_expr(kind, unary_expression(), NULL);
         }
         if (ct->kind == SIZEOF) {

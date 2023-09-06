@@ -268,5 +268,23 @@ FunctionDecl INT main
         ExprStmt
             UnaryExpr DECR
                 Identifier aaa
+        ExprStmt
+            UnaryExpr INCR
+                Identifier aaa
+        ExprStmt
+            UnaryExpr INCR
+                Identifier aaa
+        ExprStmt
+            UnaryExpr DECR
+                Identifier aaa
+        VariableDecl INT bbb
+        ExprStmt
+            ArithExpr ADD
+                IntegerLiteral 0
+                Identifier bbb
+        ExprStmt
+            ArithExpr SUB
+                IntegerLiteral 0
+                Identifier bbb
         ReturnStmt
             IntegerLiteral 0
