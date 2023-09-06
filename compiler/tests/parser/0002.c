@@ -70,8 +70,6 @@ int main() {
         -bbb;
         !bbb;
         ~bbb;
-        // g.b
-        // g->a;
         printf();
         printf(a, b);
         if (aaa == 23.9f) {
@@ -108,10 +106,10 @@ int main() {
                 int aa = 23 * bbb;
         }
 
-        // while (aa > 10) {
-        //         bb >> 2;
-        //         aaa--;
-        // }
+        while (aa > 10) {
+                bb >> 2;
+                aaa--;
+        }
         //         while (aaa < 10) bbb--;
         //         while (aa > 10) {
         //                 for (int i = 0; i < 10; i++) {

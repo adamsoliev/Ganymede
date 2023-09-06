@@ -259,6 +259,11 @@ struct declspec eval_expr(struct expr *expr) {
                 return (struct declspec){.type = INT};
         }
         if (expr->kind == SIZEOF) {
+                // FIXME: if ident, check if it exists
+                struct declspec *ds = find_var(expr->lhs->strLit);
+                if (ds == NULL) {
+                        error("'%s' undeclared\n", expr->strLit);
+                }
                 return (struct declspec){.type = INT};
         }
         if (expr->kind == QMARK) {
@@ -956,6 +961,7 @@ struct ExtDecl *parse(struct Token *tokens) {
         ct = tokens;
         struct ExtDecl head = {};
         struct ExtDecl *cur = &head;
+        enter_scope(); // global scope
         while (ct->kind != EOI) {
                 struct declspec *declspec = declaration_specifiers();
                 struct decltor *decltor = declarator();  // #1 declarator
@@ -969,7 +975,9 @@ struct ExtDecl *parse(struct Token *tokens) {
                 } else {
                         cur = cur->next = declaration(&declspec, &decltor);
                 }
+                ht_set(scope->vars, decltor->name, declspec);
         }
+        leave_scope();
         return head.next;
 }
 

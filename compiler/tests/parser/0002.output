@@ -414,5 +414,17 @@ FunctionDecl INT main
                     ArithExpr MUL
                         IntegerLiteral 23
                         Identifier bbb
+        WhileStmt
+            RelatExpr GT
+                Identifier aa
+                IntegerLiteral 10
+            CompoundStmt
+                ExprStmt
+                    ShiftExpr RSHIFT
+                        Identifier bb
+                        IntegerLiteral 2
+                ExprStmt
+                    UnaryExpr DECR
+                        Identifier aaa
         ReturnStmt
             IntegerLiteral 0
