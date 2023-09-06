@@ -68,5 +68,11 @@ int main() {
         int bbb;
         +bbb;
         -bbb;
+        !bbb;
+        ~bbb;
+        // g.b
+        // g->a;
+        printf();
+        printf(a, b);
         return 0;
 }

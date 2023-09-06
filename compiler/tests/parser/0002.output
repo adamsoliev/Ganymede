@@ -286,5 +286,21 @@ FunctionDecl INT main
             ArithExpr SUB
                 IntegerLiteral 0
                 Identifier bbb
+        ExprStmt
+            UnaryExpr NOT
+                Identifier bbb
+        ExprStmt
+            UnaryExpr TILDA
+                Identifier bbb
+        ExprStmt
+            FuncCallExpr
+                Identifier printf
+        ExprStmt
+            FuncCallExpr
+                Identifier printf
+                FuncCallExpr
+                    Identifier a
+                    FuncCallExpr
+                        Identifier b
         ReturnStmt
             IntegerLiteral 0

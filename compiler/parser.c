@@ -216,7 +216,7 @@ struct declspec eval_expr(struct expr *expr) {
         if (expr == NULL) {
                 return (struct declspec){.type = NONE};
         }
-        if (expr->kind == INCR || expr->kind == DECR) {
+        if (expr->kind == INCR || expr->kind == DECR || expr->kind == NOT || expr->kind == TILDA) {
                 return eval_expr(expr->lhs);
         }
         if (is_type(expr->kind)) return (struct declspec){.type = expr->kind};
