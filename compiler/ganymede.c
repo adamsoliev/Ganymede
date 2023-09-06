@@ -127,11 +127,11 @@ int main(int argc, char **argv) {
                 }                                    \
         }
 
-        // SCANNING
         struct Token *tokens = scan(input);
         RUNTEST("scan", printTokens(tokens, outfile));
         struct ExtDecl *program = parse(tokens);
         RUNTEST("parse", printExtDecl(program, 0));
+        codegen(program);
 
         return 0;
 }

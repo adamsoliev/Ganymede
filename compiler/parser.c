@@ -2,94 +2,58 @@
 
 #include "ganymede.h"
 
-struct scope {
-        struct scope *next;
-        ht *vars;  // key: name, value: declspec
-};
+static struct Token *ct;
+static int INDENT = 4;
+static struct scope *scope = &(struct scope){};
 
-// either function or declaration
-struct ExtDecl {
-        struct ExtDecl *next;
-        struct declspec *declspec;
-        struct decltor *decltor;
-        struct expr *expr;         // for declaration
-        struct initializer *init;  // for array declaration
-        struct stmt *compStmt;     // for function
-};
+static void copystr(char **dest, char **src, int len);
+static void consume(enum Kind kind);
+static struct ExtDecl *function(struct declspec **declspec, struct decltor **decltor);
+static struct ExtDecl *declaration(struct declspec **declspec, struct decltor **decltor);
+static struct expr *expr(void);
+static struct declspec *declaration_specifiers(void);
+static struct decltor *declarator(void);
+static struct params *parameters(void);
+static void printBlock(struct block *block, int level);
+static void printStmt(struct stmt *stmt, int level);
+static void printExpr(struct expr *expr, int level);
+static void printParams(struct params *params, int level);
+static void printInitializer(struct initializer *initializer, int level);
+static struct expr *primary_expression(void);
+static struct expr *additive_expression(void);
+static struct expr *multiplicative_expression(void);
+static struct expr *shift_expression(void);
+static struct expr *relational_expression(void);
+static struct expr *equality_expression(void);
+static struct expr *equality_expression(void);
+static struct expr *and_expression(void);
+static struct expr *exc_or_expression(void);
+static struct expr *inc_or_expression(void);
+static struct expr *logic_and_expression(void);
+static struct expr *logic_or_expression(void);
+static struct expr *conditional_expression(void);
+static struct expr *unary_expression(void);
+static struct expr *assignment_expression(void);
+static struct expr *postfix_expression(void);
+static struct expr *arg_expr_list(void);
+static struct stmt *stmt(void);
+static struct stmt *compound_stmt(void);
+static struct initializer *initializer_list(void);
+static void enter_scope(void);
+static void leave_scope(void);
+static struct declspec eval_expr(struct expr *expr);
+static bool typecheck(struct declspec *declspec, struct expr *expr);
+static bool is_type(enum Kind kind);
+static struct declspec *find_var(char *name);
 
-struct declspec {
-        enum Kind type;
-        int array[2];  // row, col
-        int pointer;   // pointer
-};
+static void consume(enum Kind kind) {
+        if (ct->kind != kind) {
+                error("Expected %s, got %s", token_names[kind], token_names[ct->kind]);
+        }
+        ct = ct->next;
+}
 
-struct decltor {
-        //
-        char *name;
-        enum {
-                FUNCTION,
-                DECLARATION,
-        } kind;
-        struct params *params;  // function
-        int row;                // array
-        int col;                // array
-        int pointer;            //  0 - isn't pointer, 1 - is pointer, 2 - is pointer pointer
-};
-
-struct params {
-        struct params *next;
-        struct declspec *declspec;
-        struct decltor *decltor;
-};
-
-/*
-int array[4] = {1, 2, 3, 4}
-                   -------------               
-ExcDecl --init--> | INITIALIZER | --chilren--> 1 --> 2 --> 3 --> 4
-                   -------------               
-
-int array[3][4] = {{1, 2, 3, 4}, {5, 6, 7, 8}, {9, 10, 11, 12}}
-                   -------------                -------------
-ExcDecl --init--> | INITIALIZER | --chilren--> | INITIALIZER | --children--> 1 --> 2 --> 3 --> 4
-                   -------------                -------------
-                                                      |
-                                                     next
-                                                      |
-                                                      V
-                                                ------------- 
-                                               | INITIALIZER | --children--> 5 --> 6 --> 7 --> 8
-                                                ------------- 
-                                                      |
-                                                     next
-                                                      |
-                                                      V
-                                                ------------- 
-                                               | INITIALIZER | --children--> 9 --> 10 --> 11 --> 12
-                                                ------------- 
-*/
-struct initializer {
-        struct initializer *next;
-        struct initializer *children;
-        union {
-                int ivalue;
-        } value;
-        enum Kind type;
-};
-
-struct expr {
-        enum Kind kind;
-        union {
-                int ivalue;
-                float fvalue;
-                double dvalue;
-        };
-        char *strLit;
-
-        struct expr *lhs;
-        struct expr *rhs;
-};
-
-struct expr *new_expr(enum Kind kind, struct expr *lhs, struct expr *rhs) {
+static struct expr *new_expr(enum Kind kind, struct expr *lhs, struct expr *rhs) {
         struct expr *expr = calloc(1, sizeof(struct expr));
         expr->kind = kind;
         expr->lhs = lhs;
@@ -97,123 +61,21 @@ struct expr *new_expr(enum Kind kind, struct expr *lhs, struct expr *rhs) {
         return expr;
 }
 
-// statement or declaration
-struct block {
-        struct block *next;
-        struct ExtDecl *decl;
-        struct stmt *stmt;
-};
-
-/*
-label_stmt
-    ident ':' stmt                              | value then
-    'case' expr ':' stmt                        | cond then
-    'default' ':' stmt                          | then
-
-compound_stmt
-    '{' block '}'                               | body
-
-expression_stmt
-    expr ';'                                    | value 
-
-selection_stmt
-    'if' '(' expr ')' stmt                      | cond then
-    'if' '(' expr ')' stmt 'else' stmt          | cond then els
-    'switch' '(' expr ')' stmt                  | cond then
-
-iteration_stmt
-    'while' '(' expr ')' stmt                   | cond then
-    'do' stmt 'while' '(' expr ')' ';'          | then cond
-    'for' '(' expr ';' expr ';' expr ')' stmt   | init cond inc then
-    'for' '(' decl expr ';' expr ')' stmt       | init cond inc then
-
-jump_stmt
-    'goto' ident ';'                            | value
-    'continue' ';'                              | 
-    'break' ';'                                 | 
-    'return' expr ';'                           | value
-*/
-struct stmt {
-        enum Kind kind;
-        struct expr *cond;
-        struct stmt *then;
-        struct stmt *els;
-        union {
-                struct expr *expr;
-                struct ExtDecl *decl;
-        } init;
-        int init_kind;  // 0 for expr, 1 for decl
-        struct expr *inc;
-        struct expr *value;
-        struct block *body;
-};
-
-static struct Token *ct;
-static int INDENT = 4;
-static struct scope *scope = &(struct scope){};
-
-void copystr(char **dest, char **src, int len);
-void consume(enum Kind kind);
-struct ExtDecl *function(struct declspec **declspec, struct decltor **decltor);
-struct ExtDecl *declaration(struct declspec **declspec, struct decltor **decltor);
-struct expr *expr(void);
-struct declspec *declaration_specifiers(void);
-struct decltor *declarator(void);
-struct params *parameters(void);
-void printBlock(struct block *block, int level);
-void printStmt(struct stmt *stmt, int level);
-void printExpr(struct expr *expr, int level);
-void printParams(struct params *params, int level);
-void printInitializer(struct initializer *initializer, int level);
-struct expr *primary_expression(void);
-struct expr *additive_expression(void);
-struct expr *multiplicative_expression(void);
-struct expr *shift_expression(void);
-struct expr *relational_expression(void);
-struct expr *equality_expression(void);
-struct expr *equality_expression(void);
-struct expr *and_expression(void);
-struct expr *exc_or_expression(void);
-struct expr *inc_or_expression(void);
-struct expr *logic_and_expression(void);
-struct expr *logic_or_expression(void);
-struct expr *conditional_expression(void);
-struct expr *unary_expression(void);
-struct expr *assignment_expression(void);
-struct expr *postfix_expression(void);
-struct expr *arg_expr_list(void);
-struct stmt *stmt(void);
-struct stmt *compound_stmt(void);
-struct initializer *initializer_list(void);
-void enter_scope(void);
-void leave_scope(void);
-struct declspec eval_expr(struct expr *expr);
-bool typecheck(struct declspec *declspec, struct expr *expr);
-bool is_type(enum Kind kind);
-struct declspec *find_var(char *name);
-
-void consume(enum Kind kind) {
-        if (ct->kind != kind) {
-                error("Expected %s, got %s", token_names[kind], token_names[ct->kind]);
-        }
-        ct = ct->next;
-}
-
-void enter_scope(void) {
+static void enter_scope(void) {
         struct scope *new_scope = calloc(1, sizeof(struct scope));
         new_scope->next = scope;
         new_scope->vars = ht_create();
         scope = new_scope;
 }
 
-void leave_scope(void) {
+static void leave_scope(void) {
         struct scope *old_scope = scope;
         scope = scope->next;
         ht_destroy(old_scope->vars);
         free(old_scope);
 }
 
-struct declspec eval_expr(struct expr *expr) {
+static struct declspec eval_expr(struct expr *expr) {
         if (expr == NULL) {
                 return (struct declspec){.type = NONE};
         }
@@ -285,7 +147,7 @@ struct declspec eval_expr(struct expr *expr) {
         return (struct declspec){.type = NONE};
 }
 
-struct declspec *find_var(char *name) {
+static struct declspec *find_var(char *name) {
         for (struct scope *cur = scope; cur != NULL; cur = cur->next) {
                 struct declspec *ds = ht_get(cur->vars, name);
                 if (ds != NULL) {
@@ -295,7 +157,7 @@ struct declspec *find_var(char *name) {
         return NULL;
 }
 
-bool typecheck(struct declspec *declspec, struct expr *expr) {
+static bool typecheck(struct declspec *declspec, struct expr *expr) {
         if (expr == NULL) {
                 return false;
         }
@@ -322,13 +184,13 @@ bool typecheck(struct declspec *declspec, struct expr *expr) {
         return eval_expr(expr).type == declspec->type;
 }
 
-bool is_type(enum Kind kind) {
+static bool is_type(enum Kind kind) {
         return kind == INT || kind == FLOAT || kind == DOUBLE || kind == CHAR;
 }
 
 // function-definition ::=
 //      declarator compount-statement? ;
-struct ExtDecl *function(struct declspec **declspec, struct decltor **decltor) {
+static struct ExtDecl *function(struct declspec **declspec, struct decltor **decltor) {
         struct ExtDecl *func = calloc(1, sizeof(struct ExtDecl));
         func->declspec = *declspec;
         func->decltor = *decltor;
@@ -336,7 +198,7 @@ struct ExtDecl *function(struct declspec **declspec, struct decltor **decltor) {
         return func;
 }
 
-struct stmt *stmt(void) {
+static struct stmt *stmt(void) {
         struct stmt *statement = calloc(1, sizeof(struct stmt));
         switch (ct->kind) {
                 case IDENT:
@@ -477,7 +339,7 @@ struct stmt *stmt(void) {
         return statement;
 }
 
-struct stmt *compound_stmt(void) {
+static struct stmt *compound_stmt(void) {
         struct stmt *comp_stmt = calloc(1, sizeof(struct stmt));
         comp_stmt->kind = STMT_COMPOUND;
         struct block head = {};
@@ -524,7 +386,7 @@ struct stmt *compound_stmt(void) {
 
 // declaration ::=
 // 	    declspec decltor ("=" expr)? ("," decltor ("=" expr)?)* ";"
-struct ExtDecl *declaration(struct declspec **declspec, struct decltor **decltor) {
+static struct ExtDecl *declaration(struct declspec **declspec, struct decltor **decltor) {
         struct ExtDecl head = {};
         struct ExtDecl *cur = &head;
         cur = cur->next = calloc(1, sizeof(struct ExtDecl));
@@ -563,7 +425,7 @@ struct ExtDecl *declaration(struct declspec **declspec, struct decltor **decltor
         return head.next;
 }
 
-struct initializer *initializer_list(void) {
+static struct initializer *initializer_list(void) {
         struct initializer head = {};
         struct initializer *cur = &head;
         while (ct->kind != CCBR) {
@@ -588,7 +450,7 @@ struct initializer *initializer_list(void) {
         return head.next;
 }
 
-struct declspec *declaration_specifiers(void) {
+static struct declspec *declaration_specifiers(void) {
         struct declspec *declspec = calloc(1, sizeof(struct declspec));
         if (is_type(ct->kind)) {
                 declspec->type = ct->kind;
@@ -608,7 +470,7 @@ struct declspec *declaration_specifiers(void) {
 
 // declarator ::=
 // 	    pointer? (identifier or "(" declarator ")")
-struct decltor *declarator(void) {
+static struct decltor *declarator(void) {
         struct decltor *decltor = calloc(1, sizeof(struct decltor));
         if (ct->kind == MUL) {
                 consume(MUL);
@@ -651,7 +513,7 @@ struct decltor *declarator(void) {
         return decltor;
 }
 
-struct params *parameters(void) {
+static struct params *parameters(void) {
         if (ct->kind == CPAR) return NULL;
         struct params head = {};
         struct params *cur = &head;
@@ -674,7 +536,7 @@ struct params *parameters(void) {
         return head.next;
 }
 
-struct expr *expr(void) { return assignment_expression(); }
+static struct expr *expr(void) { return assignment_expression(); }
 
 #define HANDLE_BINOP(opEnum, func)                  \
         if (ct->kind == opEnum) {                   \
@@ -683,7 +545,7 @@ struct expr *expr(void) { return assignment_expression(); }
                 return new_expr(opEnum, expr, rhs); \
         }
 
-struct expr *assignment_expression(void) {
+static struct expr *assignment_expression(void) {
 #define HANDLE_OPASSIGN(opAssign, op)                                                     \
         if (ct->kind == opAssign) {                                                       \
                 consume(opAssign);                                                        \
@@ -710,7 +572,7 @@ struct expr *assignment_expression(void) {
         return cond_expr;
 }
 
-struct expr *conditional_expression(void) {
+static struct expr *conditional_expression(void) {
         struct expr *cond_expr = logic_or_expression();
         if (ct->kind == QMARK) {
                 consume(QMARK);
@@ -722,44 +584,44 @@ struct expr *conditional_expression(void) {
         return cond_expr;
 }
 
-struct expr *logic_or_expression(void) {
+static struct expr *logic_or_expression(void) {
         struct expr *expr = logic_and_expression();
         HANDLE_BINOP(OROR, logic_or_expression());
         return expr;
 }
 
-struct expr *logic_and_expression(void) {
+static struct expr *logic_and_expression(void) {
         struct expr *expr = inc_or_expression();
         HANDLE_BINOP(ANDAND, logic_and_expression());
         return expr;
 }
 
-struct expr *inc_or_expression(void) {
+static struct expr *inc_or_expression(void) {
         struct expr *expr = exc_or_expression();
         HANDLE_BINOP(OR, inc_or_expression());
         return expr;
 }
 
-struct expr *exc_or_expression(void) {
+static struct expr *exc_or_expression(void) {
         struct expr *expr = and_expression();
         HANDLE_BINOP(XOR, exc_or_expression());
         return expr;
 }
 
-struct expr *and_expression(void) {
+static struct expr *and_expression(void) {
         struct expr *expr = equality_expression();
         HANDLE_BINOP(AND, and_expression());
         return expr;
 }
 
-struct expr *equality_expression(void) {
+static struct expr *equality_expression(void) {
         struct expr *expr = relational_expression();
         HANDLE_BINOP(EQ, equality_expression());
         HANDLE_BINOP(NEQ, equality_expression());
         return expr;
 }
 
-struct expr *relational_expression(void) {
+static struct expr *relational_expression(void) {
         struct expr *expr = shift_expression();
         HANDLE_BINOP(LT, relational_expression());
         HANDLE_BINOP(GT, relational_expression());
@@ -768,21 +630,21 @@ struct expr *relational_expression(void) {
         return expr;
 }
 
-struct expr *shift_expression(void) {
+static struct expr *shift_expression(void) {
         struct expr *expr = additive_expression();
         HANDLE_BINOP(LSHIFT, shift_expression());
         HANDLE_BINOP(RSHIFT, shift_expression());
         return expr;
 }
 
-struct expr *additive_expression(void) {
+static struct expr *additive_expression(void) {
         struct expr *expr = multiplicative_expression();
         HANDLE_BINOP(ADD, additive_expression());
         HANDLE_BINOP(SUB, additive_expression());
         return expr;
 }
 
-struct expr *multiplicative_expression(void) {
+static struct expr *multiplicative_expression(void) {
         struct expr *expr = unary_expression();
         HANDLE_BINOP(MUL, multiplicative_expression());
         HANDLE_BINOP(DIV, multiplicative_expression());
@@ -790,7 +652,7 @@ struct expr *multiplicative_expression(void) {
 }
 
 // FIXME: prefix incr/decr should be different from postfix incr/decr
-struct expr *unary_expression(void) {
+static struct expr *unary_expression(void) {
         if (ct->kind == INCR) {
                 consume(INCR);
                 return new_expr(INCR, unary_expression(), NULL);
@@ -837,7 +699,7 @@ struct expr *unary_expression(void) {
 // 	    postfix-expression "--"                                             -- decrement
 // 	    "(" type-name ")" "{" initializer-list "}"                          -- compound literal
 // 	    "(" type-name ")" "{" initializer-list "," "}"                      -- compound literal
-struct expr *postfix_expression(void) {
+static struct expr *postfix_expression(void) {
         if (ct->kind == OPAR) {
                 error("postfix_expression not implemented\n");
         }
@@ -874,7 +736,7 @@ struct expr *postfix_expression(void) {
         return prim_expr;
 }
 
-struct expr *primary_expression(void) {
+static struct expr *primary_expression(void) {
         struct expr *expr = calloc(1, sizeof(struct expr));
         if (ct->kind == IDENT) {
                 expr->kind = IDENT;
@@ -942,7 +804,7 @@ struct expr *primary_expression(void) {
 // argument-expression-list ::=
 // 	    assignment-expression
 // 	    argument-expression-list "," assignment-expression
-struct expr *arg_expr_list(void) {
+static struct expr *arg_expr_list(void) {
         if (ct->kind != CPAR) {
                 struct expr *arg_list = expr();
                 if (ct->kind == COMMA) {
@@ -961,7 +823,7 @@ struct ExtDecl *parse(struct Token *tokens) {
         ct = tokens;
         struct ExtDecl head = {};
         struct ExtDecl *cur = &head;
-        enter_scope(); // global scope
+        enter_scope();  // global scope
         while (ct->kind != EOI) {
                 struct declspec *declspec = declaration_specifiers();
                 struct decltor *decltor = declarator();  // #1 declarator
@@ -982,7 +844,7 @@ struct ExtDecl *parse(struct Token *tokens) {
 }
 
 // UTILS
-void copystr(char **dest, char **src, int len) {
+static void copystr(char **dest, char **src, int len) {
         if (*dest == NULL) {
                 *dest = calloc(len, sizeof(char));
         }
@@ -1091,7 +953,7 @@ void printExtDecl(struct ExtDecl *extDecl, int level) {
         printExtDecl(extDecl->next, level);
 }
 
-void printBlock(struct block *block, int level) {
+static void printBlock(struct block *block, int level) {
         if (block == NULL) return;
         assert(block->stmt == NULL || block->decl == NULL);
         if (block->stmt != NULL) {
@@ -1104,7 +966,7 @@ void printBlock(struct block *block, int level) {
         printBlock(block->next, level);
 }
 
-void printStmt(struct stmt *stmt, int level) {
+static void printStmt(struct stmt *stmt, int level) {
         if (stmt == NULL) return;
         switch (stmt->kind) {
                 case IDENT: {
@@ -1193,7 +1055,7 @@ void printStmt(struct stmt *stmt, int level) {
         }
 }
 
-void printExpr(struct expr *expr, int level) {
+static void printExpr(struct expr *expr, int level) {
 #define PRINT_EXPR_NAME(name) \
         fprintf(outfile, "%*s" name " %s\n", level *INDENT, "", token_names[expr->kind]);
 
@@ -1315,7 +1177,7 @@ void printExpr(struct expr *expr, int level) {
         }
 }
 
-void printParams(struct params *params, int level) {
+static void printParams(struct params *params, int level) {
         if (params == NULL) return;
         fprintf(outfile,
                 "%*s%s %s\n",
@@ -1326,7 +1188,7 @@ void printParams(struct params *params, int level) {
         printParams(params->next, level);
 }
 
-void printInitializer(struct initializer *initializer, int level) {
+static void printInitializer(struct initializer *initializer, int level) {
         if (initializer == NULL) return;
         struct initializer *head = initializer;
         initializer = initializer->children;
