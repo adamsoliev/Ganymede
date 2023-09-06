@@ -119,21 +119,19 @@ int main(int argc, char **argv) {
                 outfile = stdout;
         }
 
+#define RUNTEST(name, printFunc)                     \
+        if (run_tests) {                             \
+                if (strcmp(test_suite, name) == 0) { \
+                        printFunc;                   \
+                        return 0;                    \
+                }                                    \
+        }
+
         // SCANNING
         struct Token *tokens = scan(input);
-        if (run_tests) {
-                if (strcmp(test_suite, "scan") == 0) {
-                        printTokens(tokens, outfile);
-                        return 0;
-                }
-        }
+        RUNTEST("scan", printTokens(tokens, outfile));
         struct ExtDecl *program = parse(tokens);
-        if (run_tests) {
-                if (strcmp(test_suite, "parse") == 0) {
-                        printExtDecl(program, 0);
-                        return 0;
-                }
-        }
+        RUNTEST("parse", printExtDecl(program, 0));
 
         return 0;
 }
