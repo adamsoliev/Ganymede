@@ -17,5 +17,7 @@ int main() {
         int b = 42;
         int *ptr = &b;
         int **ptrPtr = &ptr;
+        int array[5] = {1, 2, 3, 4, 5};
+        int array1[5][4] = {{1, 2, 3, 4}, {5, 6, 7, 8}};
         return 0;
 }
