@@ -224,8 +224,24 @@ struct declspec eval_expr(struct expr *expr) {
                 return (struct declspec){.type = CHAR, .array = {strlen(expr->strLit), 0}};
         }
         if (expr->kind == AND) {
-                struct declspec *ds = ht_get(scope->vars, expr->lhs->strLit);
-                return (struct declspec){.type = ds->type, .pointer = ds->pointer + 1};
+                if (expr->lhs != NULL && expr->rhs != NULL) {
+                        // FIXME: if arg(s) isn't rvalue, it should be declared before and have correct type
+                        return (struct declspec){.type = INT};
+                } else {
+                        struct declspec *ds = ht_get(scope->vars, expr->lhs->strLit);
+                        return (struct declspec){.type = ds->type, .pointer = ds->pointer + 1};
+                }
+        }
+        if (expr->kind == ADD || expr->kind == SUB || expr->kind == MUL || expr->kind == DIV) {
+                // FIXME: if arg(s) isn't rvalue, it should be declared before and have correct type
+                return (struct declspec){.type = expr->lhs->kind};
+        }
+        if (expr->kind == LSHIFT || expr->kind == RSHIFT || expr->kind == AND || expr->kind == OR ||
+            expr->kind == XOR || expr->kind == LT || expr->kind == GT || expr->kind == LEQ ||
+            expr->kind == GEQ || expr->kind == EQ || expr->kind == NEQ || expr->kind == ANDAND ||
+            expr->kind == OROR || expr->kind == MOD || expr->kind == SIZEOF) {
+                // FIXME: if arg(s) isn't rvalue, it should be declared before and have correct type
+                return (struct declspec){.type = INT};
         }
         return (struct declspec){.type = NONE};
 }
@@ -523,6 +539,14 @@ struct declspec *declaration_specifiers(void) {
         }
         return declspec;
 }
+
+// direct-declarator ::=
+// 	    "[" type-qualifier-list? assignment-expression? "]"
+// 	    "[" "static" type-qualifier-list? assignment-expression "]"
+// 	    "[" type-qualifier-list "static" assignment-expression "]"
+// 	    "[" type-qualifier-list? "*" "]"
+// 	    "(" parameter-type-list ")"
+// 	    "(" identifier-list? ")"
 
 // declarator ::=
 // 	    pointer? (identifier or "(" declarator ")")
@@ -861,14 +885,6 @@ struct expr *arg_expr_list(void) {
         }
         return NULL;
 }
-
-// direct-declarator ::=
-// 	    "[" type-qualifier-list? assignment-expression? "]"
-// 	    "[" "static" type-qualifier-list? assignment-expression "]"
-// 	    "[" type-qualifier-list "static" assignment-expression "]"
-// 	    "[" type-qualifier-list? "*" "]"
-// 	    "(" parameter-type-list ")"
-// 	    "(" identifier-list? ")"
 
 // function-definition
 // declaration

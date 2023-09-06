@@ -1,3 +1,33 @@
+int bb = 23 + 32 + 23 - 43 - 32;
+int bc = 82 + 23 * 32 - 600 / 20;
+int bd = 54 << 2;
+int be = 24 >> 2;
+int bf = 94 < 2;
+int bg = 74 > 2;
+int bh = 13 <= 2;
+int bi = 94 >= 2;
+int bj = 51 == 2;
+int bk = 18 != 2;
+int bl = 43 & 2;
+int bm = 93 ^ 2;
+int bn = 34 | 2;
+int bo = 32 && 92;
+int bp = 32 || 12;
+int bv = sizeof bb;
+
+int sum0() { return 0; }
+
+int sum1(int a) { return a; }
+
+int sum2(int a, int b) { return a + b; }
+
+int sum10(int a, int b, int c, int d, int e, int f, int g, int h, int i) {
+        return a + b + c + d + e + f + g + h + i;
+}
+
+int a[4] = {1, 2, 3, 9};
+int b[3][4] = {{1, 2, 3, 4}, {5, 6, 7, 8}, {9, 0, 1, 2}};
+
 int main() {
         float a = .2f;
         float a0 = .1250E+04f;
