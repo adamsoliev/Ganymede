@@ -14,5 +14,7 @@ int main() {
         char str[10] = "hello";
         a = 32.94f;
         a9 = 120.34;
+        int b = 42;
+        int *ptr = &b;
         return 0;
 }

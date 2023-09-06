@@ -20,6 +20,7 @@ struct ExtDecl {
 struct declspec {
         enum Kind type;
         int array[2];  // row, col
+        int pointer;   // pointer
 };
 
 struct decltor {
@@ -32,6 +33,7 @@ struct decltor {
         struct params *params;  // function
         int row;                // array
         int col;                // array
+        int pointer;            //  0 - isn't pointer, 1 - is pointer, 2 - is pointer pointer
 };
 
 struct params {
@@ -221,6 +223,10 @@ struct declspec eval_expr(struct expr *expr) {
         if (expr->kind == STRCONST) {
                 return (struct declspec){.type = CHAR, .array = {strlen(expr->strLit), 0}};
         }
+        if (expr->kind == AND) {
+                struct declspec *ds = ht_get(scope->vars, expr->lhs->strLit);
+                return (struct declspec){.type = ds->type, .pointer = 1};
+        }
         return (struct declspec){.type = NONE};
 }
 
@@ -233,6 +239,11 @@ bool typecheck(struct declspec *declspec, struct expr *expr) {
                 struct declspec ds = eval_expr(expr);
                 return ds.type == declspec->type && ds.array[0] <= declspec->array[0] &&
                        ds.array[1] <= declspec->array[1];
+        }
+        // pointer types
+        if (declspec->pointer > 0) {
+                struct declspec ds = eval_expr(expr);
+                return ds.type == declspec->type && ds.pointer == declspec->pointer;
         }
         return eval_expr(expr).type == declspec->type;
 }
@@ -406,11 +417,12 @@ struct stmt *compound_stmt(void) {
                         if (is_type(ct->kind)) {
                                 struct declspec *declspec = declaration_specifiers();
                                 struct decltor *decltor = declarator();
-                                if (decltor->row > 0 || decltor->col > 0) {
-                                        // array declaration
-                                        declspec->array[0] = decltor->row;
-                                        declspec->array[1] = decltor->col;
-                                }
+
+                                // if array declaration
+                                declspec->array[0] = decltor->row;
+                                declspec->array[1] = decltor->col;
+                                // if pointer declaration
+                                declspec->pointer = decltor->pointer;
 
                                 // type checking
                                 struct declspec *prev_declspec = ht_get(scope->vars, decltor->name);
@@ -458,10 +470,11 @@ struct ExtDecl *declaration(struct declspec **declspec, struct decltor **decltor
                                 cur->expr = expr();  // initializer
 
                                 if (!typecheck(*declspec, cur->expr)) {
+                                        struct declspec ds = eval_expr(cur->expr);
                                         error("type mismatch in '%s' declaration: '%s' vs '%s' \n",
                                               (*decltor)->name,
                                               token_names[(*declspec)->type],
-                                              token_names[cur->expr->kind]);
+                                              token_names[ds.type]);
                                 }
                         }
                 }
@@ -515,6 +528,14 @@ struct declspec *declaration_specifiers(void) {
 // 	    pointer? (identifier or "(" declarator ")")
 struct decltor *declarator(void) {
         struct decltor *decltor = calloc(1, sizeof(struct decltor));
+        if (ct->kind == MUL) {
+                consume(MUL);
+                decltor->pointer = 1;
+                if (ct->kind == MUL) {
+                        consume(MUL);
+                        decltor->pointer = 2;
+                }
+        }
         if (ct->kind == IDENT) {
                 copystr(&decltor->name, &ct->start, ct->len);
                 consume(IDENT);
@@ -1121,7 +1142,11 @@ void printExpr(struct expr *expr, int level) {
                 case AND:
                 case OR:
                 case XOR: {
-                        PRINT_EXPR_NAME("BitExpr");
+                        if (expr->kind == AND && expr->rhs == NULL) {
+                                PRINT_EXPR_NAME("AddressExpr");
+                        } else {
+                                PRINT_EXPR_NAME("BitExpr");
+                        }
                         PRINT_EXPR_LR();
                 }
                 case ANDAND:

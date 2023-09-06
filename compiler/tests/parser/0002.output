@@ -34,5 +34,10 @@ FunctionDecl INT main
             AssignExpr
                 Identifier a9
                 DoubleLiteral 120.340000
+        VariableDecl INT b
+            IntegerLiteral 42
+        VariableDecl INT ptr
+            AddressExpr AND
+                Identifier b
         ReturnStmt
             IntegerLiteral 0
