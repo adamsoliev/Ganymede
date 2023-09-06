@@ -420,12 +420,11 @@ struct stmt *compound_stmt(void) {
                                               decltor->name,
                                               token_names[declspec->type],
                                               token_names[prev_declspec->type]);
-                                } else {  // new variable
-                                        ht_set(scope->vars, decltor->name, declspec);
                                 }
-
                                 cur->decl = calloc(1, sizeof(struct ExtDecl));
                                 cur->decl = declaration(&declspec, &decltor);
+
+                                ht_set(scope->vars, decltor->name, declspec);
                         } else {
                                 cur->stmt = stmt();
                         }
