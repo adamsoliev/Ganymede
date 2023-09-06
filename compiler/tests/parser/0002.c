@@ -49,5 +49,14 @@ int main() {
         int **ptrPtr = &ptr;
         int array[5] = {1, 2, 3, 4, 5};
         int array1[5][4] = {{1, 2, 3, 4}, {5, 6, 7, 8}};
+        printf(bb, bc);
+        printf("a", b);
+        printf("squared: %d\n", a * a);
+        printf("escape char: %c\n", '\n');
+        printf("escape char: %c\n", '\\');
+        printf("escape char: %c\n", '\?');
+        printf("escape char: %c\n", '\'');
+        printf("escape char: %c\n", '\"');
+        printf("normal char: %c\n", 'a');
         return 0;
 }

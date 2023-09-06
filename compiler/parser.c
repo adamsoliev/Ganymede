@@ -247,8 +247,12 @@ struct declspec eval_expr(struct expr *expr) {
 }
 
 bool typecheck(struct declspec *declspec, struct expr *expr) {
-        if (declspec == NULL || expr == NULL) {
+        if (expr == NULL) {
                 return false;
+        }
+        // funcall
+        if (expr->kind == OPAR) {
+                return true;
         }
         // array types
         if (declspec->array[0] > 0 || declspec->array[1] > 0) {
@@ -840,7 +844,7 @@ struct expr *primary_expression(void) {
         if (ct->kind == CHARCONST) {
                 expr->kind = CHAR;
                 if (ct->len == 3) {
-                        expr->strLit = &ct->start[0];
+                        expr->strLit = strncpy(calloc(2, sizeof(char)), ct->start + 1, 1);
                 } else if (ct->len == 4) {
                         if (ct->start[1] == '\\') {
                                 switch (ct->start[2]) {
