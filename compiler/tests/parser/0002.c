@@ -110,53 +110,53 @@ int main() {
                 bb >> 2;
                 aaa--;
         }
-        //         while (aaa < 10) bbb--;
-        //         while (aa > 10) {
-        //                 for (int i = 0; i < 10; i++) {
-        //                         aa += bb;
-        //                         if (a == 23) {
-        //                                 aa += bbb;
-        //                         }
-        //                         int c = 23 * bbb;
-        //                 }
-        //                 aa >> 2;
-        //                 aaa--;
-        //         }
+        while (aaa < 10) bbb--;
+        while (aa > 10) {
+                for (int i = 0; i < 10; i++) {
+                        aa += bb;
+                        if (a == 23) {
+                                aa += bbb;
+                        }
+                        int c = 23 * bbb;
+                }
+                aa >> 2;
+                aaa--;
+        }
 
-        //         do {
-        //                 aa++;
-        //                 if (aaa == 43)
-        //                         bb = 23;
-        //                 else
-        //                         bb = 32;
-        //         } while (aaa < 10);
+        do {
+                aa++;
+                if (aaa == 43)
+                        bb = 23;
+                else
+                        bb = 32;
+        } while (aaa < 10);
 
-        //         do bb--;
-        //         while (bbb < 10);
+        do bb--;
+        while (bbb < 10);
 
-        //         switch (aaa) {
-        //                 case 23: {
-        //                         aa = 32;
-        //                         break;
-        //                 }
-        //                 case 43: {
-        //                         bb = 23;
-        //                         break;
-        //                 }
-        //                 default: {
-        //                         bbb = 0;
-        //                         break;
-        //                 }
-        //         }
+        switch (aaa) {
+                case 23: {
+                        aa = 32;
+                        break;
+                }
+                case 43: {
+                        bb = 23;
+                        break;
+                }
+                default: {
+                        bbb = 0;
+                        break;
+                }
+        }
 
-        //         for (int i = 0; i < 10; i++) {
-        //                 if (i == 3) continue;
-        //                 if (i == 5) break;
-        //                 if (i == 7) goto end_loop;
-        //         }
+        for (int i = 0; i < 10; i++) {
+                if (i == 3) continue;
+                if (i == 5) break;
+                if (i == 7) goto end_loop;
+        }
 
-        // end_loop:
-        //         return 23;
+end_loop:
+        return 23;
 
         return 0;
 }

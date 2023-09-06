@@ -426,5 +426,136 @@ FunctionDecl INT main
                 ExprStmt
                     UnaryExpr DECR
                         Identifier aaa
+        WhileStmt
+            RelatExpr LT
+                Identifier aaa
+                IntegerLiteral 10
+            ExprStmt
+                UnaryExpr DECR
+                    Identifier bbb
+        WhileStmt
+            RelatExpr GT
+                Identifier aa
+                IntegerLiteral 10
+            CompoundStmt
+                ForStmt
+                    VariableDecl INT i
+                        IntegerLiteral 0
+                    RelatExpr LT
+                        Identifier i
+                        IntegerLiteral 10
+                    UnaryExpr INCR
+                        Identifier i
+                    CompoundStmt
+                        ExprStmt
+                            AssignExpr
+                                Identifier aa
+                                ArithExpr ADD
+                                    Identifier aa
+                                    Identifier bb
+                        IfStmt
+                            RelatExpr EQ
+                                Identifier a
+                                IntegerLiteral 23
+                            CompoundStmt
+                                ExprStmt
+                                    AssignExpr
+                                        Identifier aa
+                                        ArithExpr ADD
+                                            Identifier aa
+                                            Identifier bbb
+                        VariableDecl INT c
+                            ArithExpr MUL
+                                IntegerLiteral 23
+                                Identifier bbb
+                ExprStmt
+                    ShiftExpr RSHIFT
+                        Identifier aa
+                        IntegerLiteral 2
+                ExprStmt
+                    UnaryExpr DECR
+                        Identifier aaa
+        DoStmt
+            CompoundStmt
+                ExprStmt
+                    UnaryExpr INCR
+                        Identifier aa
+                IfStmt
+                    RelatExpr EQ
+                        Identifier aaa
+                        IntegerLiteral 43
+                    ExprStmt
+                        AssignExpr
+                            Identifier bb
+                            IntegerLiteral 23
+                    ExprStmt
+                        AssignExpr
+                            Identifier bb
+                            IntegerLiteral 32
+            RelatExpr LT
+                Identifier aaa
+                IntegerLiteral 10
+        DoStmt
+            ExprStmt
+                UnaryExpr DECR
+                    Identifier bb
+            RelatExpr LT
+                Identifier bbb
+                IntegerLiteral 10
+        SwitchStmt
+            Identifier aaa
+            CompoundStmt
+                CaseStmt
+                    IntegerLiteral 23
+                    CompoundStmt
+                        ExprStmt
+                            AssignExpr
+                                Identifier aa
+                                IntegerLiteral 32
+                        BreakStmt
+                CaseStmt
+                    IntegerLiteral 43
+                    CompoundStmt
+                        ExprStmt
+                            AssignExpr
+                                Identifier bb
+                                IntegerLiteral 23
+                        BreakStmt
+                DefaultStmt
+                    CompoundStmt
+                        ExprStmt
+                            AssignExpr
+                                Identifier bbb
+                                IntegerLiteral 0
+                        BreakStmt
+        ForStmt
+            VariableDecl INT i
+                IntegerLiteral 0
+            RelatExpr LT
+                Identifier i
+                IntegerLiteral 10
+            UnaryExpr INCR
+                Identifier i
+            CompoundStmt
+                IfStmt
+                    RelatExpr EQ
+                        Identifier i
+                        IntegerLiteral 3
+                    ContinueStmt
+                IfStmt
+                    RelatExpr EQ
+                        Identifier i
+                        IntegerLiteral 5
+                    BreakStmt
+                IfStmt
+                    RelatExpr EQ
+                        Identifier i
+                        IntegerLiteral 7
+                    GotoStmt
+                        Identifier end_loop
+        LabelStmt
+            Identifier end_loop
+            ReturnStmt
+                IntegerLiteral 23
         ReturnStmt
             IntegerLiteral 0
