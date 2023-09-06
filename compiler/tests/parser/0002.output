@@ -36,8 +36,11 @@ FunctionDecl INT main
                 DoubleLiteral 120.340000
         VariableDecl INT b
             IntegerLiteral 42
-        VariableDecl INT ptr
+        VariableDecl INT* ptr
             AddressExpr AND
                 Identifier b
+        VariableDecl INT** ptrPtr
+            AddressExpr AND
+                Identifier ptr
         ReturnStmt
             IntegerLiteral 0

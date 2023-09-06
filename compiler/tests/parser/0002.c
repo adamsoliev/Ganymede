@@ -16,5 +16,6 @@ int main() {
         a9 = 120.34;
         int b = 42;
         int *ptr = &b;
+        int **ptrPtr = &ptr;
         return 0;
 }
