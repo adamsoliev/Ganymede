@@ -12,17 +12,17 @@ if [[ $exit_code -ne 0 ]]; then
 fi
 cd ../../
 
-# echo -e "\n-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*"
-# echo "             RUNNING PARSER TESTS               "
-# echo "-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*"
-# cd ./tests/parser # dump way to do this
-# python3 runner.py
-# exit_code=$?
-# if [[ $exit_code -ne 0 ]]; then
-#     echo "Script failed"
-#     exit 1
-# fi
-# cd ../../
+echo -e "\n-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*"
+echo "             RUNNING PARSER TESTS               "
+echo "-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*"
+cd ./tests/parser # dump way to do this
+python3 runner.py
+exit_code=$?
+if [[ $exit_code -ne 0 ]]; then
+    echo "Script failed"
+    exit 1
+fi
+cd ../../
 
 
 # echo "TESTSUITE #1 - ensure generated .s file is runnable and returns expected value"

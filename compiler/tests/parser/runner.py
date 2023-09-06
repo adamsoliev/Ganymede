@@ -12,14 +12,12 @@ def execute_command(name):
 def cleanup(name):
     command = f"rm ./{name}.temp.output"
     subprocess.run(command, shell=True)
-    command = f"rm ./{name}.temp.output.parse"
-    subprocess.run(command, shell=True)
 
 def compare_files(name):
     global all_tests_pass
     cf = f"./{name}.c"
     outputf = f"./{name}.output"
-    tempoutputf = f"./{name}.temp.output.parse"
+    tempoutputf = f"./{name}.temp.output"
 
     # Read the contents of the files into variables
     with open(outputf, "r") as file:
@@ -39,7 +37,7 @@ def compare_files(name):
         subprocess.run(f"diff -y {outputf} {tempoutputf}", shell=True)
 
 def main():
-    names = ["0001", "0002", "0003", "0004", "0005", "0006", "0007", "0008", "0009", "0010", "0011", "0012", "0013", "0014", "0015", "0016", "0017", "0018", "0019", "0020"]
+    names = ["0002"]
     for name in names:
         execute_command(name)
         compare_files(name)

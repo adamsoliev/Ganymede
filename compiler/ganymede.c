@@ -121,9 +121,19 @@ int main(int argc, char **argv) {
 
         // SCANNING
         struct Token *tokens = scan(input);
-        // printTokens(tokens, outfile);
+        if (run_tests) {
+                if (strcmp(test_suite, "scan") == 0) {
+                        printTokens(tokens, outfile);
+                        return 0;
+                }
+        }
         struct ExtDecl *program = parse(tokens);
-        printExtDecl(program, 0);
+        if (run_tests) {
+                if (strcmp(test_suite, "parse") == 0) {
+                        printExtDecl(program, 0);
+                        return 0;
+                }
+        }
 
         return 0;
 }
