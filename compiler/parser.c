@@ -233,15 +233,41 @@ struct declspec eval_expr(struct expr *expr) {
                 }
         }
         if (expr->kind == ADD || expr->kind == SUB || expr->kind == MUL || expr->kind == DIV) {
-                // FIXME: if arg(s) isn't rvalue, it should be declared before and have correct type
-                return (struct declspec){.type = expr->lhs->kind};
+                struct declspec lhs = eval_expr(expr->lhs);
+                struct declspec rhs = eval_expr(expr->rhs);
+                assert(lhs.type == rhs.type && lhs.array[0] == rhs.array[0] &&
+                       lhs.array[1] == rhs.array[1] && lhs.pointer == rhs.pointer);
+                return (struct declspec){.type = lhs.type};
         }
         if (expr->kind == LSHIFT || expr->kind == RSHIFT || expr->kind == AND || expr->kind == OR ||
             expr->kind == XOR || expr->kind == LT || expr->kind == GT || expr->kind == LEQ ||
             expr->kind == GEQ || expr->kind == EQ || expr->kind == NEQ || expr->kind == ANDAND ||
-            expr->kind == OROR || expr->kind == MOD || expr->kind == SIZEOF) {
-                // FIXME: if arg(s) isn't rvalue, it should be declared before and have correct type
+            expr->kind == OROR || expr->kind == MOD) {
+                // FIXME: bitwise operators deal with int only
+                struct declspec lhs = eval_expr(expr->lhs);
+                struct declspec rhs = eval_expr(expr->rhs);
+                assert(lhs.type == rhs.type && lhs.array[0] == rhs.array[0] &&
+                       lhs.array[1] == rhs.array[1] && lhs.pointer == rhs.pointer);
                 return (struct declspec){.type = INT};
+        }
+        if (expr->kind == SIZEOF) {
+                return (struct declspec){.type = INT};
+        }
+        if (expr->kind == QMARK) {
+                // conditional expression
+                assert(eval_expr(expr->lhs).type == INT);  // eq
+                return eval_expr(expr->rhs);               // colon
+        }
+        if (expr->kind == COLON) {
+                assert(expr->lhs->kind == expr->rhs->kind);
+                return (struct declspec){.type = expr->lhs->kind};
+        }
+        if (expr->kind == IDENT) {
+                struct declspec *ds = ht_get(scope->vars, expr->strLit);
+                if (ds == NULL) {
+                        error("'%s' undeclared\n", expr->strLit);
+                }
+                return *ds;
         }
         return (struct declspec){.type = NONE};
 }

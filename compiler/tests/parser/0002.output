@@ -246,5 +246,21 @@ FunctionDecl INT main
                     StringLiteral "normal char: %c\n"
                     FuncCallExpr
                         CharLiteral 'a'
+        VariableDecl INT aa
+            CondExpr
+                RelatExpr EQ
+                    Identifier b
+                    IntegerLiteral 23
+                IntegerLiteral 32
+                IntegerLiteral 43
+        ExprStmt
+            AssignExpr
+                Identifier aa
+                CondExpr
+                    RelatExpr NEQ
+                        Identifier b
+                        IntegerLiteral 23
+                    IntegerLiteral 32
+                    IntegerLiteral 43
         ReturnStmt
             IntegerLiteral 0

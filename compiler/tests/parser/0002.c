@@ -58,5 +58,7 @@ int main() {
         printf("escape char: %c\n", '\'');
         printf("escape char: %c\n", '\"');
         printf("normal char: %c\n", 'a');
+        int aa = b == 23 ? 32 : 43;
+        aa = b != 23 ? 32 : 43;
         return 0;
 }
