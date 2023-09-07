@@ -44,7 +44,7 @@ static void leave_scope(void);
 static struct declspec eval_expr(struct expr *expr);
 static bool typecheck(struct declspec *declspec, struct expr *expr);
 static bool is_type(enum Kind kind);
-static struct declspec *find_var(char *name);
+struct declspec *find_var(char *name);
 
 static void consume(enum Kind kind) {
         if (ct->kind != kind) {
@@ -53,7 +53,7 @@ static void consume(enum Kind kind) {
         ct = ct->next;
 }
 
-static struct expr *new_expr(enum Kind kind, struct expr *lhs, struct expr *rhs) {
+struct expr *new_expr(enum Kind kind, struct expr *lhs, struct expr *rhs) {
         struct expr *expr = calloc(1, sizeof(struct expr));
         expr->kind = kind;
         expr->lhs = lhs;
@@ -147,7 +147,7 @@ static struct declspec eval_expr(struct expr *expr) {
         return (struct declspec){.type = NONE};
 }
 
-static struct declspec *find_var(char *name) {
+struct declspec *find_var(char *name) {
         for (struct scope *cur = scope; cur != NULL; cur = cur->next) {
                 struct declspec *ds = ht_get(cur->vars, name);
                 if (ds != NULL) {

@@ -20,10 +20,28 @@ static char *nextr(void) {
 }
 
 struct expr *const_fold(struct expr *expression) {
+        // if (expression->kind == SIZEOF) {
+        //         if (expression->lhs->kind == IDENT) {
+        //                 struct declspec *decl = find_var(expression->lhs->strLit);
+        //                 assert(decl != NULL);
+        //                 assert(decl->type == INT);
+        //                 struct expr *expr = new_expr(INT, NULL, NULL);
+        //                 expr->ivalue = sizeof(int);
+        //                 return expr;
+        //         }
+        //         error("codegen: sizeof unimplemented");
+        // }
         if (expression->kind == ADD || expression->kind == SUB || expression->kind == MUL ||
-            expression->kind == DIV || expression->kind == RSHIFT || expression->kind == LSHIFT) {
+            expression->kind == DIV || expression->kind == RSHIFT || expression->kind == LSHIFT ||
+            expression->kind == LT || expression->kind == GT || expression->kind == LEQ ||
+            expression->kind == GEQ || expression->kind == EQ || expression->kind == NEQ ||
+            expression->kind == ANDAND || expression->kind == OROR || expression->kind == AND ||
+            expression->kind == OR || expression->kind == XOR) {
+                if (expression->kind == AND)
+                        assert(expression->lhs != NULL && expression->rhs != NULL);
                 struct expr *rhs = const_fold(expression->rhs);
                 struct expr *lhs = const_fold(expression->lhs);
+                assert(lhs->kind == rhs->kind);
                 if (lhs->kind == INT && rhs->kind == INT) {
                         int result = 0;
                         if (expression->kind == ADD)
@@ -38,6 +56,28 @@ struct expr *const_fold(struct expr *expression) {
                                 result = lhs->ivalue >> rhs->ivalue;
                         else if (expression->kind == LSHIFT)
                                 result = lhs->ivalue << rhs->ivalue;
+                        else if (expression->kind == LT)
+                                result = lhs->ivalue < rhs->ivalue;
+                        else if (expression->kind == GT)
+                                result = lhs->ivalue > rhs->ivalue;
+                        else if (expression->kind == LEQ)
+                                result = lhs->ivalue <= rhs->ivalue;
+                        else if (expression->kind == GEQ)
+                                result = lhs->ivalue >= rhs->ivalue;
+                        else if (expression->kind == EQ)
+                                result = lhs->ivalue == rhs->ivalue;
+                        else if (expression->kind == NEQ)
+                                result = lhs->ivalue != rhs->ivalue;
+                        else if (expression->kind == ANDAND)
+                                result = lhs->ivalue && rhs->ivalue;
+                        else if (expression->kind == OROR)
+                                result = lhs->ivalue || rhs->ivalue;
+                        else if (expression->kind == AND)
+                                result = lhs->ivalue & rhs->ivalue;
+                        else if (expression->kind == OR)
+                                result = lhs->ivalue | rhs->ivalue;
+                        else if (expression->kind == XOR)
+                                result = lhs->ivalue ^ rhs->ivalue;
                         else
                                 error("codegen: inner op unimplemented");
                         expression->kind = INT;
@@ -54,20 +94,6 @@ struct expr *const_fold(struct expr *expression) {
 
 char *expr(struct expr *expression) {
         expression = const_fold(expression);
-        if (expression->kind == ADD || expression->kind == SUB || expression->kind == MUL ||
-            expression->kind == DIV) {
-                char *lhs = expr(expression->lhs);
-                char *rhs = expr(expression->rhs);
-                if (expression->kind == ADD)
-                        fprintf(outfile, "  add     %s,%s,%s\n", lhs, lhs, rhs);
-                else if (expression->kind == SUB)
-                        fprintf(outfile, "  sub     %s,%s,%s\n", lhs, lhs, rhs);
-                else if (expression->kind == MUL)
-                        fprintf(outfile, "  mul     %s,%s,%s\n", lhs, lhs, rhs);
-                else
-                        fprintf(outfile, "  div     %s,%s,%s\n", lhs, lhs, rhs);
-                return lhs;
-        }
         if (expression->kind == INT) {
                 char *reg = nextr();
                 fprintf(outfile, "  li      %s,%d\n", reg, expression->ivalue);
