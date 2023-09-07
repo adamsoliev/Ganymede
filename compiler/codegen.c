@@ -129,8 +129,14 @@ char *expr(struct expr *expression) {
         return NULL;
 }
 
-static void decl(struct ExtDecl *decl) {
-        char *reg = expr(decl->expr);
+static void decl(struct ExtDecl *decl, bool isGlobal) {
+        if (isGlobal) {
+                struct expr *result = const_fold(decl->expr);
+                fprintf(outfile, "%s:\n", decl->decltor->name);
+                fprintf(outfile, "          .word   %d\n", result->ivalue);
+        } else {
+                char *reg = expr(decl->expr);
+        }
         return;
 }
 
@@ -140,7 +146,7 @@ static void stmt(struct stmt *statement) {
                         for (struct block *cur = statement->body; cur != NULL; cur = cur->next) {
                                 if (cur->decl != NULL) {
                                         ht_set(scope->vars, cur->decl->decltor->name, cur->decl);
-                                        decl(cur->decl);
+                                        decl(cur->decl, false);
                                 } else {
                                         stmt(cur->stmt);
                                 }
@@ -156,9 +162,7 @@ static void stmt(struct stmt *statement) {
 
 // function
 static void function(struct ExtDecl *func) {
-        enter_scope();
-
-        fprintf(outfile, "  .globl %s\n", func->decltor->name);
+        fprintf(outfile, "\n  .globl %s\n", func->decltor->name);
         fprintf(outfile, "%s:\n", func->decltor->name);
 
         // prologue
@@ -177,11 +181,19 @@ static void function(struct ExtDecl *func) {
         fprintf(outfile, "  ld      s0,8(sp)\n");
         fprintf(outfile, "  addi    sp,sp,16\n");
         fprintf(outfile, "  jr      ra\n");
-
-        leave_scope();
 }
 
 void codegen(struct ExtDecl *program) {
-        //
-        function(program);
+        enter_scope();
+        for (struct ExtDecl *cur = program; cur != NULL; cur = cur->next) {
+                if (cur->decltor->kind == DECLARATION) {
+                        decl(cur, true);
+                        ht_set(scope->vars, cur->decltor->name, cur);
+                } else if (cur->decltor->kind == FUNCTION) {
+                        function(cur);
+                        ht_set(scope->vars, cur->decltor->name, cur);
+                } else
+                        error("codegen: unimplemented\n");
+        }
+        leave_scope();
 }

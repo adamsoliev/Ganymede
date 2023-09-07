@@ -1,3 +1,36 @@
+bb:
+          .word   3
+bc:
+          .word   788
+bd:
+          .word   216
+be:
+          .word   6
+bf:
+          .word   0
+bg:
+          .word   1
+bh:
+          .word   0
+bi:
+          .word   1
+bj:
+          .word   0
+bk:
+          .word   1
+bl:
+          .word   2
+bm:
+          .word   95
+bn:
+          .word   34
+bo:
+          .word   1
+bp:
+          .word   1
+bv:
+          .word   4
+
   .globl main
 main:
   # prologue
@@ -5,22 +38,6 @@ main:
   sd      s0,8(sp)
   addi    s0,sp,16
   # body
-  li      r0,3
-  li      r1,788
-  li      r2,216
-  li      r3,6
-  li      r4,0
-  li      r5,1
-  li      r6,0
-  li      r7,1
-  li      r8,0
-  li      r9,1
-  li      r10,2
-  li      r11,95
-  li      r12,34
-  li      r13,1
-  li      r14,1
-  li      r15,4
   li      a5,0
   # epilogue
   mv      a0,a5
