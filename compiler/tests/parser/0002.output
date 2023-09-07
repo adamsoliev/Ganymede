@@ -1,23 +1,23 @@
 VariableDecl INT bb
-    ArithExpr ADD
-        IntegerLiteral 23
-        ArithExpr ADD
-            IntegerLiteral 32
-            ArithExpr SUB
-                IntegerLiteral 23
-                ArithExpr SUB
-                    IntegerLiteral 43
-                    IntegerLiteral 32
-VariableDecl INT bc
-    ArithExpr ADD
-        IntegerLiteral 82
+    ArithExpr SUB
         ArithExpr SUB
+            ArithExpr ADD
+                ArithExpr ADD
+                    IntegerLiteral 23
+                    IntegerLiteral 32
+                IntegerLiteral 23
+            IntegerLiteral 43
+        IntegerLiteral 32
+VariableDecl INT bc
+    ArithExpr SUB
+        ArithExpr ADD
+            IntegerLiteral 82
             ArithExpr MUL
                 IntegerLiteral 23
                 IntegerLiteral 32
-            ArithExpr DIV
-                IntegerLiteral 600
-                IntegerLiteral 20
+        ArithExpr DIV
+            IntegerLiteral 600
+            IntegerLiteral 20
 VariableDecl INT bd
     ShiftExpr LSHIFT
         IntegerLiteral 54
@@ -106,22 +106,22 @@ FunctionDecl INT sum10
     CompoundStmt
         ReturnStmt
             ArithExpr ADD
-                Identifier a
                 ArithExpr ADD
-                    Identifier b
                     ArithExpr ADD
-                        Identifier c
                         ArithExpr ADD
-                            Identifier d
                             ArithExpr ADD
-                                Identifier e
                                 ArithExpr ADD
-                                    Identifier f
                                     ArithExpr ADD
-                                        Identifier g
                                         ArithExpr ADD
-                                            Identifier h
-                                            Identifier i
+                                            Identifier a
+                                            Identifier b
+                                        Identifier c
+                                    Identifier d
+                                Identifier e
+                            Identifier f
+                        Identifier g
+                    Identifier h
+                Identifier i
 ArrayDecl INT a[4]
     Initializer
         1, 2, 3, 9

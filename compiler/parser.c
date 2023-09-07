@@ -542,21 +542,22 @@ static struct expr *expr(void) { return assignment_expression(); }
         if (ct->kind == opEnum) {                   \
                 consume(opEnum);                    \
                 struct expr *rhs = func;            \
-                return new_expr(opEnum, expr, rhs); \
+                expr = new_expr(opEnum, expr, rhs); \
+                continue;                           \
         }
 
 static struct expr *assignment_expression(void) {
 #define HANDLE_OPASSIGN(opAssign, op)                                                     \
         if (ct->kind == opAssign) {                                                       \
                 consume(opAssign);                                                        \
-                struct expr *assign_expr = assignment_expression();                       \
+                struct expr *assign_expr = conditional_expression();                      \
                 return new_expr(ASSIGN, cond_expr, new_expr(op, cond_expr, assign_expr)); \
         }
 
         struct expr *cond_expr = conditional_expression();
         if (ct->kind == ASSIGN) {
                 consume(ASSIGN);
-                struct expr *assign_expr = assignment_expression();
+                struct expr *assign_expr = conditional_expression();
                 return new_expr(ASSIGN, cond_expr, assign_expr);
         }
         HANDLE_OPASSIGN(MULASSIGN, MUL);
@@ -578,7 +579,7 @@ static struct expr *conditional_expression(void) {
                 consume(QMARK);
                 struct expr *true_expr = expr();
                 consume(COLON);
-                struct expr *false_expr = conditional_expression();
+                struct expr *false_expr = logic_or_expression();
                 return new_expr(QMARK, cond_expr, new_expr(COLON, true_expr, false_expr));
         }
         return cond_expr;
@@ -586,69 +587,89 @@ static struct expr *conditional_expression(void) {
 
 static struct expr *logic_or_expression(void) {
         struct expr *expr = logic_and_expression();
-        HANDLE_BINOP(OROR, logic_or_expression());
+        while (ct->kind == OROR) {
+                HANDLE_BINOP(OROR, logic_and_expression());
+        }
         return expr;
 }
 
 static struct expr *logic_and_expression(void) {
         struct expr *expr = inc_or_expression();
-        HANDLE_BINOP(ANDAND, logic_and_expression());
+        while (ct->kind == ANDAND) {
+                HANDLE_BINOP(ANDAND, inc_or_expression());
+        }
         return expr;
 }
 
 static struct expr *inc_or_expression(void) {
         struct expr *expr = exc_or_expression();
-        HANDLE_BINOP(OR, inc_or_expression());
+        while (ct->kind == OR) {
+                HANDLE_BINOP(OR, exc_or_expression());
+        }
         return expr;
 }
 
 static struct expr *exc_or_expression(void) {
         struct expr *expr = and_expression();
-        HANDLE_BINOP(XOR, exc_or_expression());
+        while (ct->kind == XOR) {
+                HANDLE_BINOP(XOR, and_expression());
+        }
         return expr;
 }
 
 static struct expr *and_expression(void) {
         struct expr *expr = equality_expression();
-        HANDLE_BINOP(AND, and_expression());
+        while (ct->kind == AND) {
+                HANDLE_BINOP(AND, equality_expression());
+        }
         return expr;
 }
 
 static struct expr *equality_expression(void) {
         struct expr *expr = relational_expression();
-        HANDLE_BINOP(EQ, equality_expression());
-        HANDLE_BINOP(NEQ, equality_expression());
-        return expr;
+        while (1) {
+                HANDLE_BINOP(EQ, relational_expression());
+                HANDLE_BINOP(NEQ, relational_expression());
+                return expr;
+        }
 }
 
 static struct expr *relational_expression(void) {
         struct expr *expr = shift_expression();
-        HANDLE_BINOP(LT, relational_expression());
-        HANDLE_BINOP(GT, relational_expression());
-        HANDLE_BINOP(LEQ, relational_expression());
-        HANDLE_BINOP(GEQ, relational_expression());
-        return expr;
+        while (1) {
+                HANDLE_BINOP(LT, shift_expression());
+                HANDLE_BINOP(GT, shift_expression());
+                HANDLE_BINOP(LEQ, shift_expression());
+                HANDLE_BINOP(GEQ, shift_expression());
+                return expr;
+        }
 }
 
 static struct expr *shift_expression(void) {
         struct expr *expr = additive_expression();
-        HANDLE_BINOP(LSHIFT, shift_expression());
-        HANDLE_BINOP(RSHIFT, shift_expression());
-        return expr;
+        while (1) {
+                HANDLE_BINOP(LSHIFT, additive_expression());
+                HANDLE_BINOP(RSHIFT, additive_expression());
+                return expr;
+        }
 }
 
 static struct expr *additive_expression(void) {
         struct expr *expr = multiplicative_expression();
-        HANDLE_BINOP(ADD, additive_expression());
-        HANDLE_BINOP(SUB, additive_expression());
-        return expr;
+        while (1) {
+                HANDLE_BINOP(ADD, multiplicative_expression());
+                HANDLE_BINOP(SUB, multiplicative_expression());
+                return expr;
+        }
 }
 
 static struct expr *multiplicative_expression(void) {
         struct expr *expr = unary_expression();
-        HANDLE_BINOP(MUL, multiplicative_expression());
-        HANDLE_BINOP(DIV, multiplicative_expression());
-        return expr;
+        while (1) {
+                HANDLE_BINOP(MUL, unary_expression());
+                HANDLE_BINOP(DIV, unary_expression());
+                return expr;
+        }
 }
 
 // FIXME: prefix incr/decr should be different from postfix incr/decr
