@@ -1,5 +1,8 @@
 #include "ganymede.h"
 
+// will hold ht, where (name *, ExtDecl *)
+static struct scope *scope = &(struct scope){};
+
 // -------------- ASSUME UNLIMITED REGISTERS
 static char *nextr(void) {
         static int regCount = 0;
@@ -19,18 +22,42 @@ static char *nextr(void) {
         return reg;
 }
 
+void enter_scope(void) {
+        struct scope *new_scope = calloc(1, sizeof(struct scope));
+        new_scope->next = scope;
+        new_scope->vars = ht_create();
+        scope = new_scope;
+}
+
+void leave_scope(void) {
+        struct scope *old_scope = scope;
+        scope = scope->next;
+        ht_destroy(old_scope->vars);
+        free(old_scope);
+}
+
+struct ExtDecl *find_var(char *name) {
+        for (struct scope *cur = scope; cur != NULL; cur = cur->next) {
+                struct ExtDecl *extDecl = ht_get(cur->vars, name);
+                if (extDecl != NULL) {
+                        return extDecl;
+                }
+        }
+        return NULL;
+}
+
 struct expr *const_fold(struct expr *expression) {
-        // if (expression->kind == SIZEOF) {
-        //         if (expression->lhs->kind == IDENT) {
-        //                 struct declspec *decl = find_var(expression->lhs->strLit);
-        //                 assert(decl != NULL);
-        //                 assert(decl->type == INT);
-        //                 struct expr *expr = new_expr(INT, NULL, NULL);
-        //                 expr->ivalue = sizeof(int);
-        //                 return expr;
-        //         }
-        //         error("codegen: sizeof unimplemented");
-        // }
+        if (expression->kind == SIZEOF) {
+                if (expression->lhs->kind == IDENT) {
+                        struct ExtDecl *extDecl = find_var(expression->lhs->strLit);
+                        assert(extDecl != NULL && extDecl->declspec != NULL);
+                        assert(extDecl->declspec->type == INT);
+                        struct expr *expr = new_expr(INT, NULL, NULL);
+                        expr->ivalue = sizeof(int);
+                        return expr;
+                }
+                error("codegen: sizeof unimplemented");
+        }
         if (expression->kind == ADD || expression->kind == SUB || expression->kind == MUL ||
             expression->kind == DIV || expression->kind == RSHIFT || expression->kind == LSHIFT ||
             expression->kind == LT || expression->kind == GT || expression->kind == LEQ ||
@@ -112,6 +139,7 @@ static void stmt(struct stmt *statement) {
                 case STMT_COMPOUND:
                         for (struct block *cur = statement->body; cur != NULL; cur = cur->next) {
                                 if (cur->decl != NULL) {
+                                        ht_set(scope->vars, cur->decl->decltor->name, cur->decl);
                                         decl(cur->decl);
                                 } else {
                                         stmt(cur->stmt);
@@ -128,6 +156,8 @@ static void stmt(struct stmt *statement) {
 
 // function
 static void function(struct ExtDecl *func) {
+        enter_scope();
+
         fprintf(outfile, "  .globl %s\n", func->decltor->name);
         fprintf(outfile, "%s:\n", func->decltor->name);
 
@@ -147,6 +177,8 @@ static void function(struct ExtDecl *func) {
         fprintf(outfile, "  ld      s0,8(sp)\n");
         fprintf(outfile, "  addi    sp,sp,16\n");
         fprintf(outfile, "  jr      ra\n");
+
+        leave_scope();
 }
 
 void codegen(struct ExtDecl *program) {

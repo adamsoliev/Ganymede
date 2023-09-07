@@ -14,6 +14,6 @@ int main() {
         int bn = 34 | 2;
         int bo = 32 && 92;
         int bp = 32 || 12;
-        // int bv = sizeof bb;
+        int bv = sizeof bb;
         return 0;
 }

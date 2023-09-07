@@ -139,7 +139,6 @@ struct Token *scan(char *stream);
 // parser
 struct ExtDecl *parse(struct Token *tokens);
 void printExtDecl(struct ExtDecl *extDecl, int level);
-struct declspec *find_var(char *name);
 struct expr *new_expr(enum Kind kind, struct expr *lhs, struct expr *rhs);
 
 struct scope {
