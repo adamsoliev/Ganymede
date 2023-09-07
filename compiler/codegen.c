@@ -1,3 +1,5 @@
+#pragma clang diagnostic ignored "-Wgnu-empty-initializer"
+
 #include "ganymede.h"
 
 // will hold ht, where (name *, ExtDecl *)
@@ -112,7 +114,7 @@ struct expr *const_fold(struct expr *expression) {
                         return expression;
                 }
                 error("codegen: type unimplemented");
-        } else if (expression->kind == INT) {
+        } else if (expression->kind == INT || expression->kind == CHAR) {
                 return expression;
         }
         error("codegen: outer op unimplemented");
@@ -124,6 +126,42 @@ char *expr(struct expr *expression) {
         if (expression->kind == INT) {
                 char *reg = nextr();
                 fprintf(outfile, "  li      %s,%d\n", reg, expression->ivalue);
+                return reg;
+        }
+        if (expression->kind == CHAR) {
+                char *reg = nextr();
+                int cval = 0;
+                if (expression->strLit[0] == '\\') {
+                        if (expression->strLit[1] == 'n')
+                                cval = '\n' - '\0';
+                        else if (expression->strLit[1] == 't')
+                                cval = '\t' - '\0';
+                        else if (expression->strLit[1] == 'v')
+                                cval = '\v' - '\0';
+                        else if (expression->strLit[1] == 'b')
+                                cval = '\b' - '\0';
+                        else if (expression->strLit[1] == 'r')
+                                cval = '\r' - '\0';
+                        else if (expression->strLit[1] == 'f')
+                                cval = '\f' - '\0';
+                        else if (expression->strLit[1] == 'a')
+                                cval = '\a' - '\0';
+                        else if (expression->strLit[1] == '0')
+                                cval = '\0' - '\0';
+                        else if (expression->strLit[1] == '\\')
+                                cval = '\\' - '\0';
+                        else if (expression->strLit[1] == '\'')
+                                cval = '\'' - '\0';
+                        else if (expression->strLit[1] == '\"')
+                                cval = '\"' - '\0';
+                        else if (expression->strLit[1] == '\?')
+                                cval = '\?' - '\0';
+                        else
+                                error("codegen: escape char unimplemented");
+                } else {
+                        cval = expression->strLit[0] - '\0';
+                }
+                fprintf(outfile, "  li      %s,%d\n", reg, cval);
                 return reg;
         }
         return NULL;
@@ -162,8 +200,8 @@ static void stmt(struct stmt *statement) {
 
 // function
 static void function(struct ExtDecl *func) {
-        fprintf(outfile, "\n  .globl %s\n", func->decltor->name);
-        fprintf(outfile, "%s:\n", func->decltor->name);
+        // fprintf(outfile, "\n  .globl %s\n", func->decltor->name);
+        fprintf(outfile, "\n%s:\n", func->decltor->name);
 
         // prologue
         fprintf(outfile, "  # prologue\n");

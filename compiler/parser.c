@@ -804,6 +804,7 @@ static struct expr *primary_expression(void) {
                                         case 'f': expr->strLit = "\\f"; break;
                                         case 'b': expr->strLit = "\\b"; break;
                                         case 'a': expr->strLit = "\\a"; break;
+                                        case '0': expr->strLit = "\\0"; break;
                                         case '\\': expr->strLit = "\\\\"; break;
                                         case '?': expr->strLit = "\\?"; break;
                                         case '\'': expr->strLit = "\\'"; break;
