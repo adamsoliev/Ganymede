@@ -1,11 +1,16 @@
   .globl main
 main:
+  # prologue
   addi    sp,sp,-16
   sd      s0,8(sp)
   addi    s0,sp,16
-  li      r0,67
+  # body
+  li      r0,3
   li      r1,788
+  li      r2,216
+  li      r3,6
   li      a5,0
+  # epilogue
   mv      a0,a5
   ld      s0,8(sp)
   addi    sp,sp,16

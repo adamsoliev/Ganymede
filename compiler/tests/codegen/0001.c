@@ -1,8 +1,8 @@
 int main() {
         int bb = 23 + 32 + 23 - 43 - 32;
         int bc = 82 + 23 * 32 - 600 / 20;
-        // int bd = 54 << 2;
-        // int be = 24 >> 2;
+        int bd = 54 << 2;
+        int be = 24 >> 2;
         // int bf = 94 < 2;
         // int bg = 74 > 2;
         // int bh = 13 <= 2;

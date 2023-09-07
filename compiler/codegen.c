@@ -21,31 +21,39 @@ static char *nextr(void) {
 
 struct expr *const_fold(struct expr *expression) {
         if (expression->kind == ADD || expression->kind == SUB || expression->kind == MUL ||
-            expression->kind == DIV) {
-                struct expr *lhs = const_fold(expression->lhs);
+            expression->kind == DIV || expression->kind == RSHIFT || expression->kind == LSHIFT) {
                 struct expr *rhs = const_fold(expression->rhs);
+                struct expr *lhs = const_fold(expression->lhs);
                 if (lhs->kind == INT && rhs->kind == INT) {
-                        int result;
+                        int result = 0;
                         if (expression->kind == ADD)
                                 result = lhs->ivalue + rhs->ivalue;
                         else if (expression->kind == SUB)
                                 result = lhs->ivalue - rhs->ivalue;
                         else if (expression->kind == MUL)
                                 result = lhs->ivalue * rhs->ivalue;
-                        else
+                        else if (expression->kind == DIV)
                                 result = lhs->ivalue / rhs->ivalue;
+                        else if (expression->kind == RSHIFT)
+                                result = lhs->ivalue >> rhs->ivalue;
+                        else if (expression->kind == LSHIFT)
+                                result = lhs->ivalue << rhs->ivalue;
+                        else
+                                error("codegen: inner op unimplemented");
                         expression->kind = INT;
                         expression->ivalue = result;
                         return expression;
                 }
-                return expression;
+                error("codegen: type unimplemented");
         } else if (expression->kind == INT) {
                 return expression;
         }
+        error("codegen: outer op unimplemented");
         return NULL;
 }
 
 char *expr(struct expr *expression) {
+        expression = const_fold(expression);
         if (expression->kind == ADD || expression->kind == SUB || expression->kind == MUL ||
             expression->kind == DIV) {
                 char *lhs = expr(expression->lhs);
@@ -69,7 +77,7 @@ char *expr(struct expr *expression) {
 }
 
 static void decl(struct ExtDecl *decl) {
-        char *reg = expr(const_fold(decl->expr));
+        char *reg = expr(decl->expr);
         return;
 }
 
@@ -98,14 +106,17 @@ static void function(struct ExtDecl *func) {
         fprintf(outfile, "%s:\n", func->decltor->name);
 
         // prologue
+        fprintf(outfile, "  # prologue\n");
         fprintf(outfile, "  addi    sp,sp,-16\n");
         fprintf(outfile, "  sd      s0,8(sp)\n");
         fprintf(outfile, "  addi    s0,sp,16\n");
 
         // body
+        fprintf(outfile, "  # body\n");
         stmt(func->compStmt);
 
         // epilogue
+        fprintf(outfile, "  # epilogue\n");
         fprintf(outfile, "  mv      a0,a5\n");
         fprintf(outfile, "  ld      s0,8(sp)\n");
         fprintf(outfile, "  addi    sp,sp,16\n");
