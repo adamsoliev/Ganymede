@@ -30,6 +30,9 @@ $ cd Ganymede/compiler
 $ make
 ```
 
+## Data Structures
+![Data Structures](./assets/data_structures_9_8_23.png)
+
 ## Scanner
 It is a hand-coded scanner that generates the following types of tokens:
 ```
