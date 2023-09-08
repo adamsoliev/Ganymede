@@ -15,6 +15,8 @@ int bo = 32 && 92;
 int bp = 32 || 12;
 int bv = sizeof bb;
 
+char word[20] = "Hello!";
+
 int sum0() { return 0; }
 
 // int sum1(int a) { return a; }

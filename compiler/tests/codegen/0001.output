@@ -30,6 +30,9 @@ bp:
           .word   1
 bv:
           .word   4
+word:
+          .string "Hello!"
+          .zero   13
 
 sum0:
   # prologue

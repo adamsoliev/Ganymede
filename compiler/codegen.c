@@ -49,9 +49,6 @@ static char *nextl(void) {  // next label
         return label;
 }
 
-// whether string or array
-static bool is2dstructure(struct decltor *decltor) { return decltor->row > 0 || decltor->col > 0; }
-
 void enter_scope(void) {
         struct scope *new_scope = calloc(1, sizeof(struct scope));
         new_scope->next = scope;
@@ -142,7 +139,8 @@ struct expr *const_fold(struct expr *expression) {
                         return expression;
                 }
                 error("codegen: type unimplemented");
-        } else if (expression->kind == INT || expression->kind == CHAR) {
+        } else if (expression->kind == INT || expression->kind == CHAR ||
+                   expression->kind == STRCONST) {
                 return expression;
         }
         error("codegen: outer op unimplemented");
@@ -199,7 +197,13 @@ static void decl(struct ExtDecl *decl, bool isGlobal) {
         if (isGlobal) {
                 struct expr *result = const_fold(decl->expr);
                 fprintf(outfile, "%s:\n", decl->decltor->name);
-                fprintf(outfile, "          .word   %d\n", result->ivalue);
+                if (decl->expr->kind == STRCONST) {
+                        fprintf(outfile, "          .string %s\n", result->strLit);
+                        fprintf(outfile,
+                                "          .zero   %d\n",
+                                decl->decltor->row - strlen(result->strLit) + 1);
+                } else
+                        fprintf(outfile, "          .word   %d\n", result->ivalue);
         } else {
                 char *reg = expr(decl->expr);
         }
@@ -211,7 +215,7 @@ static void stmt(struct stmt *statement) {
                 case STMT_COMPOUND:
                         for (struct block *cur = statement->body; cur != NULL; cur = cur->next) {
                                 if (cur->decl != NULL) {
-                                        if (is2dstructure(cur->decl->decltor)) {
+                                        if (cur->decl->expr->kind == STRCONST) {
                                                 assert(Index < (EXTDECL_SIZE - 1));
                                                 char *reg = nextr();
                                                 char *label = nextl();
@@ -289,6 +293,8 @@ void codegen(struct ExtDecl *program) {
                 struct ExtDecl *extDecl = list[i]->extDecl;
                 fprintf(outfile, "%s:\n", label);
                 fprintf(outfile, "          .string %s\n", extDecl->expr->strLit);
-                fprintf(outfile, "          .zero    4\n");
+                fprintf(outfile,
+                        "          .zero    %d\n",
+                        extDecl->decltor->row - strlen(extDecl->expr->strLit) + 1);
         }
 }
