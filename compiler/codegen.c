@@ -5,8 +5,23 @@
 // will hold ht, where (name *, ExtDecl *)
 static struct scope *scope = &(struct scope){};
 
+#define EXTDECL_SIZE 10
+struct varlist {
+        struct ExtDecl *extDecl;
+        char *label;
+};
+struct varlist *list[EXTDECL_SIZE];
+static int Index = 0;
+
+static struct varlist *new_varlist(struct ExtDecl *extDecl, char *label) {
+        struct varlist *varlist = calloc(1, sizeof(struct varlist));
+        varlist->extDecl = extDecl;
+        varlist->label = label;
+        return varlist;
+}
+
 // -------------- ASSUME UNLIMITED REGISTERS
-static char *nextr(void) {
+static char *nextr(void) {  // next register
         static int regCount = 0;
         int size = 0;
         if (regCount < 10)
@@ -23,6 +38,19 @@ static char *nextr(void) {
         regCount++;
         return reg;
 }
+
+static char *nextl(void) {  // next label
+        static int labCount = 0;
+        int size = 1;  // single digit labCount
+        assert(labCount < (EXTDECL_SIZE - 1));
+        char *label = calloc(size + 3, sizeof(char));
+        snprintf(label, sizeof(label), ".LC%d", labCount);
+        labCount++;
+        return label;
+}
+
+// whether string or array
+static bool is2dstructure(struct decltor *decltor) { return decltor->row > 0 || decltor->col > 0; }
 
 void enter_scope(void) {
         struct scope *new_scope = calloc(1, sizeof(struct scope));
@@ -183,8 +211,29 @@ static void stmt(struct stmt *statement) {
                 case STMT_COMPOUND:
                         for (struct block *cur = statement->body; cur != NULL; cur = cur->next) {
                                 if (cur->decl != NULL) {
-                                        ht_set(scope->vars, cur->decl->decltor->name, cur->decl);
-                                        decl(cur->decl, false);
+                                        if (is2dstructure(cur->decl->decltor)) {
+                                                assert(Index < (EXTDECL_SIZE - 1));
+                                                char *reg = nextr();
+                                                char *label = nextl();
+                                                struct varlist *varlist =
+                                                        new_varlist(cur->decl, label);
+                                                list[Index++] = varlist;
+                                                fprintf(outfile,
+                                                        "  lui     %s,%%hi(%s)\n",
+                                                        reg,
+                                                        label);
+                                                fprintf(outfile,
+                                                        "  addi    %s,%s,%%lo(%s)\n",
+                                                        reg,
+                                                        reg,
+                                                        label);
+                                        } else {
+                                                // vars that fit in a register
+                                                ht_set(scope->vars,
+                                                       cur->decl->decltor->name,
+                                                       cur->decl);
+                                                decl(cur->decl, false);
+                                        }
                                 } else {
                                         stmt(cur->stmt);
                                 }
@@ -234,4 +283,12 @@ void codegen(struct ExtDecl *program) {
                         error("codegen: unimplemented\n");
         }
         leave_scope();
+
+        for (int i = 0; i < Index; i++) {
+                char *label = list[i]->label;
+                struct ExtDecl *extDecl = list[i]->extDecl;
+                fprintf(outfile, "%s:\n", label);
+                fprintf(outfile, "          .string %s\n", extDecl->expr->strLit);
+                fprintf(outfile, "          .zero    4\n");
+        }
 }
