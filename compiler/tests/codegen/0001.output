@@ -1,3 +1,51 @@
+bb:
+          .word   3
+bc:
+          .word   788
+bd:
+          .word   216
+be:
+          .word   6
+bf:
+          .word   0
+bg:
+          .word   1
+bh:
+          .word   0
+bi:
+          .word   1
+bj:
+          .word   0
+bk:
+          .word   1
+bl:
+          .word   2
+bm:
+          .word   95
+bn:
+          .word   34
+bo:
+          .word   1
+bp:
+          .word   1
+bv:
+          .word   4
+word:
+          .string "Hello!"
+          .zero   13
+
+sum0:
+  # prologue
+  addi    sp,sp,-16
+  sd      s0,8(sp)
+  addi    s0,sp,16
+  # body
+  li      a5,0
+  # epilogue
+  mv      a0,a5
+  ld      s0,8(sp)
+  addi    sp,sp,16
+  jr      ra
 
 main:
   # prologue
@@ -5,11 +53,17 @@ main:
   sd      s0,8(sp)
   addi    s0,sp,16
   # body
-  li      r0,42
-  li      r1,43
+  li      r0,10
+  lui     r1,%hi(.LC0)
+  addi    r1,r1,%lo(.LC0)
+  li      r2,42
+  li      r3,43
   li      a5,0
   # epilogue
   mv      a0,a5
   ld      s0,8(sp)
   addi    sp,sp,16
   jr      ra
+.LC0:
+          .string "hello"
+          .zero    4

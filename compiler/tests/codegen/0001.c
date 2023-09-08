@@ -61,7 +61,7 @@ int main() {
         //         printf("escape char: %c\n", '\"');
         //         printf("normal char: %c\n", 'a');
         int aa = b == 23 ? 32 : 43;
-        //         aa = b != 23 ? 32 : 43;
+        // aa = b != 93 ? 52 : 39;
         //         int aaa = ++b;
         //         --aaa;
         //         ++aaa;
