@@ -46,7 +46,7 @@ int main() {
         char str[10] = "hello";
         //         a = 32.94f;
         //         a9 = 120.34;
-        //         int b = 42;
+        int b = 42;
         //         int *ptr = &b;
         //         int **ptrPtr = &ptr;
         //         int array[5] = {1, 2, 3, 4, 5};
@@ -60,7 +60,7 @@ int main() {
         //         printf("escape char: %c\n", '\'');
         //         printf("escape char: %c\n", '\"');
         //         printf("normal char: %c\n", 'a');
-        //         int aa = b == 23 ? 32 : 43;
+        int aa = b == 23 ? 32 : 43;
         //         aa = b != 23 ? 32 : 43;
         //         int aaa = ++b;
         //         --aaa;

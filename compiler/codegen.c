@@ -84,13 +84,13 @@ struct expr *const_fold(struct expr *expression) {
                         return expr;
                 }
                 error("codegen: sizeof unimplemented");
-        }
-        if (expression->kind == ADD || expression->kind == SUB || expression->kind == MUL ||
-            expression->kind == DIV || expression->kind == RSHIFT || expression->kind == LSHIFT ||
-            expression->kind == LT || expression->kind == GT || expression->kind == LEQ ||
-            expression->kind == GEQ || expression->kind == EQ || expression->kind == NEQ ||
-            expression->kind == ANDAND || expression->kind == OROR || expression->kind == AND ||
-            expression->kind == OR || expression->kind == XOR) {
+        } else if (expression->kind == ADD || expression->kind == SUB || expression->kind == MUL ||
+                   expression->kind == DIV || expression->kind == RSHIFT ||
+                   expression->kind == LSHIFT || expression->kind == LT || expression->kind == GT ||
+                   expression->kind == LEQ || expression->kind == GEQ || expression->kind == EQ ||
+                   expression->kind == NEQ || expression->kind == ANDAND ||
+                   expression->kind == OROR || expression->kind == AND || expression->kind == OR ||
+                   expression->kind == XOR) {
                 if (expression->kind == AND)
                         assert(expression->lhs != NULL && expression->rhs != NULL);
                 struct expr *rhs = const_fold(expression->rhs);
@@ -142,8 +142,25 @@ struct expr *const_fold(struct expr *expression) {
         } else if (expression->kind == INT || expression->kind == CHAR ||
                    expression->kind == STRCONST) {
                 return expression;
+        } else if (expression->kind == QMARK) {
+                struct expr *eq = const_fold(expression->lhs);
+                struct expr *option1 = const_fold(expression->rhs->lhs);
+                struct expr *option2 = const_fold(expression->rhs->rhs);
+                assert(eq->kind == INT);
+                if (eq->ivalue == 0)
+                        return option2;
+                else
+                        return option1;
+        } else if (expression->kind == IDENT) {
+                char *name = expression->strLit;
+                struct ExtDecl *extDecl = ht_get(scope->vars, name);
+                assert(extDecl != NULL && extDecl->expr->kind == INT);
+                struct expr *expr = new_expr(INT, NULL, NULL);
+                expr->ivalue = extDecl->expr->ivalue;
+                return expr;
+        } else {
+                error("codegen: outer op unimplemented");
         }
-        error("codegen: outer op unimplemented");
         return NULL;
 }
 
@@ -201,7 +218,7 @@ static void decl(struct ExtDecl *decl, bool isGlobal) {
                         fprintf(outfile, "          .string %s\n", result->strLit);
                         fprintf(outfile,
                                 "          .zero   %d\n",
-                                decl->decltor->row - strlen(result->strLit) + 1);
+                                decl->decltor->row - (int)strlen(result->strLit) + 1);
                 } else
                         fprintf(outfile, "          .word   %d\n", result->ivalue);
         } else {
@@ -295,6 +312,6 @@ void codegen(struct ExtDecl *program) {
                 fprintf(outfile, "          .string %s\n", extDecl->expr->strLit);
                 fprintf(outfile,
                         "          .zero    %d\n",
-                        extDecl->decltor->row - strlen(extDecl->expr->strLit) + 1);
+                        extDecl->decltor->row - (int)strlen(extDecl->expr->strLit) + 1);
         }
 }
