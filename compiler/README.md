@@ -24,15 +24,11 @@ It is a hand-coded scanner that generates the following types of tokens:
 See [ganymede.h](./ganymede.h) and [scanner tests](./tests/scanner/) for more details.
 
 ## Parser 
-It is a hand-coded recursive descent parser. It generates an AST using 5 types of nodes: decl, stmt, expr, type and param_list. 
-See [ganymede.h](./ganymede.h) for more details.
-
-A complete program consists of a sequence of ExcDecl structs. Each external declaration is defined by its specifiers (struct declspec) and declarator (struct decltor). 
+It is a hand-coded recursive descent parser. It generates an AST (complete program), consisting of a sequence of ExcDecl structs. Each external declaration can either represent a variable declaration or function and is defined by its specifiers (struct declspec) and declarator (struct decltor). 
 
 A simple variable declaration has its specifiers in declspec and its name in decltor. If initialized, the value is stored in expr. For more complex variables (arrays, including strings, and pointers), both declspec and decltor have corresponding fields carrying necessary information.  
 
-A function declaration has its specifiers in declspec, its name and parameters in decltor and its body in compStmt. A compound statement (applicable to any curly-brace enclosed block) consists of a sequence of block structs, which can either point to ExcDecl or stmt.
-
+A function has its specifiers in declspec, its name and parameters in decltor and its body in compStmt. A compound statement consists of a sequence of block structs, which can either point to ExcDecl or stmt. (note: compound statement is applicable to any curly-brace enclosed block). See [ganymede.h](./ganymede.h) for more details.
 
 ## Resources
 - Introduction to Compilers and Language Design by Douglas Thain is a short book but has a complete description of data structures used in building an AST, which is nice to have when you are trying to come up with an AST design of your own.  
