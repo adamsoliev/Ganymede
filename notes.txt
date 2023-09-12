@@ -56,26 +56,6 @@ some metric (e.g. performance)
 
 two subsets of CFGs known as LL(1) and LR(1) grammars
 
-LL(1) grammars are CFGs that can be evaluated by considering only
-the current rule and next token in the input stream. This property makes
-it easy to write a hand-coded parser known as a recursive descent parser.
-
-LR(1) grammars are more general and more powerful than LL(1).
-
-A RECURSIVE DESCENT PARSER
-There is one simple function for each non-terminal in the grammar. 
-The body of the function follows the right-hand sides of the 
-corresponding rules: nonterminals result in a call to another 
-parse function, while terminals result in considering the next token.
-
-• scan token() returns the next token on the input stream.
-• putback token(t) puts an unexpected token back on the input
-stream, where it will be read again by the next call to scan token.
-• expect token(t) calls scan token to retrieve the next token. It
-returns true if the token matches the expected type. If not, it puts the
-token back on the input stream and returns false.
-
-
 IR
 ------------------
 - Easy to process, such as create, read, write, traverse, or transfer.
@@ -186,8 +166,6 @@ Properties that simplify the problem of validating their correctness
 2. Another property that eases compiler testing is that the semantics of the source language are usually specified
 3. The fact that for most popular programming languages, there are multiple supposedly equivalent implementations, which compiler testing can exploit as an oracle for differential testing 
 
-
-
 Notes on existing compilers
 (llvm)[https://github.com/llvm/llvm-project]
   ---------------
@@ -229,9 +207,7 @@ Notes on existing compilers
     Machine Specific Features
 
 (TCC)[https://bellard.org/tcc/tcc-doc.html]
-  --------
-  scanner
-  --------
+********* LEX
   BufferedFile  
   tcc_open(), tcc_close()
   inp() => next char
@@ -239,119 +215,79 @@ Notes on existing compilers
     switch(char) scanning while hashing it and putting it into symbol table
   TOK_xxx 
 
-  --------
-  parser
-  --------
-  hardcoded
+********* PARSE
+  parsing expr is similar to grammar
+  
+  type_decl()
+    handle pointer related logic
+    if abstract
+    else direct 
+    post_type() // function or array
 
-  -------------
-  symbol table
-  -------------
-  hashed symbol stacks
-  sym_push(), sym_pop(st,b), sym_find(v)
+  decl()
+    while (1)
+      parse_btype()
+      check for struct | enum
+      while (1) // iterature each declaration
+        type_decl()
+        if function
+          assertions
+        check for assembly 
+        function body
 
-  ---------------
-  optimazations
-  ---------------
-  optimazations are done only at the expression level
-  constant propagation; mult & div => shift ops
-  other minor optimizations that doesn't require storing the code in a abstract form
-
-  ---------------
-  code generation
-  ---------------
-  register-based
-  directly generates linked binary code instead of having IR in the middle-end
+********* OTHER PARTS
+  tcc generates code while parsing :)
 
 
 (chibicc)[https://github.com/rui314/chibicc]
-  ---------------
-  scanner
-  ---------------
-  given a char, tokenizes a particular type
-  linked list of tokens
-  very short and clean; modern
+********* LEX
+  ident | punct | keyword | str | num | pp_num | eof
+  linkedlist of tokens
+  Token -----------------------------
+    | if num: int64_t | long double
+    | if str: char *str, int len
+    | file location | filename | line number | column number
 
-  ---------------
-  parser 
-  ---------------
-  recursive descent parser
-  similar looking functions
+********* PARSE
+  linkedlist of Objs (global var | local var | function)
+  Obj -------------------------------
+    | char *name | Type *ty | Token *tok | bool is_local | int align | int offset 
+    | Obj *params | Node *body | Obj *locals | int stack_size
+  
+  AST
+  Node -------------------------------
+    | Type *ty | Token *tok
+    | if expr: Node *lhs | Node *rhs
+    | if stmt: Node *cond | Node *then | Node *els | Node *init | Node *inc | Node *body
+    | if num: int64_t val | long double fval
+    | if var: Obj *var
+    | if funcal: Type *func_ty | Node *args | bool pass_by_stack | Obj *ret_buffer
+  
+  Type -------------------------------
+    | enum { INT, CHAR, PTR, ARRAY, STRUCT, FUNC, BOOL, VOID, ENUM, SHORT, LONG, FLOAT, DOUBLE, LDOUBLE, VLA, UNION }
+    | int size | int align | bool is_unsigned | Type *origin | Type *base
+    | if DECL: Token *name | Token *name_pos
+    | if ARRAY: int array_len
+    | if STRUCT: Member *members | bool is_flexible | bool is_packed
+    | if FUNC: Type *return_ty | Type *params | bool is_variadic | Type *next
+  
+  Member -----------------------------
+    | Member *next | Type *ty | Token *tok | Token *name | int align | int offset | int idx
 
-  ---------------
-  semantic routines 
-  ---------------
-
-  ---------------
-  optimizations 
-  ---------------
-
-  ---------------
-  code generation 
-  ---------------
-
-  -- steps --
-  +, -
-  *, / and ()
-  unary + and -
-  ==, !=, <, <=, > and >=
-  multiple statements separated by , 
-  single letter local variables
-  multiple letter local variables
-  return
-  { ... }
-  null stmt
-  if, for, while, 
-  improve error msg
-  unary & and *
-  ptr arithmetic
-  int and var def mandatory
-  zero-rity func calls
-  func call with up to 6 args
-  zero-rity func def 
-  func def with up to 6 args
-  1-dim array
-  arrays of arrays
-  [] operator
-  sizeof
-  merge func with variable
-  global variables
-  char type
-  string literal
-  refactoring: util function
-  \a, \b, \f, \n, \r, \t, \v, \x, \0, \', \", \\
-  \<octal-sequence>
-  \x<hex-sequence>
-  read from file instead of argv[1]
-  refactor
-  add -o and -h optiosn
-  add line and block comments
-  handle block scope
-  rewrite tests in shell script in C
-  line numbers
-  emit .file and .loc directives
-  comma operator
-  add struct, align struct members
-  align local variables
-  support struct tags
-  add -> operator
-  add union
-  add struct assignemnt
-  change size of int from 8 to 4
-  add long type
-  add short type
-  add nested type declarations
-  add func declaration
-  add void type
-  add long long for long
-  add typedef
-  make sizeof to accept type name 
-  use 32 bit regs for char, short and int
-  add type cast
-  add usual arith conversion
-  report error on undefined/undeclared function
-  handle return type converstion
-  https://github.com/rui314/chibicc/commits/main?before=90d1f7f199cc55b13c7fdb5839d1409806633fdb+256&branch=main&qualified_name=refs%2Fheads%2Fmain
+********* CODE GENERATION 
+  Assign lvar offset
+    passed by stack parameters
+    passed by registers parameters and local variables
+  Emit data
+    .data or .tdata
+    .bss or .tbss
+  Emit text
+    ignore dead inline functions
+    prologue
+    save passed-by-register arguments to stack
+    emit code for each stmt in the body
+    if main, special handling
+    epilogue
 
 
 (shecc)[https://github.com/jserv/shecc]
@@ -362,8 +298,4 @@ Notes on existing compilers
 (SmallerC)[https://github.com/alexfru/SmallerC]
 (kefir)[https://github.com/protopopov1122/kefir]
 
-
-TranslationUnit ExternalDeclaration
-
-ExternalDeclaration
 
