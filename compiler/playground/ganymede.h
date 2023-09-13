@@ -35,7 +35,7 @@ typedef struct Token Token;
 
 
 // basic types
-#define TYPE_BMASK        0xf // 0000,0000
+#define TYPE_BMASK        0xf // 0000,1111
 // #define TYPE_UNUSED       0x0	// 0000,0000 
 #define TYPE_VOID         0x1	// 0000,0001
 #define TYPE_CHAR         0x2	// 0000,0010
