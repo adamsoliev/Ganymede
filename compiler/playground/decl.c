@@ -22,39 +22,45 @@ uint64_t declspec(Token *token) {
         while (token->kind != TK_EOF) {
                 switch (token->kind) {
                         case TK_VOID:
-                                if (t) return error("other types with void\n");
+                                if (t) {
+                                bterror:
+                                        return error("too many basic types\n");
+                                }
                                 t = TYPE_VOID;
                                 break;
                         case TK_CHAR:
-                                if (t & TYPE_BMASK) return error("other types with char\n");
+                                if (t & TYPE_BMASK) goto bterror;
                                 t = TYPE_CHAR;
                                 break;
                         case TK_INT:
-                                if (t & TYPE_BMASK) return error("other types with int\n");
+                                if (t & TYPE_BMASK) goto bterror;
                                 t = TYPE_INT;
                                 break;
                         case TK_FLOAT:
-                                if (t & TYPE_BMASK) return error("other types with float\n");
+                                if (t & TYPE_BMASK) goto bterror;
                                 t = TYPE_FLOAT;
                                 break;
                         case TK_DOUBLE:
-                                if (t & TYPE_BMASK) return error("other types with double\n");
+                                if (t & TYPE_BMASK) goto bterror;
                                 t = TYPE_DOUBLE;
                                 break;
                         case TK_SHORT:
-                                if (t & 0x30) return error("too many shorts and/or longs\n");
+                                if (t & 0x30) {
+                                sterror:
+                                        return error("invalid specifiers\n");
+                                }
                                 t |= TYPE_SHORT;
                                 break;
                         case TK_LONG:
-                                if (t & 0x30) return error("too many shorts and/or longs\n");
+                                if (t & 0x30) goto sterror;
                                 t |= TYPE_LONG;
                                 break;
                         case TK_UNSIGNED:
-                                if (t & 0xc0) return error("too many signed and/or unsigned\n");
+                                if (t & 0xc0) goto sterror;
                                 t |= TYPE_UNSIGNED;
                                 break;
                         case TK_SIGNED:
-                                if (t & 0xc0) return error("too many signed and/or unsigned\n");
+                                if (t & 0xc0) goto sterror;
                                 t |= TYPE_SIGNED;
                                 break;
                         default: error("Invalid token kind: %d\n", token->kind);
