@@ -1,8 +1,11 @@
 #include <assert.h>
+#include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+typedef struct Token Token;
 
 // clang-format off
 // https://stackoverflow.com/questions/111928/is-there-a-printf-converter-to-print-in-binary-format/25108449#25108449
@@ -30,45 +33,47 @@
 #define BB64(i) \
   BB32((i) >> 32), BB32(i)
 
+
 // basic types
-#define TYPE_BMASK        0b1111
-#define TYPE_VOID         0b0000
-#define TYPE_CHAR         0b0001
-#define TYPE_SHORT        0b0010
-#define TYPE_INT          0b0011
-#define TYPE_LONG         0b0100
-#define TYPE_LLONG        0b0101
-#define TYPE_FLOAT        0b0110
-#define TYPE_DOUBLE       0b0111
-#define TYPE_UNSIGNED     0b1000
-#define TYPE_SIGNED       0b1001
+#define TYPE_BMASK        0xf // 0000,0000
+// #define TYPE_UNUSED       0x0	// 0000,0000 
+#define TYPE_VOID         0x1	// 0000,0001
+#define TYPE_CHAR         0x2	// 0000,0010
+#define TYPE_INT          0x3	// 0000,0011
+#define TYPE_FLOAT        0x4	// 0000,0100
+#define TYPE_DOUBLE       0x5	// 0000,0101
+#define TYPE_ARRAY        0x6	// 0000,0110	
+#define TYPE_FUNC         0x7	// 0000,0111		
+#define TYPE_PTR          0x8	// 0000,1000		
+#define TYPE_STRUCT       0x9	// 0000,1001	
+#define TYPE_UNION        0xa	// 0000,1010		
+#define TYPE_ENUM         0xb	// 0000,1011		
+// #define TYPE_UNUSED       0xc	// 0000,1100
+// #define TYPE_UNUSED       0xd	// 0000,1101
+// #define TYPE_UNUSED       0xe	// 0000,1110
+// #define TYPE_UNUSED       0xf	// 0000,1111
 
-/*
-#define TYPE_UNUSED       0b1010
-#define TYPE_UNUSED       0b1011
-#define TYPE_UNUSED       0b1100
-#define TYPE_UNUSED       0b1101
-#define TYPE_UNUSED       0b1110
-#define TYPE_UNUSED       0b1111
-*/
-/* Complex isn't supported */
+#define TYPE_SHORT        0x10 // 0001,0000
+#define TYPE_LONG         0x20 // 0010,0000 // long = long long
+#define TYPE_UNSIGNED     0x40 // 0100,0000
+#define TYPE_SIGNED       0x80 // 1000,0000
 
-#define TYPE_ARRAY        0b00010000		
-#define TYPE_FUNC         0b00010001		
-#define TYPE_PTR          0b00010010		
-#define TYPE_STRUCT       0b00010011		
-#define TYPE_UNION        0b00010100		
-#define TYPE_ENUM         0b00010101		
-/*
-#define TYPE_UNUSED       0b00010110		
-#define TYPE_UNUSED       0b00010111		
-#define TYPE_UNUSED       0b00011000		
-#define TYPE_UNUSED       0b00011001		
-#define TYPE_UNUSED       0b00011010		
-#define TYPE_UNUSED       0b00011011		
-#define TYPE_UNUSED       0b00011100		
-#define TYPE_UNUSED       0b00011101		
-#define TYPE_UNUSED       0b00011110		
-#define TYPE_UNUSED       0b00011111		
-*/
 // clang-format on
+
+enum TokenKind {
+        TK_VOID,
+        TK_CHAR,
+        TK_SHORT,
+        TK_INT,
+        TK_LONG,
+        TK_FLOAT,
+        TK_DOUBLE,
+        TK_UNSIGNED,
+        TK_SIGNED,
+        TK_EOF,
+};
+
+struct Token {
+        enum TokenKind kind;
+        Token *next;
+};
