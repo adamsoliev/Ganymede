@@ -58,6 +58,8 @@ typedef struct Token Token;
 #define TYPE_UNSIGNED     0x40 // 0100,0000
 #define TYPE_SIGNED       0x80 // 1000,0000
 
+// 1000,0011
+
 // clang-format on
 
 enum TokenKind {
