@@ -53,12 +53,20 @@ typedef struct Token Token;
 // #define TYPE_UNUSED       0xe	// 0000,1110
 // #define TYPE_UNUSED       0xf	// 0000,1111
 
+#define TYPE_SMASK        0xf0 // 1111,0000
 #define TYPE_SHORT        0x10 // 0001,0000
 #define TYPE_LONG         0x20 // 0010,0000 // long = long long
 #define TYPE_UNSIGNED     0x40 // 0100,0000
 #define TYPE_SIGNED       0x80 // 1000,0000
 
-// 1000,0011
+/* storage */
+#define TYPE_SGMASK       0xf00
+#define TYPE_TYPEDEF      0x100
+#define TYPE_EXTERN       0x200
+#define TYPE_STATIC       0x400
+#define TYPE_CONST        0x800
+
+#define TYPE_INLINE       0xf00
 
 // clang-format on
 
@@ -72,6 +80,15 @@ enum TokenKind {
         TK_DOUBLE,
         TK_UNSIGNED,
         TK_SIGNED,
+        TK_TYPEDEF,
+        TK_EXTERN,
+        TK_STATIC,
+        TK_CONST,
+        TK_INLINE,
+        TK_AUTO,
+        TK_REGISTER,
+        TK_RESTRICT,
+        TK_VOLATILE,
         TK_EOF,
 };
 

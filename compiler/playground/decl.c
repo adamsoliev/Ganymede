@@ -23,11 +23,11 @@ uint64_t declspec(Token *token) {
         while (token->kind != TK_EOF) {
                 switch (token->kind) {
                         case TK_VOID:
-                                if (t) {
+                                if (t && (t & (~(TYPE_EXTERN | TYPE_CONST)))) {
                                 bterror:
                                         return error("too many basic types\n");
                                 }
-                                t = TYPE_VOID;
+                                t |= TYPE_VOID;
                                 break;
                         case TK_CHAR:
                                 if (t & TYPE_BMASK) goto bterror;
@@ -66,41 +66,121 @@ uint64_t declspec(Token *token) {
                                 if (t & 0xc0) goto sterror;
                                 t |= TYPE_SIGNED;
                                 break;
+                        case TK_TYPEDEF: t |= TYPE_TYPEDEF; break;
+                        case TK_EXTERN: t |= TYPE_EXTERN; break;
+                        case TK_STATIC: t |= TYPE_STATIC; break;
+                        case TK_CONST: t |= TYPE_CONST; break;
+                        case TK_INLINE: t |= TYPE_INLINE; break;
+                        /* ignored */
+                        case TK_AUTO:
+                        case TK_REGISTER:
+                        case TK_RESTRICT:
+                        case TK_VOLATILE: break;
                         default: error("Invalid token kind: %d\n", token->kind);
                 }
                 token = token->next;
         }
 
-        // ADDME: struct/union, enum, typedef
+        // ADDME: struct/union, enum
 
-        // FIXME: THERE HAS TO BE ANOTHER WAY OF RESOLVING THESE
+        // -------------- Ugly but works
         // void
-        if (((t & TYPE_BMASK) == TYPE_VOID) && (t & 0xf0)) return error("invalid void type\n");
-        // signed/unsigned
-        if (t & 0xc0) {
-                if (!(t & TYPE_BMASK)) return (t | TYPE_INT);  // 'signed'
-                if ((t & TYPE_BMASK) & ((~(TYPE_INT | TYPE_CHAR)) & TYPE_BMASK))
-                        return error("invalid signed/unsigned type\n");
+        if ((t & TYPE_BMASK) == TYPE_VOID) {
+                if (t & TYPE_SMASK) return error("invalid void type\n");
                 return t;
         }
-        // short
-        if ((t & TYPE_SHORT)) {
-                if (!(t & TYPE_BMASK)) return (t | TYPE_INT | TYPE_SIGNED);  // 'short'
-                if ((t & TYPE_BMASK) & ((~TYPE_INT) & TYPE_BMASK))
-                        return error("invalid short type\n");
-                return (t | TYPE_SIGNED);  // 'short ... int'
+
+        // no 'signed/unsigned' specifiers
+        if (!(t & 0xc0)) {
+                if ((t & TYPE_BMASK) == TYPE_CHAR) {
+                        // char             // unsigned
+                        if (t & 0x30) return error("invalid short/long char\n");
+                        return (t | TYPE_UNSIGNED);
+                } else if ((t & TYPE_BMASK) == TYPE_INT || !(t & TYPE_BMASK)) {
+                        // short            // signed
+                        // long             // signed
+                        // long long        // signed
+                        if (!(t & TYPE_BMASK)) {
+                                if (t & TYPE_SHORT)
+                                        return (TYPE_SHORT | TYPE_INT | TYPE_SIGNED);
+                                else if (t & TYPE_LONG)
+                                        return (TYPE_LONG | TYPE_INT | TYPE_SIGNED);
+                                else
+                                        return error(
+                                                "invalid no signed/unsigned with no base type\n");
+                        }
+                        // short int        // signed
+                        // int              // signed
+                        // long int         // signed
+                        // long long int    // signed
+                        return (t | TYPE_SIGNED);
+                } else if ((t & TYPE_BMASK) == TYPE_DOUBLE) {
+                        // double           // signed
+                        // long double      // signed
+                        if (t & TYPE_SHORT) return error("invalid short double\n");
+                        return (t | TYPE_SIGNED);
+                } else if ((t & TYPE_BMASK) == TYPE_FLOAT) {
+                        // float            // signed
+                        if (t & 0x30) return error("invalid short/long float\n");
+                        return (t | TYPE_SIGNED);
+                } else {
+                        return error("invalid no signed/unsiged combination\n");
+                }
+        } else if (t & TYPE_SIGNED) {
+                if ((t & TYPE_BMASK) == TYPE_CHAR) {
+                        // signed char
+                        if (t & 0x30) return error("invalid short/long char\n");
+                        return t;
+                } else if ((t & TYPE_BMASK) == TYPE_INT || !(t & TYPE_BMASK)) {
+                        // signed
+                        // signed short
+                        // signed long
+                        // signed long long
+                        if (!(t & TYPE_BMASK)) {
+                                if (t & TYPE_SHORT)
+                                        return (TYPE_SHORT | TYPE_INT | TYPE_SIGNED);
+                                else if (t & TYPE_LONG)
+                                        return (TYPE_LONG | TYPE_INT | TYPE_SIGNED);
+                                else
+                                        return (TYPE_INT | TYPE_SIGNED);
+                        }
+                        // signed int
+                        // signed short int
+                        // signed long int
+                        // signed long int int
+                        return t;
+                } else {
+                        return error("invalid signed type combination\n");
+                }
+        } else {
+                assert(t & TYPE_UNSIGNED);
+                if ((t & TYPE_BMASK) == TYPE_CHAR) {
+                        // unsigned char
+                        if (t & 0x30) return error("invalid short/long char\n");
+                        return t;
+                } else if ((t & TYPE_BMASK) == TYPE_INT || !(t & TYPE_BMASK)) {
+                        // unsigned
+                        // unsigned short
+                        // unsigned long
+                        // unsigned long long
+                        if (!(t & TYPE_BMASK)) {
+                                if (t & TYPE_SHORT)
+                                        return (TYPE_SHORT | TYPE_INT | TYPE_UNSIGNED);
+                                else if (t & TYPE_LONG)
+                                        return (TYPE_LONG | TYPE_INT | TYPE_UNSIGNED);
+                                else
+                                        return (TYPE_INT | TYPE_UNSIGNED);
+                        }
+                        // unsigned int
+                        // unsigned short int
+                        // unsigned long int
+                        // unsigned long long int
+                        return t;
+                } else {
+                        return error("invalid unsiged type combination\n");
+                }
         }
-        // long
-        if ((t & TYPE_LONG)) {
-                if (!(t & TYPE_BMASK)) return (t | TYPE_INT | TYPE_SIGNED);
-                if ((t & TYPE_BMASK) & ((~(TYPE_INT | TYPE_DOUBLE)) & TYPE_BMASK))
-                        return error("invalid long type\n");
-                if ((t & TYPE_BMASK) == TYPE_INT) return (t | TYPE_SIGNED);
-                return t;
-        }
-        // int
-        if ((t & TYPE_BMASK) == TYPE_INT) return (t | TYPE_SIGNED);
-        return t;
+        return error("unknown type\n");
 }
 
 void decl(void) {
@@ -149,7 +229,7 @@ void test_declspec(void) {
 
         // char
         token = gentokens(1, TK_CHAR);
-        assert(declspec(token) == TYPE_CHAR);
+        assert(declspec(token) == (TYPE_CHAR | TYPE_UNSIGNED));
         token = gentokens(2, TK_SIGNED, TK_CHAR);
         assert(declspec(token) == (TYPE_CHAR | TYPE_SIGNED));
         token = gentokens(2, TK_UNSIGNED, TK_CHAR);
@@ -232,14 +312,48 @@ void test_declspec(void) {
         assert(declspec(token) == (TYPE_INT | TYPE_LONG | TYPE_UNSIGNED));
         token = gentokens(4, TK_UNSIGNED, TK_LONG, TK_LONG, TK_INT);
         assert(declspec(token) == (TYPE_INT | TYPE_LONG | TYPE_UNSIGNED));
+        token = gentokens(4, TK_LONG, TK_LONG, TK_LONG, TK_INT);
+        assert(declspec(token) == -1);
 
         // float
         token = gentokens(1, TK_FLOAT);
-        assert(declspec(token) == TYPE_FLOAT);
+        assert(declspec(token) == (TYPE_FLOAT | TYPE_SIGNED));
+        token = gentokens(2, TK_FLOAT, TK_SIGNED);
+        assert(declspec(token) == -1);
+        token = gentokens(2, TK_FLOAT, TK_UNSIGNED);
+        assert(declspec(token) == -1);
+        token = gentokens(2, TK_SHORT, TK_FLOAT);
+        assert(declspec(token) == -1);
+        token = gentokens(2, TK_LONG, TK_FLOAT);
+        assert(declspec(token) == -1);
 
         // double
         token = gentokens(1, TK_DOUBLE);
-        assert(declspec(token) == TYPE_DOUBLE);
+        assert(declspec(token) == (TYPE_DOUBLE | TYPE_SIGNED));
         token = gentokens(2, TK_LONG, TK_DOUBLE);
-        assert(declspec(token) == (TYPE_LONG | TYPE_DOUBLE));
+        assert(declspec(token) == (TYPE_LONG | TYPE_DOUBLE | TYPE_SIGNED));
+        token = gentokens(2, TK_SHORT, TK_DOUBLE);
+        assert(declspec(token) == -1);
+
+        // const
+        token = gentokens(2, TK_CONST, TK_VOID);
+        assert(declspec(token) == (TYPE_CONST | TYPE_VOID));
+        token = gentokens(2, TK_CONST, TK_CHAR);
+        assert(declspec(token) == (TYPE_CONST | TYPE_UNSIGNED | TYPE_CHAR));
+        token = gentokens(2, TK_CONST, TK_INT);
+        assert(declspec(token) == (TYPE_CONST | TYPE_SIGNED | TYPE_INT));
+        token = gentokens(2, TK_CONST, TK_FLOAT);
+        assert(declspec(token) == (TYPE_CONST | TYPE_SIGNED | TYPE_FLOAT));
+
+        // extern
+        token = gentokens(2, TK_EXTERN, TK_VOID);
+        assert(declspec(token) == (TYPE_EXTERN | TYPE_VOID));
+        token = gentokens(2, TK_EXTERN, TK_CHAR);
+        assert(declspec(token) == (TYPE_EXTERN | TYPE_CHAR | TYPE_UNSIGNED));
+        token = gentokens(2, TK_EXTERN, TK_INT);
+        assert(declspec(token) == (TYPE_EXTERN | TYPE_INT | TYPE_SIGNED));
+        token = gentokens(2, TK_EXTERN, TK_FLOAT);
+        assert(declspec(token) == (TYPE_EXTERN | TYPE_FLOAT | TYPE_SIGNED));
+        token = gentokens(2, TK_EXTERN, TK_DOUBLE);
+        assert(declspec(token) == (TYPE_EXTERN | TYPE_DOUBLE | TYPE_SIGNED));
 }
