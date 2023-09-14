@@ -64,9 +64,14 @@ typedef struct Token Token;
 #define TYPE_TYPEDEF      0x100
 #define TYPE_EXTERN       0x200
 #define TYPE_STATIC       0x400
-#define TYPE_CONST        0x800
+// #define TYPE_UNUSED        0x800
 
-#define TYPE_INLINE       0xf00
+/* type qualifier */
+#define TYPE_CONST        0x1000
+/* func specifier */
+#define TYPE_INLINE       0x2000
+// #define TYPE_UNUSED        0x4000
+// #define TYPE_UNUSED        0x8000
 
 // clang-format on
 
@@ -89,6 +94,9 @@ enum TokenKind {
         TK_REGISTER,
         TK_RESTRICT,
         TK_VOLATILE,
+        TK_STRUCT,
+        TK_UNION,
+        TK_ENUM,
         TK_EOF,
 };
 

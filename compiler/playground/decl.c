@@ -45,6 +45,10 @@ uint64_t declspec(Token *token) {
                                 if (t & TYPE_BMASK) goto bterror;
                                 t |= TYPE_DOUBLE;
                                 break;
+                        /* ingored for now */
+                        case TK_STRUCT:
+                        case TK_UNION:
+                        case TK_ENUM: break;
                         case TK_SHORT:
                                 if (t & 0x30) {
                                 sterror:
@@ -66,11 +70,26 @@ uint64_t declspec(Token *token) {
                                 if (t & 0xc0) goto sterror;
                                 t |= TYPE_SIGNED;
                                 break;
-                        case TK_TYPEDEF: t |= TYPE_TYPEDEF; break;
-                        case TK_EXTERN: t |= TYPE_EXTERN; break;
-                        case TK_STATIC: t |= TYPE_STATIC; break;
+                        case TK_TYPEDEF:  // IMPLEMENTME
+                                if (t & TYPE_SGMASK) {
+                                sgerror:
+                                        // FIXME: we can count bits in the SGMARK region after the loop?
+                                        return error("more than one storage-class specifier\n");
+                                }
+                                t |= TYPE_TYPEDEF;
+                                break;
+                        case TK_EXTERN:
+                                if (t & TYPE_SGMASK) goto sgerror;
+                                t |= TYPE_EXTERN;
+                                break;
+                        case TK_STATIC:  // IMPLEMENTME
+                                if (t & TYPE_SGMASK) goto sgerror;
+                                t |= TYPE_STATIC;
+                                break;
                         case TK_CONST: t |= TYPE_CONST; break;
-                        case TK_INLINE: t |= TYPE_INLINE; break;
+                        case TK_INLINE:
+                                t |= TYPE_INLINE;
+                                break;  // IMPLEMENTME
                         /* ignored */
                         case TK_AUTO:
                         case TK_REGISTER:
@@ -81,7 +100,8 @@ uint64_t declspec(Token *token) {
                 token = token->next;
         }
 
-        // ADDME: struct/union, enum
+        // CHECKME: at most one storage-class specifier
+        // CHECKME: at least one type specifier
 
         /*
             // Ugly but works
@@ -189,6 +209,10 @@ uint64_t declspec(Token *token) {
         return error("unknown type\n");
 }
 
+/*
+    declaration-specifiers init-declarator-listopt ;
+
+*/
 void decl(void) {
         //
 }
@@ -354,6 +378,8 @@ void test_declspec(void) {
         // extern
         token = gentokens(2, TK_EXTERN, TK_VOID);
         assert(declspec(token) == (TYPE_EXTERN | TYPE_VOID));
+        token = gentokens(2, TK_EXTERN, TK_STATIC, TK_VOID);
+        assert(declspec(token) == -1);
         token = gentokens(2, TK_EXTERN, TK_CHAR);
         assert(declspec(token) == (TYPE_EXTERN | TYPE_CHAR | TYPE_UNSIGNED));
         token = gentokens(2, TK_EXTERN, TK_INT);
@@ -362,4 +388,8 @@ void test_declspec(void) {
         assert(declspec(token) == (TYPE_EXTERN | TYPE_FLOAT | TYPE_SIGNED));
         token = gentokens(2, TK_EXTERN, TK_DOUBLE);
         assert(declspec(token) == (TYPE_EXTERN | TYPE_DOUBLE | TYPE_SIGNED));
+
+        // typedef
+        // static
+        // inline
 }
