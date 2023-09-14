@@ -83,24 +83,30 @@ uint64_t declspec(Token *token) {
 
         // ADDME: struct/union, enum
 
-        // -------------- Ugly but works
+        /*
+            // Ugly but works
+            The above 'while' and var choices (have default 'signed int'?) should be rethought through so that 
+            this resolution part could be simplified. Until then, we can use the below.  
+            For inspiration, look at how TCC handles this.
+        */
+        uint64_t basety = (t & TYPE_BMASK);
         // void
-        if ((t & TYPE_BMASK) == TYPE_VOID) {
+        if (basety == TYPE_VOID) {
                 if (t & TYPE_SMASK) return error("invalid void type\n");
                 return t;
         }
 
         // no 'signed/unsigned' specifiers
         if (!(t & 0xc0)) {
-                if ((t & TYPE_BMASK) == TYPE_CHAR) {
+                if (basety == TYPE_CHAR) {
                         // char             // unsigned
                         if (t & 0x30) return error("invalid short/long char\n");
                         return (t | TYPE_UNSIGNED);
-                } else if ((t & TYPE_BMASK) == TYPE_INT || !(t & TYPE_BMASK)) {
+                } else if (basety == TYPE_INT || (!basety)) {
                         // short            // signed
                         // long             // signed
                         // long long        // signed
-                        if (!(t & TYPE_BMASK)) {
+                        if (!basety) {
                                 if (t & TYPE_SHORT)
                                         return (TYPE_SHORT | TYPE_INT | TYPE_SIGNED);
                                 else if (t & TYPE_LONG)
@@ -114,12 +120,12 @@ uint64_t declspec(Token *token) {
                         // long int         // signed
                         // long long int    // signed
                         return (t | TYPE_SIGNED);
-                } else if ((t & TYPE_BMASK) == TYPE_DOUBLE) {
+                } else if (basety == TYPE_DOUBLE) {
                         // double           // signed
                         // long double      // signed
                         if (t & TYPE_SHORT) return error("invalid short double\n");
                         return (t | TYPE_SIGNED);
-                } else if ((t & TYPE_BMASK) == TYPE_FLOAT) {
+                } else if (basety == TYPE_FLOAT) {
                         // float            // signed
                         if (t & 0x30) return error("invalid short/long float\n");
                         return (t | TYPE_SIGNED);
@@ -127,16 +133,16 @@ uint64_t declspec(Token *token) {
                         return error("invalid no signed/unsiged combination\n");
                 }
         } else if (t & TYPE_SIGNED) {
-                if ((t & TYPE_BMASK) == TYPE_CHAR) {
+                if (basety == TYPE_CHAR) {
                         // signed char
                         if (t & 0x30) return error("invalid short/long char\n");
                         return t;
-                } else if ((t & TYPE_BMASK) == TYPE_INT || !(t & TYPE_BMASK)) {
+                } else if (basety == TYPE_INT || (!basety)) {
                         // signed
                         // signed short
                         // signed long
                         // signed long long
-                        if (!(t & TYPE_BMASK)) {
+                        if (!basety) {
                                 if (t & TYPE_SHORT)
                                         return (TYPE_SHORT | TYPE_INT | TYPE_SIGNED);
                                 else if (t & TYPE_LONG)
@@ -154,16 +160,16 @@ uint64_t declspec(Token *token) {
                 }
         } else {
                 assert(t & TYPE_UNSIGNED);
-                if ((t & TYPE_BMASK) == TYPE_CHAR) {
+                if (basety == TYPE_CHAR) {
                         // unsigned char
                         if (t & 0x30) return error("invalid short/long char\n");
                         return t;
-                } else if ((t & TYPE_BMASK) == TYPE_INT || !(t & TYPE_BMASK)) {
+                } else if (basety == TYPE_INT || !basety) {
                         // unsigned
                         // unsigned short
                         // unsigned long
                         // unsigned long long
-                        if (!(t & TYPE_BMASK)) {
+                        if (!basety) {
                                 if (t & TYPE_SHORT)
                                         return (TYPE_SHORT | TYPE_INT | TYPE_UNSIGNED);
                                 else if (t & TYPE_LONG)
