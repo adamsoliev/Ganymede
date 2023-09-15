@@ -111,8 +111,12 @@ uint64_t declspec(Token *token) {
             this resolution part could be simplified. Until then, we can use the below.  
             For inspiration, look at how TCC handles this.
         */
+
         uint64_t basety = (t & TYPE_BMASK);
-        // TODO: if basety isn't set, set it to SIGNED INT
+        if (!basety) {
+                basety = TYPE_INT;
+                t |= TYPE_INT;
+        }
 
         // void
         if (basety == TYPE_VOID) {
@@ -126,19 +130,7 @@ uint64_t declspec(Token *token) {
                         // char             // unsigned
                         if (t & 0x30) return error("invalid short/long char\n");
                         return (t | TYPE_UNSIGNED);
-                } else if (basety == TYPE_INT || (!basety)) {
-                        // short            // signed
-                        // long             // signed
-                        // long long        // signed
-                        if (!basety) {
-                                if (t & TYPE_SHORT)
-                                        return (TYPE_SHORT | TYPE_INT | TYPE_SIGNED);
-                                else if (t & TYPE_LONG)
-                                        return (TYPE_LONG | TYPE_INT | TYPE_SIGNED);
-                                else
-                                        return error(
-                                                "invalid no signed/unsigned with no base type\n");
-                        }
+                } else if (basety == TYPE_INT) {
                         // short int        // signed
                         // int              // signed
                         // long int         // signed
@@ -161,19 +153,7 @@ uint64_t declspec(Token *token) {
                         // signed char
                         if (t & 0x30) return error("invalid short/long char\n");
                         return t;
-                } else if (basety == TYPE_INT || (!basety)) {
-                        // signed
-                        // signed short
-                        // signed long
-                        // signed long long
-                        if (!basety) {
-                                if (t & TYPE_SHORT)
-                                        return (TYPE_SHORT | TYPE_INT | TYPE_SIGNED);
-                                else if (t & TYPE_LONG)
-                                        return (TYPE_LONG | TYPE_INT | TYPE_SIGNED);
-                                else
-                                        return (TYPE_INT | TYPE_SIGNED);
-                        }
+                } else if (basety == TYPE_INT) {
                         // signed int
                         // signed short int
                         // signed long int
@@ -188,19 +168,7 @@ uint64_t declspec(Token *token) {
                         // unsigned char
                         if (t & 0x30) return error("invalid short/long char\n");
                         return t;
-                } else if (basety == TYPE_INT || !basety) {
-                        // unsigned
-                        // unsigned short
-                        // unsigned long
-                        // unsigned long long
-                        if (!basety) {
-                                if (t & TYPE_SHORT)
-                                        return (TYPE_SHORT | TYPE_INT | TYPE_UNSIGNED);
-                                else if (t & TYPE_LONG)
-                                        return (TYPE_LONG | TYPE_INT | TYPE_UNSIGNED);
-                                else
-                                        return (TYPE_INT | TYPE_UNSIGNED);
-                        }
+                } else if (basety == TYPE_INT) {
                         // unsigned int
                         // unsigned short int
                         // unsigned long int
