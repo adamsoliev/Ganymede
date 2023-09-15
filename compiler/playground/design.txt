@@ -20,9 +20,8 @@ symbol table  -> |            |
 4.
                   ------------
 assembly      -> | opt passes | -> optimized assembly
-symbol table  -> |            |
+                 |            |
                   ------------
-
 
 Token 
     kind        // ident | keyword | punct | etc
@@ -37,23 +36,48 @@ Symbol table
 
     name : char *
 
-    type : uint64_t 
+    type[1] : uint64_t 
         0x
         00,     // unused for now 
         00,     // unused for now
-        00,     // pointer types (ptr to basic type | ptr to array | ptr to function)
+        00,     // pointer types (ptr to basic type | ptr to array | ptr to function | NULL?)
         00,     // array types (array of basic type | array of pointers)
         00,     // const | inline
         00,     // storage-class specifiers 
         00,     // short | long | signed | unsigned
-        00      // basic types (char, int, float, double, struct, union, enum)
+        00      // basic types (void, char, int, float, double, struct, union, enum)
 
     sizes :     // linkedlist of ints for array dimentions
 
     params :    // linkedlist of function parameters
-    
+
     body :      // compound statement of function
 
 A program 
     ExtDecl -> ExtDecl -> ExtDecl -> ...    // each ExtDecl is either declaration or function definition
 
+
+[1] Types supported
+    void
+    basic types
+        char
+        int
+            signed integer types
+                standard: signed char, short, int, long, long long (since C99)
+                /* ignored */ extended: implementation defined, e.g. __int128 (since C99)
+            unsigned integer types
+                standard: _Bool, (since C99) unsigned char, unsigned short, unsigned int, unsigned long, unsigned long long (since C99)
+                /* ignored */ extended: implementation-defined, e.g. __uint128 (since C99)
+        floating-point types
+            float, double, long double
+            /* ignored */ decimal float: _Decimal32, _Decimal64, _Decimal128 (since C23)
+        /* ignored */ complex types: float _Complex, double _Complex, long double _Complex
+        /* ignored */ imaginary types: float _Imaginary, double _Imaginary, long double _Imaginary (since C99)
+    enum                        // TODO
+    derived types
+        array
+        structure               // TODO
+        union                   // TODO
+        function 
+        pointer 
+        /* ignored */ atomic (since C11)
