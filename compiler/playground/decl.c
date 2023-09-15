@@ -102,16 +102,6 @@ uint64_t declspec(Token *token) {
                 token = token->next;
         }
 
-        // CHECKME: at most one storage-class specifier
-        // CHECKME: at least one type specifier
-
-        /*
-            // Ugly but works
-            The above 'while' and var choices (have default 'signed int'?) should be rethought through so that 
-            this resolution part could be simplified. Until then, we can use the below.  
-            For inspiration, look at how TCC handles this.
-        */
-
         uint64_t basety = (t & TYPE_BMASK);
         if (!basety) {
                 basety = TYPE_INT;
@@ -131,52 +121,24 @@ uint64_t declspec(Token *token) {
                         if (t & 0x30) return error("invalid short/long char\n");
                         return (t | TYPE_UNSIGNED);
                 } else if (basety == TYPE_INT) {
-                        // short int        // signed
-                        // int              // signed
-                        // long int         // signed
-                        // long long int    // signed
+                        // (short int | int | long int | long long int) // signed
                         return (t | TYPE_SIGNED);
                 } else if (basety == TYPE_DOUBLE) {
-                        // double           // signed
-                        // long double      // signed
+                        // (double | long double)       // signed
                         if (t & TYPE_SHORT) return error("invalid short double\n");
                         return (t | TYPE_SIGNED);
                 } else if (basety == TYPE_FLOAT) {
-                        // float            // signed
+                        // float                        // signed
                         if (t & 0x30) return error("invalid short/long float\n");
                         return (t | TYPE_SIGNED);
                 } else {
                         return error("invalid no signed/unsiged combination\n");
                 }
-        } else if (t & TYPE_SIGNED) {
-                if (basety == TYPE_CHAR) {
-                        // signed char
-                        if (t & 0x30) return error("invalid short/long char\n");
-                        return t;
-                } else if (basety == TYPE_INT) {
-                        // signed int
-                        // signed short int
-                        // signed long int
-                        // signed long int int
-                        return t;
-                } else {
-                        return error("invalid signed type combination\n");
-                }
-        } else {
-                assert(t & TYPE_UNSIGNED);
-                if (basety == TYPE_CHAR) {
-                        // unsigned char
-                        if (t & 0x30) return error("invalid short/long char\n");
-                        return t;
-                } else if (basety == TYPE_INT) {
-                        // unsigned int
-                        // unsigned short int
-                        // unsigned long int
-                        // unsigned long long int
-                        return t;
-                } else {
-                        return error("invalid unsiged type combination\n");
-                }
+        }
+        if (basety == TYPE_CHAR || basety == TYPE_INT) {
+                if (basety == TYPE_CHAR && t & 0x30) return error("invalid short/long char\n");
+                // signed (char | int | short int | long int | long int int)
+                return t;
         }
         return error("unknown type\n");
 }
