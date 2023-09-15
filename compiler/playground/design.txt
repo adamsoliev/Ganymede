@@ -8,7 +8,7 @@ source files  -> | scan       | -> ll of tokens
 2.
                   ------------
 ll of tokens  -> | parse      | -> AST
-                 |            | -> modified symbol table
+symbol table  -> |            | -> modified symbol table
                   ------------
 
 3.                

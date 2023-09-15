@@ -33,45 +33,44 @@ typedef struct Token Token;
 #define BB64(i) \
   BB32((i) >> 32), BB32(i)
 
-
+                      // 0xff,ff,ff,ff,ff,ff,ff,ff 
+                      // 0x00,00,00,00,00,00,00,00 
 // basic types
-#define TYPE_BMASK        0xf // 0000,1111
-// #define TYPE_UNUSED       0x0	// 0000,0000 
-#define TYPE_VOID         0x1	// 0000,0001
-#define TYPE_CHAR         0x2	// 0000,0010
-#define TYPE_INT          0x3	// 0000,0011
-#define TYPE_FLOAT        0x4	// 0000,0100
-#define TYPE_DOUBLE       0x5	// 0000,0101
-#define TYPE_ARRAY        0x6	// 0000,0110	
-#define TYPE_FUNC         0x7	// 0000,0111		
-#define TYPE_PTR          0x8	// 0000,1000		
-#define TYPE_STRUCT       0x9	// 0000,1001	
-#define TYPE_UNION        0xa	// 0000,1010		
-#define TYPE_ENUM         0xb	// 0000,1011		
-// #define TYPE_UNUSED       0xc	// 0000,1100
-// #define TYPE_UNUSED       0xd	// 0000,1101
-// #define TYPE_UNUSED       0xe	// 0000,1110
-// #define TYPE_UNUSED       0xf	// 0000,1111
+#define TYPE_BMASK        0x000000000000000f  // 1111
+// #define TYPE_UNUSED       0x0000000000000000	// 0000 
+#define TYPE_VOID         0x0000000000000001	// 0001
+#define TYPE_CHAR         0x0000000000000002	// 0010
+#define TYPE_INT          0x0000000000000003	// 0011
+#define TYPE_FLOAT        0x0000000000000004	// 0100
+#define TYPE_DOUBLE       0x0000000000000005	// 0101
+#define TYPE_STRUCT       0x0000000000000006	// 0110	
+#define TYPE_UNION        0x0000000000000007	// 0111		
+#define TYPE_ENUM         0x0000000000000008	// 1000		
+// #define TYPE_UNUSED       0x0000000000000009	// 1001	
+// #define TYPE_UNUSED       0x000000000000000a	// 1010		
+// #define TYPE_UNUSED       0x000000000000000b	// 1011		
+// #define TYPE_UNUSED       0x000000000000000c	// 1100
+// #define TYPE_UNUSED       0x000000000000000d	// 1101
+// #define TYPE_UNUSED       0x000000000000000e	// 1110
+// #define TYPE_UNUSED       0x000000000000000f	// 1111
 
-#define TYPE_SMASK        0xf0 // 1111,0000
-#define TYPE_SHORT        0x10 // 0001,0000
-#define TYPE_LONG         0x20 // 0010,0000 // long = long long
-#define TYPE_UNSIGNED     0x40 // 0100,0000
-#define TYPE_SIGNED       0x80 // 1000,0000
+#define TYPE_SMASK        0x00000000000000f0 // 1111,0000
+#define TYPE_SHORT        0x0000000000000010 // 0001,0000
+#define TYPE_LONG         0x0000000000000020 // 0010,0000 // long = long long
+#define TYPE_UNSIGNED     0x0000000000000040 // 0100,0000
+#define TYPE_SIGNED       0x0000000000000080 // 1000,0000
 
 /* storage */
-#define TYPE_SGMASK       0xf00
-#define TYPE_TYPEDEF      0x100
-#define TYPE_EXTERN       0x200
-#define TYPE_STATIC       0x400
-// #define TYPE_UNUSED        0x800
+#define TYPE_SGMASK       0x0000000000000f00
+#define TYPE_TYPEDEF      0x0000000000000100
+#define TYPE_EXTERN       0x0000000000000200
+#define TYPE_STATIC       0x0000000000000400
+// #define TYPE_UNUSED       0x0000000000000800
 
-/* type qualifier */
-#define TYPE_CONST        0x1000
-/* func specifier */
-#define TYPE_INLINE       0x2000
-// #define TYPE_UNUSED        0x4000
-// #define TYPE_UNUSED        0x8000
+#define TYPE_CONST        0x0000000000001000
+#define TYPE_INLINE       0x0000000000002000
+// #define TYPE_UNUSED       0x0000000000004000
+// #define TYPE_UNUSED       0x0000000000008000
 
 // clang-format on
 
@@ -97,6 +96,8 @@ enum TokenKind {
         TK_STRUCT,
         TK_UNION,
         TK_ENUM,
+        TK_IDENT,
+        TK_SCOLON,
         TK_EOF,
 };
 

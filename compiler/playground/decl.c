@@ -210,11 +210,68 @@ uint64_t declspec(Token *token) {
 }
 
 /*
-    declaration-specifiers init-declarator-listopt ;
 
+    declaration ::=
+        // declaration-specifiers init-declarator-list ;
+        // declaration-specifiers declarator-list ;
+        declaration-specifiers direct-declarator ;
+    
+    // init-declarator-list ::=
+    //     init-declarator
+    //     init-declarator-list , init-declarator
+
+    // init-declarator ::=
+        declarator
+        // declarator = initializer
+
+    declarator 
+        // pointer? direct-declarator
+        direct-declarator
+
+    direct-declarator:
+        identifier
+        ( declarator )
+        direct-declarator [ type-qualifier-list? assignment-expressionopt ]
+        direct-declarator [ static type-qualifier-list? assignment-expression ]
+        direct-declarator [ type-qualifier-list static assignment-expression ]
+        direct-declarator [ type-qualifier-list? * ]
+        direct-declarator ( parameter-type-list )
+        direct-declarator ( identifier-listopt )            // ignored: old style func defition
 */
-void decl(void) {
-        //
+
+void decl(Token *token) {
+        uint64_t ty = declspec(token);
+        /*
+            pointers
+            if ident
+                 array
+                    []              - 
+                    [expression]    - fixed size array
+                    [*]             - VLA wit unspecified size only usable with func prototype scope
+                    ------------
+                    float fa[11]
+                    int a[n][6][m + 2]
+
+                 func
+                    (params)
+                    (params, ...)
+                    (identifier-list)
+                    ------------
+                    int func(void)
+                    int sum(int a, int b)
+                    int product(int, int)
+                    int error(int cnt, ...)
+                    void addscalar(int n, int m, double a[n][n*m+300], double x)
+                    double maximum(int n, int m, double a[n][m]);
+                    double maximum(int n, int m, double a[*][*]);
+                    double maximum(int n, int m, double a[ ][*]);
+                    double maximum(int n, int m, double a[ ][m]);
+
+                 ident
+                    ------------
+                    int num, char ch, float x, double y
+            abstract
+        */
 }
 
 void test_declspec(void);
