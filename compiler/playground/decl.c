@@ -3,6 +3,8 @@
 
 #include "ganymede.h"
 
+Token *token;
+
 int error(char *fmt, ...) {
         va_list args;
         va_start(args, fmt);
@@ -110,6 +112,8 @@ uint64_t declspec(Token *token) {
             For inspiration, look at how TCC handles this.
         */
         uint64_t basety = (t & TYPE_BMASK);
+        // TODO: if basety isn't set, set it to SIGNED INT
+
         // void
         if (basety == TYPE_VOID) {
                 if (t & TYPE_SMASK) return error("invalid void type\n");
@@ -239,15 +243,14 @@ uint64_t declspec(Token *token) {
         direct-declarator ( identifier-listopt )            // ignored: old style func defition
 */
 
-void decl(Token *token) {
-        uint64_t ty = declspec(token);
+ExcDecl *decl(uint64_t type, Token *token) {
         /*
             pointers
             if ident
                  array
-                    []              - 
                     [expression]    - fixed size array
-                    [*]             - VLA wit unspecified size only usable with func prototype scope
+                    []              - only usable in certain scopes
+                    [*]             - only usable in func prototype scope
                     ------------
                     float fa[11]
                     int a[n][6][m + 2]
@@ -255,7 +258,6 @@ void decl(Token *token) {
                  func
                     (params)
                     (params, ...)
-                    (identifier-list)
                     ------------
                     int func(void)
                     int sum(int a, int b)
@@ -272,6 +274,13 @@ void decl(Token *token) {
                     int num, char ch, float x, double y
             abstract
         */
+        return NULL;
+}
+
+void parse(void) {
+        //
+        uint64_t type = declspec(token);
+        ExcDecl *declaration = decl(type, token);
 }
 
 void test_declspec(void);

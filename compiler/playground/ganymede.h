@@ -6,6 +6,7 @@
 #include <string.h>
 
 typedef struct Token Token;
+typedef struct ExcDecl ExcDecl;
 
 // clang-format off
 // https://stackoverflow.com/questions/111928/is-there-a-printf-converter-to-print-in-binary-format/25108449#25108449
@@ -74,6 +75,7 @@ typedef struct Token Token;
 
 // clang-format on
 
+/* ------------ scan ------------ */
 enum TokenKind {
         TK_VOID,
         TK_CHAR,
@@ -104,4 +106,10 @@ enum TokenKind {
 struct Token {
         enum TokenKind kind;
         Token *next;
+};
+
+/* ------------ parse ------------ */
+struct ExtDecl {
+        uint64_t type;
+        uint64_t hash;  // index to symbol table
 };
