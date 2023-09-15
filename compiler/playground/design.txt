@@ -1,0 +1,59 @@
+Design
+1.
+                  ------------
+source files  -> | scan       | -> ll of tokens
+                 |            | -> symbol table
+                  ------------
+
+2.
+                  ------------
+ll of tokens  -> | parse      | -> AST
+                 |            | -> modified symbol table
+                  ------------
+
+3.                
+                  ------------
+AST           -> | codegen    | -> RISC-V assembly
+symbol table  -> |            |
+                  ------------
+
+4.
+                  ------------
+assembly      -> | opt passes | -> optimized assembly
+symbol table  -> |            |
+                  ------------
+
+
+Token 
+    kind        // ident | keyword | punct | etc
+    hash        // index to symbol table
+
+Symbol table
+     -------------------------------------
+    | name | type | sizes | params | body |
+     -------------------------------------
+    |      |      |       |        |      |
+    ...
+
+    name : char *
+
+    type : uint64_t 
+        0x
+        00,     // unused for now 
+        00,     // unused for now
+        00,     // pointer types (ptr to basic type | ptr to array | ptr to function)
+        00,     // array types (array of basic type | array of pointers)
+        00,     // const | inline
+        00,     // storage-class specifiers 
+        00,     // short | long | signed | unsigned
+        00      // basic types (char, int, float, double, struct, union, enum)
+
+    sizes :     // linkedlist of ints for array dimentions
+
+    params :    // linkedlist of function parameters
+    
+    body :      // compound statement of function
+
+A program 
+    ExtDecl -> ExtDecl -> ExtDecl -> ...    // each ExtDecl is either declaration or function definition
+
