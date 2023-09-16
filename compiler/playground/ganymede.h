@@ -100,6 +100,13 @@ enum TokenKind {
         TK_ENUM,
         TK_IDENT,
         TK_SCOLON,
+        TK_OPAR,
+        TK_CPAR,
+        TK_OBR,   // [
+        TK_CBR,   // ]
+        TK_OBRC,  // {
+        TK_CBRC,  // }
+        TK_STAR,  // *
         TK_EOF,
 };
 
