@@ -294,6 +294,26 @@ Notes on existing compilers
 (lcc)[https://github.com/drh/lcc]
 ********* LEX
 ********* PARSE
+  program() // parses translation units
+    while (EOF)
+      decl(dclglobal)   // # function defition is a declaration with comp stmt
+                        // # global vs local vs param declarations
+        specifiers()    // declspec
+                          // # 1st declarator is treated diffly bc it is used to recog func definition
+        if (global) funcdefn()
+          dclr()          // bty -> declarator -> full type
+            dclr1()       // inverts the type so that it is easier to parse in dclr()
+        else dclr()
+        while (1)
+          other declarations (dclglobal | dcllocal | dclparam)    // # param is also a decl
+  dclr1()
+    if ID
+    if *
+      dclr1()
+    if (
+      if abstract function
+      else parameters()
+    if [ 
 
 
 (lacc)[https://github.com/larmel/lacc]
@@ -303,3 +323,22 @@ Notes on existing compilers
 (kefir)[https://github.com/protopopov1122/kefir]
 
 
+Memory Management
+
+Symbol tables
+
+Type representation
+  challenge here is representing constructed types, chained from combo of basic types
+    e.g., pointer to pointer to pointer to char
+          function that take in a function pointer and returns int pointer
+  - bit strings (tcc, pcc)
+  - ll | graphs of structs (lcc, chibicc)
+
+Lex
+
+Parse
+
+Codegen
+frontend -> 
+
+Optmizaton

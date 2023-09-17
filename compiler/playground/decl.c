@@ -231,11 +231,10 @@ void parse(void) {
 }
 
 void test_declspec(void);
-void test_decl(void);
 
 int main(void) {
+        char *program = "int main() { int var = 23; return 0; }";
         test_declspec();
-        test_decl();
         return 0;
 }
 
@@ -407,14 +406,4 @@ void test_declspec(void) {
         // typedef
         // static
         // inline
-}
-
-void test_decl(void) {
-        // int a;
-        Token *token = gentokens(3, TK_INT, TK_IDENT, TK_SCOLON);
-        uint64_t type = declspec(token);
-        Token *extDecl = decl(type, token);
-
-        // int array[10];
-        // int function(void);
 }
