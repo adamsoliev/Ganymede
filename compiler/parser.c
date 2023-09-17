@@ -1,1226 +1,409 @@
 #pragma clang diagnostic ignored "-Wgnu-empty-initializer"
+#pragma clang diagnostic ignored "-Wstrict-prototypes"
 
 #include "ganymede.h"
 
-static struct Token *ct;
-static int INDENT = 4;
-static struct scope *scope = &(struct scope){};
+/* global variables */
+static struct Token *_ct;
+enum { FUNC = 1, DECL } _cextdecl;
+enum { GLOBAL = 1, LOCAL, PARAM } _cdecl;
 
-static void copystr(char **dest, char **src, int len);
-static void consume(enum Kind kind);
-static struct ExtDecl *function(struct declspec **declspec, struct decltor **decltor);
-static struct ExtDecl *declaration(struct declspec **declspec, struct decltor **decltor);
-static struct expr *expr(void);
-static struct declspec *declaration_specifiers(void);
-static struct decltor *declarator(void);
-static struct params *parameters(void);
-static void printBlock(struct block *block, int level);
-static void printStmt(struct stmt *stmt, int level);
-static void printExpr(struct expr *expr, int level);
-static void printParams(struct params *params, int level);
-static void printInitializer(struct initializer *initializer, int level);
-static struct expr *primary_expression(void);
-static struct expr *additive_expression(void);
-static struct expr *multiplicative_expression(void);
-static struct expr *shift_expression(void);
-static struct expr *relational_expression(void);
-static struct expr *equality_expression(void);
-static struct expr *equality_expression(void);
-static struct expr *and_expression(void);
-static struct expr *exc_or_expression(void);
-static struct expr *inc_or_expression(void);
-static struct expr *logic_and_expression(void);
-static struct expr *logic_or_expression(void);
-static struct expr *conditional_expression(void);
-static struct expr *unary_expression(void);
-static struct expr *assignment_expression(void);
-static struct expr *postfix_expression(void);
-static struct expr *arg_expr_list(void);
-static struct stmt *stmt(void);
-static struct stmt *compound_stmt(void);
-static struct initializer *initializer_list(void);
-static void enter_scope(void);
-static void leave_scope(void);
-static struct declspec eval_expr(struct expr *expr);
-static bool typecheck(struct declspec *declspec, struct expr *expr);
-static bool is_type(enum Kind kind);
-static struct declspec *find_var(char *name);
-
-static void consume(enum Kind kind) {
-        if (ct->kind != kind) {
-                error("Expected %s, got %s", token_names[kind], token_names[ct->kind]);
+/* utility functions */
+static void consume(const char *msg, enum Kind kind) {
+        if (_ct->kind != kind) {
+                error("%s: expected %s, got %s\n", msg, token_names[kind], token_names[_ct->kind]);
         }
-        ct = ct->next;
+        _ct = _ct->next;
 }
 
-struct expr *new_expr(enum Kind kind, struct expr *lhs, struct expr *rhs) {
-        struct expr *expr = calloc(1, sizeof(struct expr));
-        expr->kind = kind;
-        expr->lhs = lhs;
-        expr->rhs = rhs;
-        return expr;
-}
+/* ---------- RECURSIVE DESCENT PARSER ---------- */
 
-static void enter_scope(void) {
-        struct scope *new_scope = calloc(1, sizeof(struct scope));
-        new_scope->next = scope;
-        new_scope->vars = ht_create();
-        scope = new_scope;
-}
+// https://github.com/katef/kgt/blob/main/examples/c99-grammar.iso-ebnf
 
-static void leave_scope(void) {
-        struct scope *old_scope = scope;
-        scope = scope->next;
-        ht_destroy(old_scope->vars);
-        free(old_scope);
-}
+void jumpstmt();
+void stmt();
+void ddecltor();
+void pointer();
+void funcspec();
+void typequal();
+void typespc();
+void sclass();
+void decl_or_stmt();
+void compstmt();
+void decltor();
+void declspec();
+void decl();
+void funcdef();
+void extdecl();
+void initdecllist();
+void parse(struct Token *token);
 
-static struct declspec eval_expr(struct expr *expr) {
-        if (expr == NULL) {
-                return (struct declspec){.type = NONE};
-        }
-        if (expr->kind == INCR || expr->kind == DECR || expr->kind == NOT || expr->kind == TILDA) {
-                return eval_expr(expr->lhs);
-        }
-        if (is_type(expr->kind)) return (struct declspec){.type = expr->kind};
-        if (expr->kind == INTCONST) return (struct declspec){.type = INT};
-        if (expr->kind == ASSIGN) {
-                return eval_expr(expr->rhs);
-        }
-        if (expr->kind == STRCONST) {
-                return (struct declspec){.type = CHAR, .array = {strlen(expr->strLit), 0}};
-        }
-        if (expr->kind == AND) {
-                if (expr->lhs != NULL && expr->rhs != NULL) {
-                        // FIXME: if arg(s) isn't rvalue, it should be declared before and have correct type
-                        return (struct declspec){.type = INT};
-                } else {
-                        struct declspec *ds = ht_get(scope->vars, expr->lhs->strLit);
-                        return (struct declspec){.type = ds->type, .pointer = ds->pointer + 1};
-                }
-        }
-        if (expr->kind == ADD || expr->kind == SUB || expr->kind == MUL || expr->kind == DIV) {
-                struct declspec lhs = eval_expr(expr->lhs);
-                struct declspec rhs = eval_expr(expr->rhs);
-                if (rhs.type == NONE) {
-                        return lhs;
-                }
-                assert(lhs.type == rhs.type && lhs.array[0] == rhs.array[0] &&
-                       lhs.array[1] == rhs.array[1] && lhs.pointer == rhs.pointer);
-                return (struct declspec){.type = lhs.type};
-        }
-        if (expr->kind == LSHIFT || expr->kind == RSHIFT || expr->kind == AND || expr->kind == OR ||
-            expr->kind == XOR || expr->kind == LT || expr->kind == GT || expr->kind == LEQ ||
-            expr->kind == GEQ || expr->kind == EQ || expr->kind == NEQ || expr->kind == ANDAND ||
-            expr->kind == OROR || expr->kind == MOD) {
-                // FIXME: bitwise operators deal with int only
-                struct declspec lhs = eval_expr(expr->lhs);
-                struct declspec rhs = eval_expr(expr->rhs);
-                assert(lhs.type == rhs.type && lhs.array[0] == rhs.array[0] &&
-                       lhs.array[1] == rhs.array[1] && lhs.pointer == rhs.pointer);
-                return (struct declspec){.type = INT};
-        }
-        if (expr->kind == SIZEOF) {
-                // FIXME: if ident, check if it exists
-                struct declspec *ds = find_var(expr->lhs->strLit);
-                if (ds == NULL) {
-                        error("'%s' undeclared\n", expr->strLit);
-                }
-                return (struct declspec){.type = INT};
-        }
-        if (expr->kind == QMARK) {
-                // conditional expression
-                assert(eval_expr(expr->lhs).type == INT);  // eq
-                return eval_expr(expr->rhs);               // colon
-        }
-        if (expr->kind == COLON) {
-                assert(expr->lhs->kind == expr->rhs->kind);
-                return (struct declspec){.type = expr->lhs->kind};
-        }
-        if (expr->kind == IDENT) {
-                struct declspec *ds = find_var(expr->strLit);
-                if (ds == NULL) {
-                        error("'%s' undeclared\n", expr->strLit);
-                }
-                return *ds;
-        }
-        return (struct declspec){.type = NONE};
-}
-
-static struct declspec *find_var(char *name) {
-        for (struct scope *cur = scope; cur != NULL; cur = cur->next) {
-                struct declspec *ds = ht_get(cur->vars, name);
-                if (ds != NULL) {
-                        return ds;
-                }
-        }
-        return NULL;
-}
-
-static bool typecheck(struct declspec *declspec, struct expr *expr) {
-        if (expr == NULL) {
-                return false;
-        }
-        // FIXME: opcheck for expressions (e.g., --c)?
-        if (declspec == NULL) {
-                eval_expr(expr);
-                return true;
-        }
-        // funcall
-        if (expr->kind == OPAR) {
-                return true;
-        }
-        // array types
-        if (declspec->array[0] > 0 || declspec->array[1] > 0) {
-                struct declspec ds = eval_expr(expr);
-                return ds.type == declspec->type && ds.array[0] <= declspec->array[0] &&
-                       ds.array[1] <= declspec->array[1];
-        }
-        // pointer types
-        if (declspec->pointer > 0) {
-                struct declspec ds = eval_expr(expr);
-                return ds.type == declspec->type && ds.pointer == declspec->pointer;
-        }
-        return eval_expr(expr).type == declspec->type;
-}
-
-static bool is_type(enum Kind kind) {
-        return kind == INT || kind == FLOAT || kind == DOUBLE || kind == CHAR;
-}
-
-// function-definition ::=
-//      declarator compount-statement? ;
-static struct ExtDecl *function(struct declspec **declspec, struct decltor **decltor) {
-        struct ExtDecl *func = calloc(1, sizeof(struct ExtDecl));
-        func->declspec = *declspec;
-        func->decltor = *decltor;
-        func->compStmt = compound_stmt();
-        return func;
-}
-
-static struct stmt *stmt(void) {
-        struct stmt *statement = calloc(1, sizeof(struct stmt));
-        switch (ct->kind) {
-                case IDENT:
-                        if (ct->next->kind == COLON) {
-                                statement->kind = IDENT;  // label statement
-                                statement->value = primary_expression();
-                                consume(COLON);
-                                statement->then = stmt();
-                                break;
-                        }
-                        goto stmt_expr;
-                case CASE: {
-                        consume(CASE);
-                        statement->kind = CASE;
-                        statement->cond = conditional_expression();  // constant-expression
-                        consume(COLON);
-                        statement->then = stmt();
-                        break;
-                }
-                case DEFAULT: {
-                        consume(DEFAULT);
-                        statement->kind = DEFAULT;
-                        consume(COLON);
-                        statement->then = stmt();
-                        break;
-                }
-                case IF:
-                        statement->kind = IF;
-                        consume(IF);
-                        consume(OPAR);
-                        statement->cond = expr();
-                        consume(CPAR);
-                        statement->then = stmt();
-                        if (ct->kind == ELSE) {
-                                consume(ELSE);
-                                statement->els = stmt();
-                        }
-                        break;
-                case SWITCH:
-                        statement->kind = SWITCH;
-                        consume(SWITCH);
-                        consume(OPAR);
-                        statement->cond = expr();
-                        consume(CPAR);
-                        statement->then = stmt();
-                        break;
-                case WHILE:
-                        statement->kind = WHILE;
-                        consume(WHILE);
-                        consume(OPAR);
-                        statement->cond = expr();
-                        consume(CPAR);
-                        statement->then = stmt();
-                        break;
-                case DO:
-                        statement->kind = DO;
-                        consume(DO);
-                        statement->then = stmt();
-                        consume(WHILE);
-                        consume(OPAR);
-                        statement->cond = expr();
-                        consume(CPAR);
-                        consume(SEMIC);
-                        break;
-                case FOR:
-                        statement->kind = FOR;
-                        consume(FOR);
-                        consume(OPAR);
-                        // init
-                        if (ct->kind == INT) {
-                                struct declspec *declspec = declaration_specifiers();
-                                struct decltor *decltor = declarator();
-                                statement->init.decl = calloc(1, sizeof(struct ExtDecl));
-                                statement->init.decl = declaration(&declspec, &decltor);
-                                statement->init_kind = 1;
-                        } else {
-                                statement->init.expr = expr();
-                                statement->init_kind = 0;
-                                consume(SEMIC);
-                        }
-                        // cond
-                        statement->cond = expr();
-                        consume(SEMIC);
-                        // inc
-                        statement->inc = expr();
-                        consume(CPAR);
-                        // stmt
-                        statement->then = stmt();
-                        break;
-                case GOTO: {
-                        statement->kind = GOTO;
-                        consume(GOTO);
-                        statement->value = primary_expression();  // identifier
-                        consume(SEMIC);
-                        break;
-                }
-                case CONTINUE: {
-                        statement->kind = CONTINUE;
-                        consume(CONTINUE);
-                        consume(SEMIC);
-                        break;
-                }
-                case BREAK: {
-                        statement->kind = BREAK;
-                        consume(BREAK);
-                        consume(SEMIC);
-                        break;
-                }
-                case RETURN:
-                        statement->kind = RETURN;
-                        consume(RETURN);
-                        if (ct->kind != SEMIC) {
-                                statement->value = expr();
-                        }
-                        consume(SEMIC);
-                        break;
-                case OCBR:  // compound statement
-                        return compound_stmt();
-                default:
-                stmt_expr: {
-                        // expression-statement
-                        char *name = calloc(ct->len, sizeof(char));
-                        strncpy(name, ct->start, ct->len);
-                        struct declspec *declspec = ht_get(scope->vars, name);
-                        statement->kind = STMT_EXPR;
-                        statement->value = expr();
-
-                        if (!typecheck(declspec, statement->value)) {
-                                struct declspec ds = eval_expr(statement->value);
-                                error("redefinition of '%s' with a different type: '%s' vs '%s'\n",
-                                      name,
-                                      token_names[declspec->type],
-                                      token_names[ds.type]);
-                        }
-                        consume(SEMIC);
-                }
-        }
-        return statement;
-}
-
-static struct stmt *compound_stmt(void) {
-        struct stmt *comp_stmt = calloc(1, sizeof(struct stmt));
-        comp_stmt->kind = STMT_COMPOUND;
-        struct block head = {};
-        struct block *cur = &head;
-        if (ct->kind == OCBR) {
-                enter_scope();
-                consume(OCBR);
-                while (ct->kind != CCBR) {
-                        // declaration or statement
-                        cur = cur->next = calloc(1, sizeof(struct block));
-                        if (is_type(ct->kind)) {
-                                struct declspec *declspec = declaration_specifiers();
-                                struct decltor *decltor = declarator();
-
-                                // if array declaration
-                                declspec->array[0] = decltor->row;
-                                declspec->array[1] = decltor->col;
-                                // if pointer declaration
-                                declspec->pointer = decltor->pointer;
-
-                                // type checking
-                                struct declspec *prev_declspec = ht_get(scope->vars, decltor->name);
-                                if (prev_declspec != NULL) {
-                                        error("redefinition of '%s' with a different type: '%s' vs "
-                                              "'%s'\n",
-                                              decltor->name,
-                                              token_names[declspec->type],
-                                              token_names[prev_declspec->type]);
-                                }
-                                cur->decl = calloc(1, sizeof(struct ExtDecl));
-                                cur->decl = declaration(&declspec, &decltor);
-
-                                ht_set(scope->vars, decltor->name, declspec);
-                        } else {
-                                cur->stmt = stmt();
-                        }
-                }
-                consume(CCBR);
-                leave_scope();
-        }
-        comp_stmt->body = head.next;
-        return comp_stmt;
-}
-
-// declaration ::=
-// 	    declspec decltor ("=" expr)? ("," decltor ("=" expr)?)* ";"
-static struct ExtDecl *declaration(struct declspec **declspec, struct decltor **decltor) {
-        struct ExtDecl head = {};
-        struct ExtDecl *cur = &head;
-        cur = cur->next = calloc(1, sizeof(struct ExtDecl));
-        cur->declspec = *declspec;
-        cur->decltor = *decltor;
-        while (ct->kind != SEMIC) {
-                if (ct->kind == ASSIGN) {
-                        consume(ASSIGN);
-                        if (ct->kind == OCBR) {
-                                cur->init = calloc(1, sizeof(struct initializer));
-                                cur->init->type = (*declspec)->type;
-                                cur->init->children = calloc(1, sizeof(struct initializer));
-                                consume(OCBR);
-                                cur->init->children = initializer_list();
-                                consume(CCBR);
-                        } else {
-                                cur->expr = expr();  // initializer
-
-                                if (!typecheck(*declspec, cur->expr)) {
-                                        struct declspec ds = eval_expr(cur->expr);
-                                        error("type mismatch in '%s' declaration: '%s' vs '%s' \n",
-                                              (*decltor)->name,
-                                              token_names[(*declspec)->type],
-                                              token_names[ds.type]);
-                                }
-                        }
-                }
-                if (ct->kind == COMMA) {
-                        consume(COMMA);
-                        cur = cur->next = calloc(1, sizeof(struct ExtDecl));
-                        cur->declspec = *declspec;
-                        cur->decltor = declarator();
-                }
-        }
-        consume(SEMIC);
-        return head.next;
-}
-
-static struct initializer *initializer_list(void) {
-        struct initializer head = {};
-        struct initializer *cur = &head;
-        while (ct->kind != CCBR) {
-                if (ct->kind == OCBR) {
-                        consume(OCBR);
-                        cur = cur->next = calloc(1, sizeof(struct initializer));
-                        cur->type = INT;
-                        cur->children = initializer_list();
-                        consume(CCBR);
-                } else if (ct->kind == INTCONST) {
-                        cur = cur->next = calloc(1, sizeof(struct initializer));
-                        cur->type = INT;
-                        cur->value.ivalue = ct->ivalue;
-                        consume(INTCONST);
-                } else {
-                        error("Initializer list not implemented\n");
-                }
-                if (ct->kind == COMMA) {
-                        consume(COMMA);
-                }
-        }
-        return head.next;
-}
-
-static struct declspec *declaration_specifiers(void) {
-        struct declspec *declspec = calloc(1, sizeof(struct declspec));
-        if (is_type(ct->kind)) {
-                declspec->type = ct->kind;
-                consume(ct->kind);
-                return declspec;
-        }
-        return declspec;
-}
-
-// direct-declarator ::=
-// 	    "[" type-qualifier-list? assignment-expression? "]"
-// 	    "[" "static" type-qualifier-list? assignment-expression "]"
-// 	    "[" type-qualifier-list "static" assignment-expression "]"
-// 	    "[" type-qualifier-list? "*" "]"
-// 	    "(" parameter-type-list ")"
-// 	    "(" identifier-list? ")"
-
-// declarator ::=
-// 	    pointer? (identifier or "(" declarator ")")
-static struct decltor *declarator(void) {
-        struct decltor *decltor = calloc(1, sizeof(struct decltor));
-        if (ct->kind == MUL) {
-                consume(MUL);
-                decltor->pointer = 1;
-                if (ct->kind == MUL) {
-                        consume(MUL);
-                        decltor->pointer = 2;
-                }
-        }
-        if (ct->kind == IDENT) {
-                copystr(&decltor->name, &ct->start, ct->len);
-                consume(IDENT);
-                if (ct->kind == OPAR) {
-                        decltor->kind = FUNCTION;
-                        consume(OPAR);
-                        decltor->params = parameters();
-                        consume(CPAR);
-                        return decltor;
-                } else if (ct->kind == OBR) {
-                        decltor->kind = DECLARATION;
-                        consume(OBR);
-                        if (ct->kind == INTCONST) {
-                                decltor->row = ct->ivalue;
-                                consume(INTCONST);
-                        }
-                        if (ct->kind == CBR && ct->next->kind == OBR &&
-                            ct->next->next->kind == INTCONST) {
-                                consume(CBR);
-                                consume(OBR);
-                                decltor->col = ct->ivalue;
-                                consume(INTCONST);
-                        }
-                        consume(CBR);
-                        return decltor;
-                } else {
-                        decltor->kind = DECLARATION;
-                        return decltor;
-                }
-        }
-        return decltor;
-}
-
-static struct params *parameters(void) {
-        if (ct->kind == CPAR) return NULL;
-        struct params head = {};
-        struct params *cur = &head;
-        int maxParams = 10;
-        while (1) {
-                if (maxParams == 0) {
-                        error("Too many parameters\n");
-                }
-
-                cur = cur->next = calloc(1, sizeof(struct params));
-                cur->declspec = declaration_specifiers();
-                cur->decltor = declarator();
-                if (ct->kind != COMMA) {
-                        break;
-                }
-                consume(COMMA);
-
-                maxParams--;
-        }
-        return head.next;
-}
-
-static struct expr *expr(void) { return assignment_expression(); }
-
-#define HANDLE_BINOP(opEnum, func)                  \
-        if (ct->kind == opEnum) {                   \
-                consume(opEnum);                    \
-                struct expr *rhs = func;            \
-                expr = new_expr(opEnum, expr, rhs); \
-                continue;                           \
-        }
-
-static struct expr *assignment_expression(void) {
-#define HANDLE_OPASSIGN(opAssign, op)                                                     \
-        if (ct->kind == opAssign) {                                                       \
-                consume(opAssign);                                                        \
-                struct expr *assign_expr = conditional_expression();                      \
-                return new_expr(ASSIGN, cond_expr, new_expr(op, cond_expr, assign_expr)); \
-        }
-
-        struct expr *cond_expr = conditional_expression();
-        if (ct->kind == ASSIGN) {
-                consume(ASSIGN);
-                struct expr *assign_expr = conditional_expression();
-                return new_expr(ASSIGN, cond_expr, assign_expr);
-        }
-        HANDLE_OPASSIGN(MULASSIGN, MUL);
-        HANDLE_OPASSIGN(DIVASSIGN, DIV);
-        HANDLE_OPASSIGN(MODASSIGN, MOD);
-        HANDLE_OPASSIGN(ADDASSIGN, ADD);
-        HANDLE_OPASSIGN(SUBASSIGN, SUB);
-        HANDLE_OPASSIGN(LSHIFTASSIGN, LSHIFT);
-        HANDLE_OPASSIGN(RSHIFTASSIGN, RSHIFT);
-        HANDLE_OPASSIGN(ANDASSIGN, AND);
-        HANDLE_OPASSIGN(XORASSIGN, XOR);
-        HANDLE_OPASSIGN(ORASSIGN, OR);
-        return cond_expr;
-}
-
-static struct expr *conditional_expression(void) {
-        struct expr *cond_expr = logic_or_expression();
-        if (ct->kind == QMARK) {
-                consume(QMARK);
-                struct expr *true_expr = expr();
-                consume(COLON);
-                struct expr *false_expr = logic_or_expression();
-                return new_expr(QMARK, cond_expr, new_expr(COLON, true_expr, false_expr));
-        }
-        return cond_expr;
-}
-
-static struct expr *logic_or_expression(void) {
-        struct expr *expr = logic_and_expression();
-        while (ct->kind == OROR) {
-                HANDLE_BINOP(OROR, logic_and_expression());
-        }
-        return expr;
-}
-
-static struct expr *logic_and_expression(void) {
-        struct expr *expr = inc_or_expression();
-        while (ct->kind == ANDAND) {
-                HANDLE_BINOP(ANDAND, inc_or_expression());
-        }
-        return expr;
-}
-
-static struct expr *inc_or_expression(void) {
-        struct expr *expr = exc_or_expression();
-        while (ct->kind == OR) {
-                HANDLE_BINOP(OR, exc_or_expression());
-        }
-        return expr;
-}
-
-static struct expr *exc_or_expression(void) {
-        struct expr *expr = and_expression();
-        while (ct->kind == XOR) {
-                HANDLE_BINOP(XOR, and_expression());
-        }
-        return expr;
-}
-
-static struct expr *and_expression(void) {
-        struct expr *expr = equality_expression();
-        while (ct->kind == AND) {
-                HANDLE_BINOP(AND, equality_expression());
-        }
-        return expr;
-}
-
-static struct expr *equality_expression(void) {
-        struct expr *expr = relational_expression();
-        while (1) {
-                HANDLE_BINOP(EQ, relational_expression());
-                HANDLE_BINOP(NEQ, relational_expression());
-                return expr;
+// translation-unit = {external-declaration};
+void parse(struct Token *token) {
+        _ct = token;
+        while (_ct->kind != EOI) {
+                extdecl();
         }
 }
 
-static struct expr *relational_expression(void) {
-        struct expr *expr = shift_expression();
-        while (1) {
-                HANDLE_BINOP(LT, shift_expression());
-                HANDLE_BINOP(GT, shift_expression());
-                HANDLE_BINOP(LEQ, shift_expression());
-                HANDLE_BINOP(GEQ, shift_expression());
-                return expr;
-        }
-}
-
-static struct expr *shift_expression(void) {
-        struct expr *expr = additive_expression();
-        while (1) {
-                HANDLE_BINOP(LSHIFT, additive_expression());
-                HANDLE_BINOP(RSHIFT, additive_expression());
-                return expr;
-        }
-}
-
-static struct expr *additive_expression(void) {
-        struct expr *expr = multiplicative_expression();
-        while (1) {
-                HANDLE_BINOP(ADD, multiplicative_expression());
-                HANDLE_BINOP(SUB, multiplicative_expression());
-                return expr;
-        }
-}
-
-static struct expr *multiplicative_expression(void) {
-        struct expr *expr = unary_expression();
-        while (1) {
-                HANDLE_BINOP(MUL, unary_expression());
-                HANDLE_BINOP(DIV, unary_expression());
-                return expr;
-        }
-}
-
-// FIXME: prefix incr/decr should be different from postfix incr/decr
-static struct expr *unary_expression(void) {
-        if (ct->kind == INCR) {
-                consume(INCR);
-                return new_expr(INCR, unary_expression(), NULL);
-        }
-        if (ct->kind == DECR) {
-                consume(DECR);
-                return new_expr(DECR, unary_expression(), NULL);
-        }
-        if (ct->kind == AND || ct->kind == MUL || ct->kind == ADD || ct->kind == SUB ||
-            ct->kind == TILDA || ct->kind == NOT) {
-                enum Kind kind = ct->kind;
-                consume(kind);
-                if (kind == SUB) {
-                        struct expr *lhs = new_expr(INT, NULL, NULL);
-                        lhs->ivalue = 0;
-                        return new_expr(SUB, lhs, unary_expression());
-                }
-                if (kind == ADD) {
-                        struct expr *lhs = new_expr(INT, NULL, NULL);
-                        lhs->ivalue = 0;
-                        return new_expr(ADD, lhs, unary_expression());
-                }
-                return new_expr(kind, unary_expression(), NULL);
-        }
-        if (ct->kind == SIZEOF) {
-                if (ct->next->kind == OPAR) {
-                        error("sizeof (type-name) not implemented\n");
-                } else {
-                        consume(SIZEOF);
-                        struct expr *expr = unary_expression();
-                        return new_expr(SIZEOF, expr, NULL);
-                }
-        }
-        return postfix_expression();
-}
-
-// postfix-expression ::=
-// 	    primary-expression
-// 	    postfix-expression "[" expression "]"                               -- array
-// 	    postfix-expression "(" argument-expression-list? ")"                -- function call
-// 	    postfix-expression "." identifier                                   -- struct
-// 	    postfix-expression "->" identifier                                  -- struct pointer
-// 	    postfix-expression "++"                                             -- increment
-// 	    postfix-expression "--"                                             -- decrement
-// 	    "(" type-name ")" "{" initializer-list "}"                          -- compound literal
-// 	    "(" type-name ")" "{" initializer-list "," "}"                      -- compound literal
-static struct expr *postfix_expression(void) {
-        if (ct->kind == OPAR) {
-                error("postfix_expression not implemented\n");
-        }
-        struct expr *prim_expr = primary_expression();
-        if (ct->kind == OBR) {
-                // array access
-                consume(OBR);
-                struct expr *index = expr();
-                consume(CBR);
-                return new_expr(OBR, prim_expr, index);
-        } else if (ct->kind == OPAR) {
-                // func call
-                consume(OPAR);
-                struct expr *arg_list = arg_expr_list();
-                // arguments
-                consume(CPAR);
-                return new_expr(OPAR, prim_expr, arg_list);
-        } else if (ct->kind == DOT) {
-                // struct access
-                consume(DOT);
-                struct expr *field = primary_expression();
-                return new_expr(DOT, prim_expr, field);
-        } else if (ct->kind == DEREF) {
-                consume(DEREF);
-                struct expr *field = primary_expression();
-                return new_expr(DEREF, prim_expr, field);
-        } else if (ct->kind == INCR) {
-                consume(INCR);
-                return new_expr(INCR, prim_expr, NULL);
-        } else if (ct->kind == DECR) {
-                consume(DECR);
-                return new_expr(DECR, prim_expr, NULL);
-        }
-        return prim_expr;
-}
-
-static struct expr *primary_expression(void) {
-        struct expr *expr = calloc(1, sizeof(struct expr));
-        if (ct->kind == IDENT) {
-                expr->kind = IDENT;
-                copystr(&expr->strLit, &ct->start, ct->len);
-                consume(IDENT);
-                return expr;
-        }
-        if (ct->kind == INTCONST) {
-                expr->kind = INT;
-                expr->ivalue = ct->ivalue;
-                consume(INTCONST);
-                return expr;
-        }
-        if (ct->kind == FLOATCONST) {
-                expr->kind = FLOAT;
-                expr->fvalue = ct->fvalue;
-                consume(FLOATCONST);
-                return expr;
-        }
-        if (ct->kind == DOUBLECONST) {
-                expr->kind = DOUBLE;
-                expr->dvalue = ct->dvalue;
-                consume(DOUBLECONST);
-                return expr;
-        }
-        if (ct->kind == STRCONST) {
-                expr->kind = STRCONST;
-                copystr(&expr->strLit, &ct->start, ct->len);
-                consume(STRCONST);
-                return expr;
-        }
-        if (ct->kind == CHARCONST) {
-                expr->kind = CHAR;
-                if (ct->len == 3) {
-                        expr->strLit = strncpy(calloc(2, sizeof(char)), ct->start + 1, 1);
-                } else if (ct->len == 4) {
-                        if (ct->start[1] == '\\') {
-                                switch (ct->start[2]) {
-                                                // other forms (plain char?) vs convenient-for-printing form
-                                        case 'n': expr->strLit = "\\n"; break;
-                                        case 't': expr->strLit = "\\t"; break;
-                                        case 'r': expr->strLit = "\\r"; break;
-                                        case 'v': expr->strLit = "\\v"; break;
-                                        case 'f': expr->strLit = "\\f"; break;
-                                        case 'b': expr->strLit = "\\b"; break;
-                                        case 'a': expr->strLit = "\\a"; break;
-                                        case '0': expr->strLit = "\\0"; break;
-                                        case '\\': expr->strLit = "\\\\"; break;
-                                        case '?': expr->strLit = "\\?"; break;
-                                        case '\'': expr->strLit = "\\'"; break;
-                                        case '\"': expr->strLit = "\\\""; break;
-                                        default: error("Char literal not implemented\n");
-                                }
-                        } else {
-                                error("Char literal not implemented\n");
-                        }
-                } else {
-                        error("Char literal not implemented\n");
-                }
-                consume(CHARCONST);
-                return expr;
-        }
-        return expr;
-}
-
-// argument-expression-list ::=
-// 	    assignment-expression
-// 	    argument-expression-list "," assignment-expression
-static struct expr *arg_expr_list(void) {
-        if (ct->kind != CPAR) {
-                struct expr *arg_list = expr();
-                if (ct->kind == COMMA) {
-                        consume(COMMA);
-                        struct expr *next = arg_expr_list();
-                        return new_expr(OPAR, arg_list, next);
-                }
-                return new_expr(OPAR, arg_list, NULL);
-        }
-        return NULL;
-}
-
-// function-definition
-// declaration
-struct ExtDecl *parse(struct Token *tokens) {
-        ct = tokens;
-        struct ExtDecl head = {};
-        struct ExtDecl *cur = &head;
-        enter_scope();  // global scope
-        while (ct->kind != EOI) {
-                struct declspec *declspec = declaration_specifiers();
-                struct decltor *decltor = declarator();  // #1 declarator
-                if (decltor->row > 0 || decltor->col > 0) {
-                        // array declaration
-                        declspec->array[0] = decltor->row;
-                        declspec->array[1] = decltor->col;
-                }
-                if (decltor->kind == FUNCTION) {
-                        cur = cur->next = function(&declspec, &decltor);
-                } else {
-                        cur = cur->next = declaration(&declspec, &decltor);
-                }
-                ht_set(scope->vars, decltor->name, declspec);
-        }
-        leave_scope();
-        return head.next;
-}
-
-// UTILS
-static void copystr(char **dest, char **src, int len) {
-        if (*dest == NULL) {
-                *dest = calloc(len, sizeof(char));
-        }
-        strncpy(*dest, *src, len);
-        (*dest)[len] = '\0';
-}
-
-// prints AST
-void printExtDecl(struct ExtDecl *extDecl, int level) {
-        if (extDecl == NULL) {
-                return;
-        }
-        switch (extDecl->decltor->kind) {
-                case FUNCTION: {
-                        fprintf(outfile,
-                                "%*sFunctionDecl %s %s\n",
-                                level * INDENT,
-                                "",
-                                token_names[extDecl->declspec->type],
-                                extDecl->decltor->name);
-                        if (extDecl->decltor->params != NULL) {
-                                fprintf(outfile, "%*sParams\n", (level + 1) * INDENT, "");
-                                printParams(extDecl->decltor->params, level + 1);
-                        }
-                        printStmt(extDecl->compStmt, level + 1);
-                        break;
-                }
-                case DECLARATION: {
-                        if (extDecl->decltor->row == 0 && extDecl->decltor->col == 0) {
-                                fprintf(outfile,
-                                        "%*sVariableDecl %s%s %s\n",
-                                        level * INDENT,
-                                        "",
-                                        token_names[extDecl->declspec->type],
-                                        (extDecl->declspec->pointer == 0)
-                                                ? ""
-                                                : (extDecl->declspec->pointer == 1 ? "*" : "**"),
-                                        extDecl->decltor->name);
-                                printExpr(extDecl->expr, level + 1);
-                                break;
-                        } else {
-                                const char *declType = token_names[extDecl->declspec->type];
-                                const char *declName = extDecl->decltor->name;
-                                int pointer = extDecl->declspec->pointer;
-                                if (extDecl->decltor->row == 0 && extDecl->decltor->col == 0) {
-                                        fprintf(outfile,
-                                                "%*sVariableDecl %s%s %s\n",
-                                                level * INDENT,
-                                                "",
-                                                declType,
-                                                (pointer == 0) ? "" : (pointer == 1 ? "*" : "**"),
-                                                declName);
-                                        printExpr(extDecl->expr, level + 1);
-                                } else {
-                                        if (extDecl->decltor->col == 0) {
-                                                if (extDecl->decltor->row == 0) {
-                                                        fprintf(outfile,
-                                                                "%*sArrayDecl %s %s[]\n",
-                                                                level * INDENT,
-                                                                "",
-                                                                declType,
-                                                                declName);
-                                                } else {
-                                                        fprintf(outfile,
-                                                                "%*sArrayDecl %s %s[%d]\n",
-                                                                level * INDENT,
-                                                                "",
-                                                                declType,
-                                                                declName,
-                                                                extDecl->decltor->row);
-                                                }
-                                        } else {
-                                                fprintf(outfile,
-                                                        "%*sArrayDecl %s %s[%d][%d]\n",
-                                                        level * INDENT,
-                                                        "",
-                                                        declType,
-                                                        declName,
-                                                        extDecl->decltor->row,
-                                                        extDecl->decltor->col);
-                                        }
-                                }
-
-                                if (extDecl->expr != NULL)
-                                        printExpr(extDecl->expr, level + 1);
-                                else if (extDecl->init != NULL &&
-                                         extDecl->init->children->children != NULL) {
-                                        fprintf(outfile,
-                                                "%*sInitializer\n",
-                                                (level + 1) * INDENT,
-                                                "");
-                                        printInitializer(extDecl->init->children, level + 2);
-                                } else if (extDecl->init != NULL) {
-                                        fprintf(outfile,
-                                                "%*sInitializer\n",
-                                                (level + 1) * INDENT,
-                                                "");
-                                        printInitializer(extDecl->init, level + 2);
-                                } else {
-                                        // zero initialized array
-                                }
-                                break;
-                        }
-                }
-        }
-        printExtDecl(extDecl->next, level);
-}
-
-static void printBlock(struct block *block, int level) {
-        if (block == NULL) return;
-        assert(block->stmt == NULL || block->decl == NULL);
-        if (block->stmt != NULL) {
-                printStmt(block->stmt, level);
-        } else if (block->decl != NULL) {
-                printExtDecl(block->decl, level);
+// external-declaration = declaration-specifiers declarator {function-definition | declaration}
+void extdecl() {
+        declspec();
+        decltor();
+        if (_cextdecl == FUNC) {
+                funcdef();
         } else {
-                error("Empty block\n");
-        }
-        printBlock(block->next, level);
-}
-
-static void printStmt(struct stmt *stmt, int level) {
-        if (stmt == NULL) return;
-        switch (stmt->kind) {
-                case IDENT: {
-                        fprintf(outfile, "%*sLabelStmt\n", level * INDENT, "");
-                        printExpr(stmt->value, level + 1);
-                        printStmt(stmt->then, level + 1);
-                        break;
-                }
-                case CONTINUE: {
-                        fprintf(outfile, "%*sContinueStmt\n", level * INDENT, "");
-                        break;
-                }
-                case GOTO: {
-                        fprintf(outfile, "%*sGotoStmt\n", level * INDENT, "");
-                        printExpr(stmt->value, level + 1);
-                        break;
-                }
-                case BREAK: {
-                        fprintf(outfile, "%*sBreakStmt\n", level * INDENT, "");
-                        break;
-                }
-                case DEFAULT: {
-                        fprintf(outfile, "%*sDefaultStmt\n", level * INDENT, "");
-                        printStmt(stmt->then, level + 1);
-                        break;
-                }
-                case CASE: {
-                        fprintf(outfile, "%*sCaseStmt\n", level * INDENT, "");
-                        printExpr(stmt->cond, level + 1);
-                        printStmt(stmt->then, level + 1);
-                        break;
-                }
-                case SWITCH: {
-                        fprintf(outfile, "%*sSwitchStmt\n", level * INDENT, "");
-                        printExpr(stmt->cond, level + 1);
-                        printStmt(stmt->then, level + 1);
-                        break;
-                }
-                case DO: {
-                        fprintf(outfile, "%*sDoStmt\n", level * INDENT, "");
-                        printStmt(stmt->then, level + 1);
-                        printExpr(stmt->cond, level + 1);
-                        break;
-                }
-                case STMT_COMPOUND: {
-                        fprintf(outfile, "%*sCompoundStmt\n", level * INDENT, "");
-                        printBlock(stmt->body, level + 1);
-                        break;
-                }
-                case WHILE: {
-                        fprintf(outfile, "%*sWhileStmt\n", level * INDENT, "");
-                        printExpr(stmt->cond, level + 1);
-                        printStmt(stmt->then, level + 1);
-                        break;
-                }
-                case FOR: {
-                        fprintf(outfile, "%*sForStmt\n", level * INDENT, "");
-                        if (stmt->init_kind == 1) {
-                                printExtDecl(stmt->init.decl, level + 1);
-                        } else {
-                                printExpr(stmt->init.expr, level + 1);
-                        }
-                        printExpr(stmt->cond, level + 1);
-                        printExpr(stmt->inc, level + 1);
-                        printStmt(stmt->then, level + 1);
-                        break;
-                }
-                case IF: {
-                        fprintf(outfile, "%*sIfStmt\n", level * INDENT, "");
-                        printExpr(stmt->cond, level + 1);
-                        printStmt(stmt->then, level + 1);
-                        printStmt(stmt->els, level + 1);
-                        break;
-                }
-                case STMT_EXPR: {
-                        fprintf(outfile, "%*sExprStmt\n", level * INDENT, "");
-                        printExpr(stmt->value, level + 1);
-                        break;
-                }
-                case RETURN: {
-                        fprintf(outfile, "%*sReturnStmt\n", level * INDENT, "");
-                        printExpr(stmt->value, level + 1);
-                        break;
-                }
-                default: error("Unknown statement kind\n");
+                _cdecl = GLOBAL;
+                decl();
         }
 }
 
-static void printExpr(struct expr *expr, int level) {
-#define PRINT_EXPR_NAME(name) \
-        fprintf(outfile, "%*s" name " %s\n", level *INDENT, "", token_names[expr->kind]);
+// function-definition = compound-statement;
+void funcdef() { compstmt(); }
 
-#define PRINT_EXPR_LR()                  \
-        printExpr(expr->lhs, level + 1); \
-        printExpr(expr->rhs, level + 1); \
-        break;
+// declaration = [declaration-specifiers] [init-declarator-list] ';'
+//             | static-assert-declaration
+//             | ';';
+void decl() {
+        if (_cdecl != GLOBAL) {
+                declspec();
+                decltor();
+        }
+        initdecllist();
+        consume("missing ';' of declaration", SEMIC);
+}
 
-        if (expr == NULL) return;
-        switch (expr->kind) {
-                case INT:
-                        fprintf(outfile,
-                                "%*sIntegerLiteral %d\n",
-                                level * INDENT,
-                                "",
-                                expr->ivalue);
-                        break;
-                case FLOAT:
-                        fprintf(outfile, "%*sFloatLiteral %f\n", level * INDENT, "", expr->fvalue);
-                        break;
-                case DOUBLE:
-                        fprintf(outfile, "%*sDoubleLiteral %f\n", level * INDENT, "", expr->dvalue);
-                        break;
-                case CHAR:
-                        fprintf(outfile, "%*sCharLiteral '%s'\n", level * INDENT, "", expr->strLit);
-                        break;
-                case IDENT:
-                        fprintf(outfile, "%*sIdentifier %s\n", level * INDENT, "", expr->strLit);
-                        break;
-                case ADD:
-                case SUB:
-                case MUL:
-                case DIV: {
-                        if (expr->rhs == NULL) {
-                                PRINT_EXPR_NAME("UnaryExpr");
-                        } else {
-                                PRINT_EXPR_NAME("ArithExpr");
-                        }
-                        PRINT_EXPR_LR();
-                }
-                case LSHIFT:
-                case RSHIFT: {
-                        PRINT_EXPR_NAME("ShiftExpr");
-                        PRINT_EXPR_LR();
-                }
-                case LT:
-                case GT:
-                case LEQ:
-                case GEQ:
-                case EQ:
-                case NEQ: {
-                        PRINT_EXPR_NAME("RelatExpr");
-                        PRINT_EXPR_LR();
-                }
-                case AND:
-                case OR:
-                case XOR: {
-                        if (expr->kind == AND && expr->rhs == NULL) {
-                                PRINT_EXPR_NAME("AddressExpr");
-                        } else {
-                                PRINT_EXPR_NAME("BitExpr");
-                        }
-                        PRINT_EXPR_LR();
-                }
-                case ANDAND:
-                case OROR: {
-                        PRINT_EXPR_NAME("LogicExpr");
-                        PRINT_EXPR_LR();
-                }
-                case QMARK: {
-                        fprintf(outfile, "%*sCondExpr\n", level * INDENT, "");
-                        printExpr(expr->lhs, level + 1);
-                        printExpr(expr->rhs->lhs, level + 1);
-                        printExpr(expr->rhs->rhs, level + 1);
-                        break;
-                }
-                case INCR:
-                case DECR:
-                case NOT:
-                case TILDA:
-                case SIZEOF: {
-                        PRINT_EXPR_NAME("UnaryExpr");
-                        PRINT_EXPR_LR();
-                }
-                case ASSIGN: {
-                        fprintf(outfile, "%*sAssignExpr\n", level * INDENT, "");
-                        PRINT_EXPR_LR();
-                }
-                case OPAR: {  // func call
-                        fprintf(outfile, "%*sFuncCallExpr\n", level * INDENT, "");
-                        PRINT_EXPR_LR();
-                }
-                case OBR: {  // array access
-                        fprintf(outfile, "%*sArrayExpr\n", level * INDENT, "");
-                        PRINT_EXPR_LR();
-                }
-                case DOT: {
-                        fprintf(outfile, "%*sStructExpr\n", level * INDENT, "");
-                        PRINT_EXPR_LR();
-                }
-                case DEREF: {
-                        fprintf(outfile, "%*sDerefExpr\n", level * INDENT, "");
-                        PRINT_EXPR_LR();
-                }
-                case STRCONST: {
-                        fprintf(outfile, "%*sStringLiteral %s\n", level * INDENT, "", expr->strLit);
-                        break;
-                }
-                case CHARCONST: {
-                        const char *frmSpec = expr->strLit[0] == '\\' ? "%*sCharLiteral '%s'\n"
-                                                                      : "%*sCharLiteral '%c'\n";
-                        if (expr->strLit[0] == '\\')
-                                fprintf(outfile, frmSpec, level * INDENT, "", expr->strLit);
-                        else
-                                fprintf(outfile, frmSpec, level * INDENT, "", expr->strLit[1]);
-                        break;
-                }
-                default: error("Unknown expression kind\n");
+// declaration-specifiers = declaration-specifier {declaration-specifier};
+void declspec() {
+        sclass();
+        typespc();
+        typequal();
+        funcspec();
+}
+
+// declaration-specifier = storage-class-specifier
+//                       | type-specifier
+//                       | type-qualifier
+//                       | function-specifier
+
+// declarator = [pointer] direct-declarator
+void decltor() {
+        if (_ct->kind == MUL) pointer();
+        ddecltor();
+}
+
+// declaration-list = declaration, {declaration};
+
+// compound-statement = '{', {declaration-or-statement}, '}';
+void compstmt() {
+        consume("missing '{' of compound statement", OCBR);
+        while (_ct->kind != CCBR && _ct->kind != EOI) {
+                decl_or_stmt();
+        }
+        consume("missing '}' of compound statement", CCBR);
+}
+
+// declaration-or-statement = declaration | statement
+void decl_or_stmt() {
+        enum Kind ctk = _ct->kind;
+        if (ctk == INT) {
+                _cdecl = LOCAL;
+                decl();
+        } else {
+                stmt();
         }
 }
 
-static void printParams(struct params *params, int level) {
-        if (params == NULL) return;
-        fprintf(outfile,
-                "%*s%s %s\n",
-                (level + 1) * INDENT,
-                "",
-                token_names[params->declspec->type],
-                params->decltor->name);
-        printParams(params->next, level);
+// init-declarator-list = ['=', initializer] {',' declarator ['=' initializer]};
+void initdecllist() {
+        if (_ct->kind == ASSIGN) {
+                consume("", ASSIGN);
+                consume("", INTCONST);
+        }
 }
 
-static void printInitializer(struct initializer *initializer, int level) {
-        if (initializer == NULL) return;
-        struct initializer *head = initializer;
-        initializer = initializer->children;
-        fprintf(outfile, "%*s", level * INDENT, "");
-        while (initializer != NULL) {
-                fprintf(outfile,
-                        "%d%s",
-                        initializer->value.ivalue,
-                        initializer->next == NULL ? "\n" : ", ");
-                initializer = initializer->next;
+// static-assert-declaration = '_Static_assert', '(', constant-expression, ',', string-literal, ')', ';';
+
+// storage-class-specifier = 'typedef'
+//                         | 'extern'
+//                         | 'static'
+//                         | 'auto'
+//                         | 'register';
+void sclass() {
+        enum Kind ctk = _ct->kind;
+        if (ctk == TYPEDEF || ctk == EXTERN || ctk == STATIC || ctk == AUTO || ctk == REGISTER)
+                consume("", ctk);
+}
+
+// type-specifier = 'void'
+//                | 'char'
+//                | 'short'
+//                | 'int'
+//                | 'long'
+//                | 'float'
+//                | 'double'
+//                | 'signed'
+//                | 'unsigned'
+//                | '_Bool'
+//                | '_Complex'
+//                | '_Imaginary'       (* non-mandated extension *)
+//                | atomic-type-specifier
+//                | struct-or-union-specifier
+//                | enum-specifier
+//                | typedef-name;
+void typespc() {
+        enum Kind ctk = _ct->kind;
+        if (ctk == VOID || ctk == CHAR || ctk == INT || ctk == LONG) consume("", ctk);
+}
+
+// (* NOTE: Please define typedef-name as result of 'typedef'. *)
+// typedef-name = identifier;
+
+// type-qualifier = 'const'
+//                | 'restrict'
+//                | 'volatile'
+void typequal() {
+        enum Kind ctk = _ct->kind;
+        if (ctk == CONST || ctk == RESTRICT || ctk == VOLATILE) consume("", ctk);
+}
+
+// function-specifier = 'inline'
+void funcspec() {
+        if (_ct->kind == INLINE) consume("", _ct->kind);
+}
+
+// pointer = '*', [type-qualifier-list], [pointer];
+void pointer() {
+        if (_ct->kind == MUL) consume("", MUL);
+}
+
+// direct-declarator = identifier
+//                   | '(', declarator, ')'
+//                   | direct-declarator, '[', ['*'], ']'
+//                   | direct-declarator, '[', 'static', [type-qualifier-list], assignment-expression, ']'
+//                   | direct-declarator, '[', type-qualifier-list, ['*'], ']'
+//                   | direct-declarator, '[', type-qualifier-list, ['static'], assignment-expression, ']'
+//                   | direct-declarator, '[', assignment-expression, ']'
+//                   | direct-declarator, '(', parameter-type-list, ')'
+//                   | direct-declarator, '(', ')';
+void ddecltor() {
+        if (_ct->kind == IDENT) consume("", IDENT);
+        if (_ct->kind == OPAR) {
+                _cextdecl = FUNC; /* global var */
+
+                // function
+                consume("", OPAR);
+                consume("", VOID);
+                consume("missing ')' of function definition", CPAR);
+                return;
+        } else if (_ct->kind == OBR) {
+                // array
+                consume("", OBR);
+                consume("", INT);
+                consume("missing '[' of array declaration", CBR);
         }
-        printInitializer(head->next, level);
+        _cextdecl = DECL; /* global var */
+}
+
+// identifier-list = identifier, {',', identifier};
+
+// initializer-list = designative-initializer, {',', designative-initializer};
+
+// designative-initializer = [designation], initializer;
+
+// initializer = '{', initializer-list, [','], '}'
+//             | assignment-expression;
+
+// constant-expression = conditional-expression;  (* with constraints *)
+
+// atomic-type-specifier = '_Atomic', '(', type-name, ')';
+
+// struct-or-union-specifier = struct-or-union, '{', struct-declaration-list, '}'
+//                           | struct-or-union, identifier, ['{', struct-declaration-list, '}'];
+
+// struct-or-union = 'struct'
+//                 | 'union';
+
+// struct-declaration-list = struct-declaration, {struct-declaration};
+
+// struct-declaration = specifier-qualifier-list, ';'     (* for anonymous struct/union *)
+//                    | specifier-qualifier-list, struct-declarator-list, ';'
+//                    | static-assert-declaration;
+
+// enum-specifier = 'enum', '{', enumerator-list, [','], '}'
+//                | 'enum', identifier, ['{', enumerator-list, [','], '}'];
+
+// enumerator-list = enumerator, {',', enumerator};
+
+// (* NOTE: Please define enumeration-constant for identifier inside enum { ... }. *)
+// enumerator = enumeration-constant, ['=', constant-expression];
+
+// enumeration-constant = identifier;
+
+// type-name = specifier-qualifier-list, [abstract-declarator];
+
+// specifier-qualifier-list = specifier-qualifier, {specifier-qualifier};
+
+// specifier-qualifier = type-specifier | type-qualifier;
+
+// abstract-declarator = pointer, [direct-abstract-declarator]
+//                     | direct-abstract-declarator;
+
+// direct-abstract-declarator = '(', abstract-declarator, ')'
+//                            | '(', parameter-type-list, ')'
+//                            | '(', ')'
+//                            | '[', ['*'], ']'
+//                            | '[', 'static', [type-qualifier-list], assignment-expression, ']'
+//                            | '[', type-qualifier-list, [['static'], assignment-expression], ']'
+//                            | '[', assignment-expression, ']'
+//                            | direct-abstract-declarator, '[', ['*'], ']'
+//                            | direct-abstract-declarator, '[', 'static', [type-qualifier-list], assignment-expression, ']'
+//                            | direct-abstract-declarator, '[', type-qualifier-list, [['static'], assignment-expression], ']'
+//                            | direct-abstract-declarator, '[', assignment-expression, ']'
+//                            | direct-abstract-declarator, '(', parameter-type-list, ')'
+//                            | direct-abstract-declarator, '(', ')';
+
+// struct-declarator-list = struct-declarator, {',', struct-declarator};
+
+// type-qualifier-list = type-qualifier, {type-qualifier};
+
+// parameter-type-list = parameter-list, [',', '...'];
+
+// struct-declarator = ':', constant-expression
+//                   | declarator, [':', constant-expression];
+
+// assignment-operator = '='
+//                     | '*='
+//                     | '/='
+//                     | '%='
+//                     | '+='
+//                     | '-='
+//                     | '<<='
+//                     | '>>='
+//                     | '&='
+//                     | '^='
+//                     | '|=';
+
+// parameter-list = parameter-declaration, {',', parameter-declaration};
+
+// parameter-declaration = declaration-specifiers, [declarator | abstract-declarator];
+
+// expression = assignment-expression, {',', assignment-expression};
+
+// assignment-expression = conditional-expression
+//                       | unary-expression, assignment-operator, assignment-expression;
+
+// conditional-expression = logical-or-expression, ['?', expression, ':', conditional-expression];
+
+// logical-or-expression = logical-and-expression, {'||', logical-and-expression};
+
+// logical-and-expression = inclusive-or-expression, {'&&', inclusive-or-expression};
+
+// inclusive-or-expression = exclusive-or-expression, {'|', exclusive-or-expression};
+
+// exclusive-or-expression = and-expression, {'^', and-expression};
+
+// and-expression = equality-expression, {'&', equality-expression};
+
+// equality-expression = relational-expression, {('==' | '!='), relational-expression};
+
+// relational-expression = shift-expression, {('<' | '>' | '<=' | '>='), shift-expression};
+
+// shift-expression = additive-expression, {('<<' | '>>'), additive-expression};
+
+// additive-expression = multiplicative-expression, {('+' | '-'), multiplicative-expression};
+
+// multiplicative-expression = cast-expression, {('*' | '/' | '%'), cast-expression};
+
+// cast-expression = unary-expression
+//                 | '(', type-name, ')', cast-expression;
+
+// unary-expression = postfix-expression
+//                  | ('++' | '--'), unary-expression
+//                  | unary-operator, cast-expression
+//                  | 'sizeof', unary-expression
+//                  | 'sizeof', '(', type-name, ')'
+//                  | '_Alignof', '(', type-name, ')';
+
+// postfix-expression = primary-expression
+//                    | postfix-expression, '[', expression, ']'
+//                    | postfix-expression, '(', [argument-expression-list], ')'
+//                    | postfix-expression, ('.' | '->'), identifier
+//                    | postfix-expression, ('++' | '--')
+//                    | '(', type-name, ')', '{', initializer-list, [','], '}';
+
+// unary-operator = '&'
+//                | '*'
+//                | '+'
+//                | '-'
+//                | '~'
+//                | '!';
+
+// primary-expression = identifier
+//                    | constant
+//                    | string
+//                    | '(', expression, ')'
+//                    | generic-selection;
+
+// argument-expression-list = assignment-expression, {',', assignment-expression};
+
+// constant = integer-constant
+//          | character-constant
+//          | floating-constant
+//          | enumeration-constant;
+
+// string = string-literal
+//        | '__func__';
+
+// generic-selection = '_Generic', '(', assignment-expression, ',', generic-assoc-list, ')';
+
+// generic-assoc-list = generic-association, {',', generic-association};
+
+// generic-association = type-name, ':', assignment-expression
+//                     | 'default', ':', assignment-expression;
+
+// designation = designator-list, '=';
+
+// designator-list = designator, {designator};
+
+// designator = '[', constant-expression, ']'
+//            | '.', identifier;
+
+// statement = labeled-statement
+//           | compound-statement
+//           | expression-statement
+//           | selection-statement
+//           | iteration-statement
+//           | jump-statement;
+void stmt() {
+        if (_ct->kind == RETURN) {
+                jumpstmt();
+        }
+}
+
+// labeled-statement = identifier, ':', statement
+//                   | 'case', constant-expression, ':', statement
+//                   | 'default', ':', statement;
+
+// expression-statement = [expression], ';';
+
+// selection-statement = 'if', '(', expression, ')', statement, 'else', statement
+//                     | 'if', '(', expression, ')', statement
+//                     | 'switch', '(', expression, ')', statement;
+
+//  iteration-statement = 'while', '(', expression, ')', statement
+//                      | 'do', statement, 'while', '(', expression, ')', ';'
+//                      | 'for', '(', [expression], ';', [expression], ';', [expression], ')', statement
+//                      | 'for', '(', declaration, [expression], ';', [expression], ')', statement;
+
+// jump-statement = 'goto', identifier, ';'
+//                | 'continue', ';'
+//                | 'break', ';'
+//                | 'return', [expression], ';';
+void jumpstmt() {
+        if (_ct->kind == RETURN) {
+                consume("", RETURN);
+                consume("", INTCONST);
+                consume("missing ';' of return stmt", SEMIC);
+        }
 }

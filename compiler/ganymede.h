@@ -116,6 +116,8 @@ enum Kind {
         DOUBLECONST,
         LONGDOUBLECONST,
         NONE,  // for error handling
+        RESTRICT,
+        INLINE
 };
 
 struct Token {
@@ -137,48 +139,11 @@ void printTokens(struct Token *head, FILE *outfile);
 struct Token *scan(char *stream);
 
 // parser
-struct ExtDecl *parse(struct Token *tokens);
-void printExtDecl(struct ExtDecl *extDecl, int level);
-struct expr *new_expr(enum Kind kind, struct expr *lhs, struct expr *rhs);
+void parse(struct Token *tokens);
 
 struct scope {
         struct scope *next;
         ht *vars;  // key: name, value: declspec
-};
-
-// either function or declaration
-struct ExtDecl {
-        struct ExtDecl *next;
-        struct declspec *declspec;
-        struct decltor *decltor;
-        struct expr *expr;         // for declaration
-        struct initializer *init;  // for array declaration
-        struct stmt *compStmt;     // for function
-};
-
-struct declspec {
-        enum Kind type;
-        int array[2];  // row, col
-        int pointer;   // pointer
-};
-
-struct decltor {
-        //
-        char *name;
-        enum {
-                FUNCTION,
-                DECLARATION,
-        } kind;
-        struct params *params;  // function
-        int row;                // array
-        int col;                // array
-        int pointer;            //  0 - isn't pointer, 1 - is pointer, 2 - is pointer pointer
-};
-
-struct params {
-        struct params *next;
-        struct declspec *declspec;
-        struct decltor *decltor;
 };
 
 /*
