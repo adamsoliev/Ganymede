@@ -46,6 +46,11 @@ enum Kind {
         STRUCT,
         UNION,
         ENUM,
+        /* jump stmt */
+        GOTO,
+        CONTINUE,
+        BREAK,
+        RETURN,
 
         LT,      // <
         GT,      // >
@@ -100,18 +105,14 @@ enum Kind {
         CHARCONST,
         ELLIPSIS,
         CASE,
-        CONTINUE,
         DEFAULT,
         DO,
         ELSE,
         FOR,
-        GOTO,
-        RETURN,
         SIZEOF,
         SWITCH,
         WHILE,
         DOT,
-        BREAK,
         COLON,
         RSHIFTASSIGN,
         LSHIFTASSIGN,

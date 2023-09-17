@@ -136,8 +136,7 @@ void initdecllist() {
 //                         | 'register';
 void sclass() {
         enum Kind ctk = _ct->kind;
-        if (ctk == TYPEDEF || ctk == EXTERN || ctk == STATIC || ctk == AUTO || ctk == REGISTER)
-                consume("", ctk);
+        if (ctk >= TYPEDEF && ctk <= REGISTER) consume("", ctk);
 }
 
 // type-specifier = 'void'
@@ -169,7 +168,7 @@ void typespc() {
 //                | 'volatile'
 void typequal() {
         enum Kind ctk = _ct->kind;
-        if (ctk == CONST || ctk == RESTRICT || ctk == VOLATILE) consume("", ctk);
+        if (ctk >= CONST && ctk <= VOLATILE) consume("", ctk);
 }
 
 // function-specifier = 'inline'
@@ -384,7 +383,7 @@ void stmt() {
         enum Kind ctk = _ct->kind;
         if (ctk == IDENT) {
                 labelstmt();
-        } else if (ctk == RETURN || ctk == BREAK || ctk == CONTINUE || ctk == GOTO) {
+        } else if (ctk >= GOTO && ctk <= RETURN) {
                 jumpstmt();
         } else if (ctk == FOR) {
                 iterstmt();
@@ -456,14 +455,14 @@ void iterstmt() {
 void jumpstmt() {
         enum Kind ctk = _ct->kind;
         if (ctk == RETURN) {
-                consume("", RETURN);
+                consume("", ctk);
                 consume("", INTCONST);
         } else if (ctk == BREAK) {
-                consume("", BREAK);
+                consume("", ctk);
         } else if (ctk == CONTINUE) {
-                consume("", CONTINUE);
+                consume("", ctk);
         } else if (ctk == GOTO) {
-                consume("", GOTO);
+                consume("", ctk);
                 consume("", IDENT);
         } else {
                 error("invalid jump statement\n");
