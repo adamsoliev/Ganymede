@@ -1,7 +1,7 @@
-int x = 2;
+long long int x = 2;
 
 int main(void) {
-        int a = 23;
+        unsigned long int a = 23;
         for (a = 0; a < 23; a++) {
                 if (a == 10) continue;
                 if (a == 16) break;

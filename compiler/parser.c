@@ -79,10 +79,12 @@ void decl() {
 
 // declaration-specifiers = declaration-specifier {declaration-specifier};
 void declspec() {
-        sclass();
-        typespc();
-        typequal();
-        funcspec();
+        while (_ct->kind >= TYPEDEF && _ct->kind <= ENUM) {
+                sclass();
+                typespc();
+                typequal();
+                funcspec();
+        }
 }
 
 // declaration-specifier = storage-class-specifier
@@ -109,8 +111,7 @@ void compstmt() {
 
 // declaration-or-statement = declaration | statement
 void declorstmt() {
-        enum Kind ctk = _ct->kind;
-        if (ctk == INT) {
+        if (_ct->kind >= VOID && _ct->kind <= ENUM) {
                 _cdecl = LOCAL;
                 decl();
         } else {
@@ -157,7 +158,7 @@ void sclass() {
 //                | typedef-name;
 void typespc() {
         enum Kind ctk = _ct->kind;
-        if (ctk == VOID || ctk == CHAR || ctk == INT || ctk == LONG) consume("", ctk);
+        if (ctk >= VOID && ctk <= ENUM) consume("", ctk);
 }
 
 // (* NOTE: Please define typedef-name as result of 'typedef'. *)

@@ -21,6 +21,32 @@ extern FILE *outfile;
 extern char *limit;
 
 enum Kind {
+        /* storage-class specifiers */
+        TYPEDEF = 1,
+        EXTERN,
+        STATIC,
+        AUTO,
+        REGISTER,
+        /* type-qualifier */
+        CONST,
+        RESTRICT,
+        VOLATILE,
+        /* func-specifier*/
+        INLINE,
+        /* type-specifier */
+        VOID,
+        CHAR,
+        SHORT,
+        INT,
+        LONG,
+        FLOAT,
+        DOUBLE,
+        SIGNED,
+        UNSIGNED,
+        STRUCT,
+        UNION,
+        ENUM,
+
         LT,      // <
         GT,      // >
         LEQ,     // <=
@@ -46,7 +72,6 @@ enum Kind {
         INCR,       // ++
         EOI,        // end of input
         IF,
-        INT,
         OBR,        // [
         CBR,        // ]
         OCBR,       // {
@@ -74,34 +99,16 @@ enum Kind {
         STRCONST,
         CHARCONST,
         ELLIPSIS,
-        AUTO,
         CASE,
-        CHAR,
-        CONST,
         CONTINUE,
         DEFAULT,
         DO,
-        DOUBLE,
         ELSE,
-        ENUM,
-        EXTERN,
-        FLOAT,
         FOR,
         GOTO,
-        LONG,
-        REGISTER,
         RETURN,
-        SHORT,
-        SIGNED,
         SIZEOF,
-        STATIC,
-        STRUCT,
         SWITCH,
-        TYPEDEF,
-        UNION,
-        UNSIGNED,
-        VOID,
-        VOLATILE,
         WHILE,
         DOT,
         BREAK,
@@ -116,8 +123,6 @@ enum Kind {
         DOUBLECONST,
         LONGDOUBLECONST,
         NONE,  // for error handling
-        RESTRICT,
-        INLINE
 };
 
 struct Token {
@@ -274,8 +279,5 @@ hti ht_iterator(ht *table);
 bool ht_next(hti *it);
 void ht_test(void);
 char *strdup(const char *s);
-
-// codegen
-void codegen(struct ExtDecl *program);
 
 #endif
