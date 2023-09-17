@@ -1,4 +1,42 @@
-// long long int x = 2;
+/* storage class specifiers */
+// static float pi;
+// static int counter;
+// extern double temperature;
+// long id;
+// const char* message;
+// volatile unsigned int flag;
+
+/* type specifiers */
+// short short_var;
+// long long_var;
+// long long long_long_var;
+// unsigned int unsigned_int_var;
+// unsigned short unsigned_short_var;
+// unsigned long unsigned_long_var;
+// unsigned long long unsigned_long_long_var;
+// float float_var;
+// double double_var;
+// long double long_double_var;
+// char char_var;
+// unsigned char unsigned_char_var;
+// signed char signed_char_var;
+// void* void_ptr;
+// long long int x;
+
+struct Point {
+        int x;
+        int y;
+};
+union Color {
+        int rgb;
+        char name;
+        // char name[10];
+};
+// enum Days { MON, TUE, WED, THU, FRI };
+// enum MColor { RED, GREEN, BLUE } color_var;
+// typedef int Integer;
+// typedef struct Point Point;
+// typedef enum Days Weekday;
 
 // signed char c;
 // signed short s;
@@ -12,14 +50,13 @@
 // double d;
 // long double D;
 // int b;
-const int a, *x;
+// const int a, *x;
+// int i, j, *p;
 // int b, *y;
 // volatile unsigned z;
-// void *p;
+// void* p;
 // void (*P)(void);
 
-// int i, j;
-// int i, j, *p;
 // float f[128];
 // int in[] = {10, 32, -1, 567, 3, 18, 1, -51, 789, 0};
 // int x[3][4], *y[3];

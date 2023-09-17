@@ -5,7 +5,9 @@
 
 /* global variables */
 static struct Token *_ct;
+/* set by upfront-parsed declarator to diff funcdef vs declaration */
 enum { FUNC = 1, DECL } _cextdecl;
+/* if GLOBAL, first declarator is parsed upfront to diff funcdef */
 enum { GLOBAL = 1, LOCAL, PARAM } _cdecl;
 
 /* utility functions */
@@ -26,7 +28,7 @@ void ddecltor();
 void pointer();
 void funcspec();
 void typequal();
-void typespc();
+void typespec();
 void sclass();
 void declorstmt();
 void compstmt();
@@ -40,6 +42,13 @@ void selectstmt();
 void iterstmt();
 void labelstmt();
 void initializer();
+void structdecllist();
+void structorunionspec();
+void specqual();
+void specquallist();
+void structdecl();
+void structdecltor();
+void structdecltorlist();
 
 void parse(struct Token *token);
 
@@ -74,6 +83,10 @@ void decl() {
                 declspec();
                 decltor();
         }
+        if (_ct->kind == SEMIC) {
+                consume("", SEMIC);
+                return;
+        }
         initdecllist();
         consume("missing ';' of declaration", SEMIC);
 }
@@ -86,7 +99,7 @@ void decl() {
 void declspec() {
         while (_ct->kind >= TYPEDEF && _ct->kind <= ENUM) {
                 sclass();
-                typespc();
+                typespec();
                 typequal();
                 funcspec();
         }
@@ -161,9 +174,14 @@ void sclass() {
 //                | struct-or-union-specifier
 //                | enum-specifier
 //                | typedef-name;
-void typespc() {
+void typespec() {
         enum Kind ctk = _ct->kind;
-        if (ctk >= VOID && ctk <= ENUM) consume("", ctk);
+        if (ctk >= VOID && ctk <= ENUM) {
+                if (ctk == STRUCT || ctk == UNION) {
+                        structorunionspec();
+                } else
+                        consume("", ctk);
+        }
 }
 
 // (* NOTE: Please define typedef-name as result of 'typedef'. *)
@@ -228,17 +246,45 @@ void initializer() {
 
 // constant-expression = conditional-expression;  (* with constraints *)
 
-// struct-or-union-specifier = struct-or-union, '{', struct-declaration-list, '}'
-//                           | struct-or-union, identifier, ['{', struct-declaration-list, '}'];
+// struct-or-union-specifier = struct-or-union '{' struct-declaration-list '}'
+//                           | struct-or-union identifier ['{' struct-declaration-list '}'];
+void structorunionspec() {
+        if (_ct->kind == STRUCT || _ct->kind == UNION) {
+                consume("", _ct->kind);
+                if (_ct->kind == IDENT) {
+                        consume("", IDENT);
+                }
+                if (_ct->kind == OCBR) {
+                        consume("", OCBR);
+                        structdecllist();
+                        consume("missing '}' of struct\n", CCBR);
+                }
+        }
+}
 
 // struct-or-union = 'struct'
 //                 | 'union';
 
-// struct-declaration-list = struct-declaration, {struct-declaration};
+// struct-declaration-list = struct-declaration {struct-declaration};
+void structdecllist() {
+        while (_ct->kind != CCBR && _ct->kind != EOI) {
+                structdecl();
+        }
+}
 
-// struct-declaration = specifier-qualifier-list, ';'     (* for anonymous struct/union *)
-//                    | specifier-qualifier-list, struct-declarator-list, ';'
+// struct-declaration = specifier-qualifier-list ';'     (* for anonymous struct/union *)
+//                    | specifier-qualifier-list struct-declarator-list ';'
 //                    | static-assert-declaration;
+void structdecl() {
+        //
+        specquallist();
+        if (_ct->kind == SEMIC)
+                consume("", SEMIC);
+        else {
+                structdecltorlist();
+                consume("missing ';' of struct member\n", SEMIC);
+        }
+}
 
 // enum-specifier = 'enum', '{', enumerator-list, [','], '}'
 //                | 'enum', identifier, ['{', enumerator-list, [','], '}'];
@@ -253,8 +299,20 @@ void initializer() {
 // type-name = specifier-qualifier-list, [abstract-declarator];
 
 // specifier-qualifier-list = specifier-qualifier, {specifier-qualifier};
+void specquallist() {
+        //
+        specqual();
+}
 
 // specifier-qualifier = type-specifier | type-qualifier;
+void specqual() {
+        if (_ct->kind >= VOID && _ct->kind <= ENUM) {
+                typespec();
+        }
+        if (_ct->kind >= CONST && _ct->kind == VOLATILE) {
+                typequal();
+        }
+}
 
 // abstract-declarator = pointer, [direct-abstract-declarator]
 //                     | direct-abstract-declarator;
@@ -273,14 +331,28 @@ void initializer() {
 //                            | direct-abstract-declarator, '(', parameter-type-list, ')'
 //                            | direct-abstract-declarator, '(', ')';
 
-// struct-declarator-list = struct-declarator, {',', struct-declarator};
+// struct-declarator-list = struct-declarator {',', struct-declarator}
+void structdecltorlist() { structdecltor(); }
 
 // type-qualifier-list = type-qualifier, {type-qualifier};
 
 // parameter-type-list = parameter-list, [',', '...'];
 
-// struct-declarator = ':', constant-expression
-//                   | declarator, [':', constant-expression];
+// struct-declarator = ':' constant-expression
+//                   | declarator [':' constant-expression]
+void structdecltor() {
+        //
+        if (_ct->kind == COLON) {
+                consume("", COLON);
+                consume("", INTCONST);
+                return;
+        }
+        decltor();
+        if (_ct->kind == COLON) {
+                consume("", COLON);
+                consume("", INTCONST);
+        }
+}
 
 // assignment-operator = '='
 //                     | '*='
