@@ -28,7 +28,7 @@ void funcspec();
 void typequal();
 void typespc();
 void sclass();
-void decl_or_stmt();
+void declorstmt();
 void compstmt();
 void decltor();
 void declspec();
@@ -36,6 +36,10 @@ void decl();
 void funcdef();
 void extdecl();
 void initdecllist();
+void selectstmt();
+void iterstmt();
+void labelstmt();
+
 void parse(struct Token *token);
 
 // translation-unit = {external-declaration};
@@ -98,13 +102,13 @@ void decltor() {
 void compstmt() {
         consume("missing '{' of compound statement", OCBR);
         while (_ct->kind != CCBR && _ct->kind != EOI) {
-                decl_or_stmt();
+                declorstmt();
         }
         consume("missing '}' of compound statement", CCBR);
 }
 
 // declaration-or-statement = declaration | statement
-void decl_or_stmt() {
+void declorstmt() {
         enum Kind ctk = _ct->kind;
         if (ctk == INT) {
                 _cdecl = LOCAL;
@@ -376,34 +380,92 @@ void ddecltor() {
 //           | iteration-statement
 //           | jump-statement;
 void stmt() {
-        if (_ct->kind == RETURN) {
+        enum Kind ctk = _ct->kind;
+        if (ctk == IDENT) {
+                labelstmt();
+        } else if (ctk == RETURN || ctk == BREAK || ctk == CONTINUE || ctk == GOTO) {
                 jumpstmt();
+        } else if (ctk == FOR) {
+                iterstmt();
+        } else if (ctk == IF) {
+                selectstmt();
+        } else {
+                compstmt();
         }
 }
 
 // labeled-statement = identifier, ':', statement
 //                   | 'case', constant-expression, ':', statement
 //                   | 'default', ':', statement;
+void labelstmt() {
+        enum Kind ctk = _ct->kind;
+        if (ctk == IDENT) {
+                consume("", IDENT);
+                consume("", COLON);
+                stmt();
+        }
+}
 
 // expression-statement = [expression], ';';
 
 // selection-statement = 'if', '(', expression, ')', statement, 'else', statement
 //                     | 'if', '(', expression, ')', statement
 //                     | 'switch', '(', expression, ')', statement;
+void selectstmt() {
+        enum Kind ctk = _ct->kind;
+        if (ctk == IF) {
+                consume("", IF);
+                consume("", OPAR);
+                consume("", IDENT);
+                consume("", EQ);
+                consume("", INTCONST);
+                consume("", CPAR);
+                stmt();
+        }
+}
 
 //  iteration-statement = 'while', '(', expression, ')', statement
 //                      | 'do', statement, 'while', '(', expression, ')', ';'
 //                      | 'for', '(', [expression], ';', [expression], ';', [expression], ')', statement
 //                      | 'for', '(', declaration, [expression], ';', [expression], ')', statement;
+void iterstmt() {
+        enum Kind ctk = _ct->kind;
+        if (ctk == FOR) {
+                consume("", FOR);
+                consume("", OPAR);
+                consume("", IDENT);
+                consume("", ASSIGN);
+                consume("", INTCONST);
+                consume("", SEMIC);
+                consume("", IDENT);
+                consume("", LT);
+                consume("", INTCONST);
+                consume("", SEMIC);
+                consume("", IDENT);
+                consume("", INCR);
+                consume("", CPAR);
+                stmt();
+        }
+}
 
-// jump-statement = 'goto', identifier, ';'
-//                | 'continue', ';'
-//                | 'break', ';'
-//                | 'return', [expression], ';';
+// jump-statement = 'goto' identifier ';'
+//                | 'continue' ';'
+//                | 'break' ';'
+//                | 'return' [expression] ';';
 void jumpstmt() {
-        if (_ct->kind == RETURN) {
+        enum Kind ctk = _ct->kind;
+        if (ctk == RETURN) {
                 consume("", RETURN);
                 consume("", INTCONST);
-                consume("missing ';' of return stmt", SEMIC);
+        } else if (ctk == BREAK) {
+                consume("", BREAK);
+        } else if (ctk == CONTINUE) {
+                consume("", CONTINUE);
+        } else if (ctk == GOTO) {
+                consume("", GOTO);
+                consume("", IDENT);
+        } else {
+                error("invalid jump statement\n");
         }
+        consume("missing ';' of jump stmt", SEMIC);
 }
