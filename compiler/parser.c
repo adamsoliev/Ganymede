@@ -39,6 +39,7 @@ void initdecllist();
 void selectstmt();
 void iterstmt();
 void labelstmt();
+void initializer();
 
 void parse(struct Token *token);
 
@@ -78,6 +79,10 @@ void decl() {
 }
 
 // declaration-specifiers = declaration-specifier {declaration-specifier};
+// declaration-specifier = storage-class-specifier
+//                       | type-specifier
+//                       | type-qualifier
+//                       | function-specifier
 void declspec() {
         while (_ct->kind >= TYPEDEF && _ct->kind <= ENUM) {
                 sclass();
@@ -86,11 +91,6 @@ void declspec() {
                 funcspec();
         }
 }
-
-// declaration-specifier = storage-class-specifier
-//                       | type-specifier
-//                       | type-qualifier
-//                       | function-specifier
 
 // declarator = [pointer] direct-declarator
 void decltor() {
@@ -121,9 +121,19 @@ void declorstmt() {
 
 // init-declarator-list = ['=', initializer] {',' declarator ['=' initializer]};
 void initdecllist() {
+        /* first declarator is already parsed. now see if it has initializer */
         if (_ct->kind == ASSIGN) {
                 consume("", ASSIGN);
-                consume("", INTCONST);
+                initializer();
+        }
+        /* rest of the declarators */
+        while (_ct->kind == COMMA && _ct->kind != EOI) {
+                consume("", COMMA);
+                decltor();
+                if (_ct->kind == ASSIGN) {
+                        consume("", ASSIGN);
+                        initializer();
+                }
         }
 }
 
@@ -148,10 +158,6 @@ void sclass() {
 //                | 'double'
 //                | 'signed'
 //                | 'unsigned'
-//                | '_Bool'
-//                | '_Complex'
-//                | '_Imaginary'       (* non-mandated extension *)
-//                | atomic-type-specifier
 //                | struct-or-union-specifier
 //                | enum-specifier
 //                | typedef-name;
@@ -209,18 +215,18 @@ void ddecltor() {
         _cextdecl = DECL; /* global var */
 }
 
-// identifier-list = identifier, {',', identifier};
-
 // initializer-list = designative-initializer, {',', designative-initializer};
 
 // designative-initializer = [designation], initializer;
 
 // initializer = '{', initializer-list, [','], '}'
 //             | assignment-expression;
+void initializer() {
+        //
+        if (_ct->kind == INTCONST) consume("", INTCONST);
+}
 
 // constant-expression = conditional-expression;  (* with constraints *)
-
-// atomic-type-specifier = '_Atomic', '(', type-name, ')';
 
 // struct-or-union-specifier = struct-or-union, '{', struct-declaration-list, '}'
 //                           | struct-or-union, identifier, ['{', struct-declaration-list, '}'];
