@@ -223,9 +223,11 @@ void ddecltor() {
                 return;
         } else if (_ct->kind == OBR) {
                 // array
-                consume("", OBR);
-                consume("", INTCONST);
-                consume("missing '[' of array declaration", CBR);
+                while (_ct->kind == OBR && _ct->kind != EOI) {
+                        consume("", OBR);
+                        consume("", INTCONST);
+                        consume("missing '[' of array declaration", CBR);
+                }
         }
         _cextdecl = DECL; /* global var */
 }
@@ -322,7 +324,9 @@ void structdecl() {
 // specifier-qualifier-list = specifier-qualifier {specifier-qualifier}
 void specquallist() {
         //
-        specqual();
+        while (_ct->kind >= CONST && _ct->kind <= ENUM && _ct->kind != INLINE && _ct->kind != EOI) {
+                specqual();
+        }
 }
 
 // specifier-qualifier = type-specifier | type-qualifier;
@@ -356,6 +360,7 @@ void specqual() {
 void structdecltorlist() {
         structdecltor();
         while (_ct->kind == COMMA && _ct->kind != EOI) {
+                consume("", COMMA);
                 structdecltor();
         }
 }

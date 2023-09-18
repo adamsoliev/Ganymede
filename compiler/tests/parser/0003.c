@@ -23,6 +23,7 @@ signed char signed_char_var;
 void* void_ptr;
 long long int x;
 
+struct Shape;
 struct Point {
         int x;
         int y;
@@ -32,6 +33,34 @@ union Color {
         char name;
         char name[10];
 };
+struct employee {
+        char name[20];
+        int id;
+        long class;
+} temp;
+struct employee student, faculty, staff;
+/* anonymous struct */
+struct {
+        float x, y;
+} complex;
+struct sample {
+        char c;
+        float* pf;
+        struct sample* next;
+} x;
+struct somestruct {
+        /* Anonymous struct */
+        struct {
+                int x, y;
+        } point;
+        int type;
+} w;
+struct {
+        unsigned short icon : 8;
+        unsigned short color : 4;
+        unsigned short underline : 1;
+        unsigned short blink : 1;
+} screen[25][80];
 
 // enum Days { MON, TUE, WED, THU, FRI };
 // enum MColor { RED, GREEN, BLUE } color_var;
