@@ -62,8 +62,9 @@ struct {
         unsigned short blink : 1;
 } screen[25][80];
 
-// enum Days { MON, TUE, WED, THU, FRI };
-// enum MColor { RED, GREEN, BLUE } color_var;
+enum Days { MON, TUE, WED, THU, FRI };
+enum MColor { RED, GREEN, BLUE } color_var;
+
 // typedef int Integer;
 // typedef struct Point Point;
 // typedef enum Days Weekday;

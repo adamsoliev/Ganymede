@@ -49,6 +49,9 @@ void specquallist();
 void structdecl();
 void structdecltor();
 void structdecltorlist();
+void enumtor();
+void enumtorlist();
+void enumspec();
 
 void parse(struct Token *token);
 
@@ -176,8 +179,11 @@ void typespec() {
         if (ctk >= VOID && ctk <= ENUM) {
                 if (ctk == STRUCT || ctk == UNION) {
                         structorunionspec();
-                } else
+                } else if (ctk == ENUM) {
+                        enumspec();
+                } else {
                         consume("", ctk);
+                }
         }
 }
 
@@ -272,32 +278,6 @@ void structdecllist() {
         }
 }
 
-/*
-struct-or-union-specifier:
-        struct-or-union { struct-declaration-list }
-        struct-or-union identifier { struct-declaration-list }
-        struct-or-union identifier
-
-struct-or-union:
-        struct
-        union
-
-struct-declaration-list: struct-declaration { struct-declaration }
-
-struct-declaration:
-        specifier-qualifier-list struct-declarator-list ;
-
-specifier-qualifier-list: specifier-qualifier { specifier-qualifier }
-
-specifier-qualifier: type-specifier | type-qualifier
-
-struct-declarator-list: struct-declarator { struct-declarator }
-
-struct-declarator:
-        declarator
-        declarator? : constant-expression
-*/
-
 // struct-declaration = specifier-qualifier-list struct-declarator-list ';'
 void structdecl() {
         specquallist();
@@ -309,13 +289,37 @@ void structdecl() {
         }
 }
 
-// enum-specifier = 'enum', '{', enumerator-list, [','], '}'
-//                | 'enum', identifier, ['{', enumerator-list, [','], '}'];
+// enum-specifier = 'enum' '{' enumerator-list [','] '}'
+//                | 'enum' identifier ['{' enumerator-list [','] '}'];
+void enumspec() {
+        consume("", ENUM);
+        if (_ct->kind == IDENT) consume("", IDENT);
+        if (_ct->kind == OCBR) {
+                consume("", OCBR);
+                enumtorlist();
+                while (_ct->kind == COMMA && _ct->kind != EOI) enumtorlist();
+                consume("missing '}' of enum\n", CCBR);
+        }
+}
 
-// enumerator-list = enumerator, {',', enumerator};
+// enumerator-list = enumerator {',' enumerator};
+void enumtorlist() {
+        enumtor();
+        while (_ct->kind == COMMA && _ct->kind != EOI) {
+                consume("", COMMA);
+                enumtor();
+        }
+}
 
 // (* NOTE: Please define enumeration-constant for identifier inside enum { ... }. *)
-// enumerator = enumeration-constant, ['=', constant-expression];
+// enumerator = identifier ['=' constant-expression];
+void enumtor() {
+        consume("", IDENT);
+        if (_ct->kind == ASSIGN) {
+                consume("", ASSIGN);
+                consume("", INTCONST);
+        }
+}
 
 // enumeration-constant = identifier;
 
