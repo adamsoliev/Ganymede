@@ -76,7 +76,6 @@ void extdecl() {
 void funcdef() { compstmt(); }
 
 // declaration = [declaration-specifiers] [init-declarator-list] ';'
-//             | static-assert-declaration
 //             | ';';
 void decl() {
         if (_cdecl != GLOBAL) {
@@ -149,8 +148,6 @@ void initdecllist() {
                 }
         }
 }
-
-// static-assert-declaration = '_Static_assert', '(', constant-expression, ',', string-literal, ')', ';';
 
 // storage-class-specifier = 'typedef'
 //                         | 'extern'
@@ -227,7 +224,7 @@ void ddecltor() {
         } else if (_ct->kind == OBR) {
                 // array
                 consume("", OBR);
-                consume("", INT);
+                consume("", INTCONST);
                 consume("missing '[' of array declaration", CBR);
         }
         _cextdecl = DECL; /* global var */
@@ -248,6 +245,7 @@ void initializer() {
 
 // struct-or-union-specifier = struct-or-union '{' struct-declaration-list '}'
 //                           | struct-or-union identifier ['{' struct-declaration-list '}'];
+//                           | struct-or-union identifier
 void structorunionspec() {
         if (_ct->kind == STRUCT || _ct->kind == UNION) {
                 consume("", _ct->kind);
@@ -272,11 +270,34 @@ void structdecllist() {
         }
 }
 
-// struct-declaration = specifier-qualifier-list ';'     (* for anonymous struct/union *)
-//                    | specifier-qualifier-list struct-declarator-list ';'
-//                    | static-assert-declaration;
+/*
+struct-or-union-specifier:
+        struct-or-union { struct-declaration-list }
+        struct-or-union identifier { struct-declaration-list }
+        struct-or-union identifier
+
+struct-or-union:
+        struct
+        union
+
+struct-declaration-list: struct-declaration { struct-declaration }
+
+struct-declaration:
+        specifier-qualifier-list struct-declarator-list ;
+
+specifier-qualifier-list: specifier-qualifier { specifier-qualifier }
+
+specifier-qualifier: type-specifier | type-qualifier
+
+struct-declarator-list: struct-declarator { struct-declarator }
+
+struct-declarator:
+        declarator
+        declarator? : constant-expression
+*/
+
+// struct-declaration = specifier-qualifier-list struct-declarator-list ';'
 void structdecl() {
-        //
         specquallist();
         if (_ct->kind == SEMIC)
                 consume("", SEMIC);
@@ -298,7 +319,7 @@ void structdecl() {
 
 // type-name = specifier-qualifier-list, [abstract-declarator];
 
-// specifier-qualifier-list = specifier-qualifier, {specifier-qualifier};
+// specifier-qualifier-list = specifier-qualifier {specifier-qualifier}
 void specquallist() {
         //
         specqual();
@@ -331,8 +352,13 @@ void specqual() {
 //                            | direct-abstract-declarator, '(', parameter-type-list, ')'
 //                            | direct-abstract-declarator, '(', ')';
 
-// struct-declarator-list = struct-declarator {',', struct-declarator}
-void structdecltorlist() { structdecltor(); }
+// struct-declarator-list = struct-declarator {',' struct-declarator}
+void structdecltorlist() {
+        structdecltor();
+        while (_ct->kind == COMMA && _ct->kind != EOI) {
+                structdecltor();
+        }
+}
 
 // type-qualifier-list = type-qualifier, {type-qualifier};
 
