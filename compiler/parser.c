@@ -52,6 +52,10 @@ void structdecltorlist();
 void enumtor();
 void enumtorlist();
 void enumspec();
+void designator();
+void designtorlist();
+void designation();
+void designinitzer();
 
 void parse(struct Token *token);
 
@@ -205,7 +209,7 @@ void funcspec() {
 
 // pointer = '*', [type-qualifier-list], [pointer];
 void pointer() {
-        if (_ct->kind == MUL) consume("", MUL);
+        while (_ct->kind == MUL && _ct->kind != EOI) consume("", MUL);
 }
 
 // direct-declarator = identifier
@@ -231,22 +235,41 @@ void ddecltor() {
                 // array
                 while (_ct->kind == OBR && _ct->kind != EOI) {
                         consume("", OBR);
-                        consume("", INTCONST);
+                        if (_ct->kind == INTCONST) consume("", INTCONST);
                         consume("missing '[' of array declaration", CBR);
                 }
         }
         _cextdecl = DECL; /* global var */
 }
 
-// initializer-list = designative-initializer, {',', designative-initializer};
+// initializer-list = designative-initializer {',' designative-initializer}
+void initializerlist() {
+        //
+        designinitzer();
+        while (_ct->kind == COMMA) {
+                consume("", COMMA);
+                designinitzer();
+        }
+}
 
 // designative-initializer = [designation], initializer;
+void designinitzer() {
+        if (_ct->kind == OBR || _ct->kind == DOT) designation();
+        initializer();
+}
 
-// initializer = '{', initializer-list, [','], '}'
+// initializer = '{' initializer-list [','] '}'
 //             | assignment-expression;
 void initializer() {
-        //
-        if (_ct->kind == INTCONST) consume("", INTCONST);
+        if (_ct->kind == OCBR) {
+                consume("", OCBR);
+                initializerlist();
+                if (_ct->kind == COMMA) consume("", COMMA);
+                consume("", CCBR);
+                return;
+        }
+        if (_ct->kind == SUB) consume("", SUB); /* negative intconst */
+        consume("", INTCONST);
 }
 
 // constant-expression = conditional-expression;  (* with constraints *)
@@ -479,12 +502,30 @@ void structdecltor() {
 // generic-association = type-name, ':', assignment-expression
 //                     | 'default', ':', assignment-expression;
 
-// designation = designator-list, '=';
+// designation = designator-list '=';
+void designation() {
+        designtorlist();
+        if (_ct->kind == ASSIGN) consume("", ASSIGN);
+}
 
-// designator-list = designator, {designator};
+// designator-list = designator {designator};
+void designtorlist() {
+        //
+        designator();
+}
 
-// designator = '[', constant-expression, ']'
-//            | '.', identifier;
+// designator = '[' constant-expression ']'
+//            | '.' identifier
+void designator() {
+        if (_ct->kind == OBR) {
+                consume("", OBR);
+                consume("", INTCONST);
+                consume("", CBR);
+        } else {
+                assert(_ct->kind == DOT);
+                consume("", IDENT);
+        }
+}
 
 // statement = labeled-statement
 //           | compound-statement

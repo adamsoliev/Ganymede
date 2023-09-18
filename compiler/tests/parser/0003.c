@@ -90,8 +90,10 @@ void* p;
 
 float f[128];
 int up[15], down[15], rows[8], x[8];
-// int in[] = {10, 32, -1, 567, 3, 18, 1, -51, 789, 0};
-// int x[3][4], *y[3];
+char*** ptrPtrPtr;
+int x[3][4], *y[3];
+
+int in[] = {10, 32, -1, 567, 3, 18, 1, -51, 789, 0};
 // int queens(), print();
 
 int main(void) {
