@@ -22,7 +22,7 @@ static void consume(const char *msg, enum Kind kind) {
 
 void jumpstmt();
 void stmt();
-void ddecltor();
+void directdeclarator();
 void pointer();
 void funcspec();
 void typequal();
@@ -30,23 +30,23 @@ void typespec();
 void sclass();
 void declorstmt();
 void compstmt();
-void decltor();
+void declarator();
 void declspec();
-void decl();
+void declaration();
 void funcdef();
 void extdecl();
-void initdecllist();
+void initdeclaratorlist();
 void selectstmt();
 void iterstmt();
 void labelstmt();
 void initializer();
-void structdecllist();
+void structdeclarationlist();
 void structorunionspec();
 void specqual();
 void specquallist();
-void structdecl();
-void structdecltor();
-void structdecltorlist();
+void structdeclaration();
+void structdeclarator();
+void structdeclaratorlist();
 void enumtor();
 void enumtorlist();
 void enumspec();
@@ -68,7 +68,7 @@ void parse(struct Token *token) {
 // external-declaration = declaration-specifiers declarator {function-definition | declaration}
 void extdecl() {
         _cdecl = GLOBAL;
-        decl();
+        declaration();
 }
 
 // function-definition = compound-statement;
@@ -76,15 +76,15 @@ void funcdef() { compstmt(); }
 
 // declaration = [declaration-specifiers] [init-declarator-list] ';'
 //             | ';';
-void decl() {
+void declaration() {
         /* parse 1st declarator to diff function definition */
         declspec();
-        decltor();
+        declarator();
         if (_cdecl == GLOBAL && _ct->kind == OCBR) {
                 funcdef();
                 return;
         }
-        initdecllist();
+        initdeclaratorlist();
         consume("missing ';' of declaration", SEMIC);
 }
 
@@ -103,9 +103,9 @@ void declspec() {
 }
 
 // declarator = [pointer] direct-declarator
-void decltor() {
+void declarator() {
         if (_ct->kind == MUL) pointer();
-        ddecltor();
+        directdeclarator();
 }
 
 // declaration-list = declaration {declaration}
@@ -123,14 +123,14 @@ void compstmt() {
 void declorstmt() {
         if (_ct->kind >= VOID && _ct->kind <= ENUM) {
                 _cdecl = LOCAL;
-                decl();
+                declaration();
         } else {
                 stmt();
         }
 }
 
 // init-declarator-list = ['=' initializer] {',' declarator ['=' initializer]}
-void initdecllist() {
+void initdeclaratorlist() {
         /* first declarator is already parsed. now see if it has initializer */
         if (_ct->kind == ASSIGN) {
                 consume("", ASSIGN);
@@ -139,7 +139,7 @@ void initdecllist() {
         /* rest of the declarators */
         while (_ct->kind == COMMA && _ct->kind != EOI) {
                 consume("", COMMA);
-                decltor();
+                declarator();
                 if (_ct->kind == ASSIGN) {
                         consume("", ASSIGN);
                         initializer();
@@ -212,7 +212,7 @@ void pointer() {
 //                   | direct-declarator '[' assignment-expression ']'
 //                   | direct-declarator '(' parameter-type-list ')'
 //                   | direct-declarator '(' ')'
-void ddecltor() {
+void directdeclarator() {
         if (_ct->kind == IDENT) consume("", IDENT);
         if (_ct->kind == OPAR) {
                 // function
@@ -273,7 +273,7 @@ void structorunionspec() {
                 }
                 if (_ct->kind == OCBR) {
                         consume("", OCBR);
-                        structdecllist();
+                        structdeclarationlist();
                         consume("missing '}' of struct\n", CCBR);
                 }
         }
@@ -283,19 +283,19 @@ void structorunionspec() {
 //                 | 'union';
 
 // struct-declaration-list = struct-declaration {struct-declaration};
-void structdecllist() {
+void structdeclarationlist() {
         while (_ct->kind != CCBR && _ct->kind != EOI) {
-                structdecl();
+                structdeclaration();
         }
 }
 
 // struct-declaration = specifier-qualifier-list struct-declarator-list ';'
-void structdecl() {
+void structdeclaration() {
         specquallist();
         if (_ct->kind == SEMIC)
                 consume("", SEMIC);
         else {
-                structdecltorlist();
+                structdeclaratorlist();
                 consume("missing ';' of struct member\n", SEMIC);
         }
 }
@@ -372,11 +372,11 @@ void specqual() {
 //                            | direct-abstract-declarator, '(', ')';
 
 // struct-declarator-list = struct-declarator {',' struct-declarator}
-void structdecltorlist() {
-        structdecltor();
+void structdeclaratorlist() {
+        structdeclarator();
         while (_ct->kind == COMMA && _ct->kind != EOI) {
                 consume("", COMMA);
-                structdecltor();
+                structdeclarator();
         }
 }
 
@@ -386,14 +386,14 @@ void structdecltorlist() {
 
 // struct-declarator = ':' constant-expression
 //                   | declarator [':' constant-expression]
-void structdecltor() {
+void structdeclarator() {
         //
         if (_ct->kind == COLON) {
                 consume("", COLON);
                 consume("", INTCONST);
                 return;
         }
-        decltor();
+        declarator();
         if (_ct->kind == COLON) {
                 consume("", COLON);
                 consume("", INTCONST);
