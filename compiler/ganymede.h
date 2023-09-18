@@ -20,6 +20,7 @@ typedef struct ht ht;
 extern FILE *outfile;
 extern char *limit;
 
+/* NOTE: relative order matters */
 enum Kind {
         /* storage-class specifiers */
         TYPEDEF = 1,

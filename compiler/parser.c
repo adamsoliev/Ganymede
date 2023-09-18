@@ -6,7 +6,7 @@
 /* global variables */
 static struct Token *_ct;
 /* if GLOBAL, first declarator is parsed upfront to diff funcdef */
-enum { GLOBAL = 1, LOCAL, PARAM } _cdecl;
+enum { GLOBAL = 1, LOCAL, PARAM } _cdecllevel;
 
 /* utility functions */
 static void consume(const char *msg, enum Kind kind) {
@@ -65,22 +65,28 @@ void parse(struct Token *token) {
         }
 }
 
-// external-declaration = declaration-specifiers declarator {function-definition | declaration}
+// external-declaration = {function-definition | declaration}
 void extdecl() {
-        _cdecl = GLOBAL;
+        _cdecllevel = GLOBAL;
         declaration();
 }
 
 // function-definition = compound-statement;
 void funcdef() { compstmt(); }
 
-// declaration = [declaration-specifiers] [init-declarator-list] ';'
+// declaration = declaration-specifiers declarator [declaration-specifiers] [init-declarator-list] ';'
 //             | ';';
 void declaration() {
         /* parse 1st declarator to diff function definition */
         declspec();
         declarator();
-        if (_cdecl == GLOBAL && _ct->kind == OCBR) {
+        if (_cdecllevel == GLOBAL && _ct->kind == OCBR) {
+                /* TODO: funcdef if 
+                        0) level is global
+                        1) 1st declarator specifies FUNCT 
+                        2) 1st declarator includes IDENT
+                        3) next token is '{' (we don't support old stype funcdef)
+                */
                 funcdef();
                 return;
         }
@@ -122,7 +128,7 @@ void compstmt() {
 // declaration-or-statement = declaration | statement
 void declorstmt() {
         if (_ct->kind >= VOID && _ct->kind <= ENUM) {
-                _cdecl = LOCAL;
+                _cdecllevel = LOCAL;
                 declaration();
         } else {
                 stmt();
