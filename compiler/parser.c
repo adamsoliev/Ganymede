@@ -5,8 +5,6 @@
 
 /* global variables */
 static struct Token *_ct;
-/* set by upfront-parsed declarator to diff funcdef vs declaration */
-enum { FUNC = 1, DECL } _cextdecl;
 /* if GLOBAL, first declarator is parsed upfront to diff funcdef */
 enum { GLOBAL = 1, LOCAL, PARAM } _cdecl;
 
@@ -69,16 +67,8 @@ void parse(struct Token *token) {
 
 // external-declaration = declaration-specifiers declarator {function-definition | declaration}
 void extdecl() {
-        declspec();
-        decltor();
-        /* THINK: you may want to combine these two methods since a function definition 
-        is a declaration with compound statement */
-        if (_cextdecl == FUNC) {
-                funcdef();
-        } else {
-                _cdecl = GLOBAL;
-                decl();
-        }
+        _cdecl = GLOBAL;
+        decl();
 }
 
 // function-definition = compound-statement;
@@ -87,12 +77,11 @@ void funcdef() { compstmt(); }
 // declaration = [declaration-specifiers] [init-declarator-list] ';'
 //             | ';';
 void decl() {
-        if (_cdecl != GLOBAL) {
-                declspec();
-                decltor();
-        }
-        if (_ct->kind == SEMIC) {
-                consume("", SEMIC);
+        /* parse 1st declarator to diff function definition */
+        declspec();
+        decltor();
+        if (_cdecl == GLOBAL && _ct->kind == OCBR) {
+                funcdef();
                 return;
         }
         initdecllist();
@@ -117,12 +106,6 @@ void declspec() {
 void decltor() {
         if (_ct->kind == MUL) pointer();
         ddecltor();
-        /* global var */
-        if (_ct->kind == OCBR) {
-                _cextdecl = FUNC;
-        } else {
-                _cextdecl = DECL;
-        }
 }
 
 // declaration-list = declaration {declaration}
