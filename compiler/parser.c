@@ -71,6 +71,8 @@ void parse(struct Token *token) {
 void extdecl() {
         declspec();
         decltor();
+        /* THINK: you may want to combine these two methods since a function definition 
+        is a declaration with compound statement */
         if (_cextdecl == FUNC) {
                 funcdef();
         } else {
@@ -115,11 +117,17 @@ void declspec() {
 void decltor() {
         if (_ct->kind == MUL) pointer();
         ddecltor();
+        /* global var */
+        if (_ct->kind == OCBR) {
+                _cextdecl = FUNC;
+        } else {
+                _cextdecl = DECL;
+        }
 }
 
-// declaration-list = declaration, {declaration};
+// declaration-list = declaration {declaration}
 
-// compound-statement = '{', {declaration-or-statement}, '}';
+// compound-statement = '{' {declaration-or-statement} '}'
 void compstmt() {
         consume("missing '{' of compound statement", OCBR);
         while (_ct->kind != CCBR && _ct->kind != EOI) {
@@ -138,7 +146,7 @@ void declorstmt() {
         }
 }
 
-// init-declarator-list = ['=', initializer] {',' declarator ['=' initializer]};
+// init-declarator-list = ['=' initializer] {',' declarator ['=' initializer]}
 void initdecllist() {
         /* first declarator is already parsed. now see if it has initializer */
         if (_ct->kind == ASSIGN) {
@@ -213,23 +221,21 @@ void pointer() {
 }
 
 // direct-declarator = identifier
-//                   | '(', declarator, ')'
-//                   | direct-declarator, '[', ['*'], ']'
-//                   | direct-declarator, '[', 'static', [type-qualifier-list], assignment-expression, ']'
-//                   | direct-declarator, '[', type-qualifier-list, ['*'], ']'
-//                   | direct-declarator, '[', type-qualifier-list, ['static'], assignment-expression, ']'
-//                   | direct-declarator, '[', assignment-expression, ']'
-//                   | direct-declarator, '(', parameter-type-list, ')'
-//                   | direct-declarator, '(', ')';
+//                   | '(' declarator ')'
+//                   | direct-declarator '[' ['*'] ']'
+//                   | direct-declarator '[' 'static' [type-qualifier-list] assignment-expression ']'
+//                   | direct-declarator '[' type-qualifier-list ['*'] ']'
+//                   | direct-declarator '[' type-qualifier-list ['static'] assignment-expression ']'
+//                   | direct-declarator '[' assignment-expression ']'
+//                   | direct-declarator '(' parameter-type-list ')'
+//                   | direct-declarator '(' ')'
 void ddecltor() {
         if (_ct->kind == IDENT) consume("", IDENT);
         if (_ct->kind == OPAR) {
-                _cextdecl = FUNC; /* global var */
-
                 // function
                 consume("", OPAR);
-                consume("", VOID);
-                consume("missing ')' of function definition", CPAR);
+                if (_ct->kind == VOID) consume("", VOID);
+                consume("missing ')' of function definition/declaration", CPAR);
                 return;
         } else if (_ct->kind == OBR) {
                 // array
@@ -239,7 +245,6 @@ void ddecltor() {
                         consume("missing '[' of array declaration", CBR);
                 }
         }
-        _cextdecl = DECL; /* global var */
 }
 
 // initializer-list = designative-initializer {',' designative-initializer}
