@@ -57,7 +57,7 @@ void designinitzer();
 
 void parse(struct Token *token);
 
-// translation-unit = {external-declaration};
+// translation-unit = {external-declaration}
 void parse(struct Token *token) {
         _ct = token;
         while (_ct->kind != EOI) {
@@ -65,16 +65,16 @@ void parse(struct Token *token) {
         }
 }
 
-// external-declaration = {function-definition | declaration}
+// external-declaration = declaration
 void extdecl() {
         _cdecllevel = GLOBAL;
         declaration();
 }
 
-// function-definition = compound-statement;
+// function-definition = compound-statement
 void funcdef() { compstmt(); }
 
-// declaration = declaration-specifiers declarator [declaration-specifiers] [init-declarator-list] ';'
+// declaration = declaration-specifiers declarator (function-definition | [init-declarator-list] ';')
 //             | ';';
 void declaration() {
         /* parse 1st declarator to diff function definition */
@@ -94,7 +94,7 @@ void declaration() {
         consume("missing ';' of declaration", SEMIC);
 }
 
-// declaration-specifiers = declaration-specifier {declaration-specifier};
+// declaration-specifiers = declaration-specifier {declaration-specifier}
 // declaration-specifier = storage-class-specifier
 //                       | type-specifier
 //                       | type-qualifier
@@ -157,7 +157,7 @@ void initdeclaratorlist() {
 //                         | 'extern'
 //                         | 'static'
 //                         | 'auto'
-//                         | 'register';
+//                         | 'register'
 void sclass() {
         enum Kind ctk = _ct->kind;
         if (ctk >= TYPEDEF && ctk <= REGISTER) consume("", ctk);
@@ -174,7 +174,7 @@ void sclass() {
 //                | 'unsigned'
 //                | struct-or-union-specifier
 //                | enum-specifier
-//                | typedef-name;
+//                | typedef-name
 void typespec() {
         enum Kind ctk = _ct->kind;
         if (ctk >= VOID && ctk <= ENUM) {
@@ -204,7 +204,7 @@ void funcspec() {
         if (_ct->kind == INLINE) consume("", _ct->kind);
 }
 
-// pointer = '*', [type-qualifier-list], [pointer];
+// pointer = '*' [type-qualifier-list] [pointer]
 void pointer() {
         while (_ct->kind == MUL && _ct->kind != EOI) consume("", MUL);
 }
@@ -223,10 +223,17 @@ void directdeclarator() {
         if (_ct->kind == OPAR) {
                 // function
                 consume("", OPAR);
-                if (_ct->kind == VOID) consume("", VOID);
-                consume("missing ')' of function definition/declaration", CPAR);
-                return;
-        } else if (_ct->kind == OBR) {
+                if (_ct->kind >= VOID && _ct->kind <= ENUM) {
+                        // params
+                        if (_ct->kind == VOID) consume("", VOID);
+                        consume("missing ')' of function definition/declaration", CPAR);
+                        return;
+                } else {
+                        declarator();
+                        consume("missing ')' of function definition/declaration", CPAR);
+                }
+        }
+        if (_ct->kind == OBR) {
                 // array
                 while (_ct->kind == OBR && _ct->kind != EOI) {
                         consume("", OBR);
@@ -246,7 +253,7 @@ void initializerlist() {
         }
 }
 
-// designative-initializer = [designation], initializer;
+// designative-initializer = [designation] initializer
 void designinitzer() {
         if (_ct->kind == OBR || _ct->kind == DOT) designation();
         initializer();
@@ -266,10 +273,10 @@ void initializer() {
         consume("", INTCONST);
 }
 
-// constant-expression = conditional-expression;  (* with constraints *)
+// constant-expression = conditional-expression  (* with constraints *)
 
 // struct-or-union-specifier = struct-or-union '{' struct-declaration-list '}'
-//                           | struct-or-union identifier ['{' struct-declaration-list '}'];
+//                           | struct-or-union identifier ['{' struct-declaration-list '}']
 //                           | struct-or-union identifier
 void structorunionspec() {
         if (_ct->kind == STRUCT || _ct->kind == UNION) {
@@ -286,9 +293,9 @@ void structorunionspec() {
 }
 
 // struct-or-union = 'struct'
-//                 | 'union';
+//                 | 'union'
 
-// struct-declaration-list = struct-declaration {struct-declaration};
+// struct-declaration-list = struct-declaration {struct-declaration
 void structdeclarationlist() {
         while (_ct->kind != CCBR && _ct->kind != EOI) {
                 structdeclaration();
@@ -307,7 +314,7 @@ void structdeclaration() {
 }
 
 // enum-specifier = 'enum' '{' enumerator-list [','] '}'
-//                | 'enum' identifier ['{' enumerator-list [','] '}'];
+//                | 'enum' identifier ['{' enumerator-list [','] '}']
 void enumspec() {
         consume("", ENUM);
         if (_ct->kind == IDENT) consume("", IDENT);
@@ -319,7 +326,7 @@ void enumspec() {
         }
 }
 
-// enumerator-list = enumerator {',' enumerator};
+// enumerator-list = enumerator {',' enumerator}
 void enumtorlist() {
         enumtor();
         while (_ct->kind == COMMA && _ct->kind != EOI) {
@@ -338,9 +345,9 @@ void enumtor() {
         }
 }
 
-// enumeration-constant = identifier;
+// enumeration-constant = identifier
 
-// type-name = specifier-qualifier-list, [abstract-declarator];
+// type-name = specifier-qualifier-list [abstract-declarator]
 
 // specifier-qualifier-list = specifier-qualifier {specifier-qualifier}
 void specquallist() {
@@ -350,7 +357,7 @@ void specquallist() {
         }
 }
 
-// specifier-qualifier = type-specifier | type-qualifier;
+// specifier-qualifier = type-specifier | type-qualifier
 void specqual() {
         if (_ct->kind >= VOID && _ct->kind <= ENUM) {
                 typespec();
@@ -361,21 +368,21 @@ void specqual() {
 }
 
 // abstract-declarator = pointer, [direct-abstract-declarator]
-//                     | direct-abstract-declarator;
+//                     | direct-abstract-declarator
 
-// direct-abstract-declarator = '(', abstract-declarator, ')'
-//                            | '(', parameter-type-list, ')'
-//                            | '(', ')'
-//                            | '[', ['*'], ']'
-//                            | '[', 'static', [type-qualifier-list], assignment-expression, ']'
-//                            | '[', type-qualifier-list, [['static'], assignment-expression], ']'
-//                            | '[', assignment-expression, ']'
-//                            | direct-abstract-declarator, '[', ['*'], ']'
-//                            | direct-abstract-declarator, '[', 'static', [type-qualifier-list], assignment-expression, ']'
-//                            | direct-abstract-declarator, '[', type-qualifier-list, [['static'], assignment-expression], ']'
-//                            | direct-abstract-declarator, '[', assignment-expression, ']'
-//                            | direct-abstract-declarator, '(', parameter-type-list, ')'
-//                            | direct-abstract-declarator, '(', ')';
+// direct-abstract-declarator = '(' abstract-declarator ')'
+//                            | '(' parameter-type-list ')'
+//                            | '(' ')'
+//                            | '[' ['*'] ']'
+//                            | '[' 'static' [type-qualifier-list] assignment-expression ']'
+//                            | '[' type-qualifier-list [['static'] assignment-expression] ']'
+//                            | '[' assignment-expression ']'
+//                            | direct-abstract-declarator '[' ['*'] ']'
+//                            | direct-abstract-declarator '[' 'static' [type-qualifier-list] assignment-expression ']'
+//                            | direct-abstract-declarator '[' type-qualifier-list [['static'] assignment-expression] ']'
+//                            | direct-abstract-declarator '[' assignment-expression ']'
+//                            | direct-abstract-declarator '(' parameter-type-list ')'
+//                            | direct-abstract-declarator '(' ')'
 
 // struct-declarator-list = struct-declarator {',' struct-declarator}
 void structdeclaratorlist() {
@@ -386,9 +393,9 @@ void structdeclaratorlist() {
         }
 }
 
-// type-qualifier-list = type-qualifier, {type-qualifier};
+// type-qualifier-list = type-qualifier {type-qualifier}
 
-// parameter-type-list = parameter-list, [',', '...'];
+// parameter-type-list = parameter-list [',' '...']
 
 // struct-declarator = ':' constant-expression
 //                   | declarator [':' constant-expression]
@@ -416,7 +423,7 @@ void structdeclarator() {
 //                     | '>>='
 //                     | '&='
 //                     | '^='
-//                     | '|=';
+//                     | '|='
 
 // parameter-list = parameter-declaration, {',', parameter-declaration};
 
@@ -496,13 +503,13 @@ void structdeclarator() {
 // generic-association = type-name, ':', assignment-expression
 //                     | 'default', ':', assignment-expression;
 
-// designation = designator-list '=';
+// designation = designator-list '='
 void designation() {
         designtorlist();
         if (_ct->kind == ASSIGN) consume("", ASSIGN);
 }
 
-// designator-list = designator {designator};
+// designator-list = designator {designator}
 void designtorlist() {
         //
         designator();
@@ -526,7 +533,7 @@ void designator() {
 //           | expression-statement
 //           | selection-statement
 //           | iteration-statement
-//           | jump-statement;
+//           | jump-statement
 void stmt() {
         enum Kind ctk = _ct->kind;
         if (ctk == IDENT) {
@@ -542,9 +549,9 @@ void stmt() {
         }
 }
 
-// labeled-statement = identifier, ':', statement
-//                   | 'case', constant-expression, ':', statement
-//                   | 'default', ':', statement;
+// labeled-statement = identifier ':' statement
+//                   | 'case' constant-expression ':' statement
+//                   | 'default' ':' statement
 void labelstmt() {
         enum Kind ctk = _ct->kind;
         if (ctk == IDENT) {
@@ -554,11 +561,11 @@ void labelstmt() {
         }
 }
 
-// expression-statement = [expression], ';';
+// expression-statement = [expression] ';'
 
-// selection-statement = 'if', '(', expression, ')', statement, 'else', statement
-//                     | 'if', '(', expression, ')', statement
-//                     | 'switch', '(', expression, ')', statement;
+// selection-statement = 'if' '(' expression ')' statement 'else' statement
+//                     | 'if' '(' expression ')' statement
+//                     | 'switch' '(' expression ')' statement
 void selectstmt() {
         enum Kind ctk = _ct->kind;
         if (ctk == IF) {
@@ -572,10 +579,10 @@ void selectstmt() {
         }
 }
 
-//  iteration-statement = 'while', '(', expression, ')', statement
-//                      | 'do', statement, 'while', '(', expression, ')', ';'
-//                      | 'for', '(', [expression], ';', [expression], ';', [expression], ')', statement
-//                      | 'for', '(', declaration, [expression], ';', [expression], ')', statement;
+//  iteration-statement = 'while' '(' expression ')' statement
+//                      | 'do' statement 'while' '(' expression ')' ';'
+//                      | 'for' '(' [expression] ';' [expression] ';' [expression] ')' statement
+//                      | 'for' '(' declaration [expression] ';' [expression] ')' statement
 void iterstmt() {
         enum Kind ctk = _ct->kind;
         if (ctk == FOR) {
@@ -599,7 +606,7 @@ void iterstmt() {
 // jump-statement = 'goto' identifier ';'
 //                | 'continue' ';'
 //                | 'break' ';'
-//                | 'return' [expression] ';';
+//                | 'return' [expression] ';'
 void jumpstmt() {
         enum Kind ctk = _ct->kind;
         if (ctk == RETURN) {
