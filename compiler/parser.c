@@ -75,11 +75,12 @@ void extdecl() {
 void funcdef() { compstmt(); }
 
 // declaration = declaration-specifiers declarator (function-definition | [init-declarator-list] ';')
-//             | ';';
+//             | ';'
 void declaration() {
         /* parse 1st declarator to diff function definition */
         declspec();
         declarator();
+        /* TODO: resolve type info here since declarator collected it */
         if (_cdecllevel == GLOBAL && _ct->kind == OCBR) {
                 /* TODO: funcdef if 
                         0) level is global
@@ -108,7 +109,7 @@ void declspec() {
         }
 }
 
-// declarator = [pointer] direct-declarator
+// declarator = [pointer] direct-declarator {suffix-declarator}
 void declarator() {
         if (_ct->kind == MUL) pointer();
         directdeclarator();
@@ -145,6 +146,7 @@ void initdeclaratorlist() {
         /* rest of the declarators */
         while (_ct->kind == COMMA && _ct->kind != EOI) {
                 consume("", COMMA);
+                /* TODO: you can't have params here, so ensure that path is never taken in this call path */
                 declarator();
                 if (_ct->kind == ASSIGN) {
                         consume("", ASSIGN);
@@ -207,39 +209,43 @@ void funcspec() {
 // pointer = '*' [type-qualifier-list] [pointer]
 void pointer() {
         while (_ct->kind == MUL && _ct->kind != EOI) consume("", MUL);
+        while (_ct->kind >= CONST && _ct->kind <= VOLATILE) consume("", _ct->kind);
 }
 
 // direct-declarator = identifier
 //                   | '(' declarator ')'
-//                   | direct-declarator '[' ['*'] ']'
-//                   | direct-declarator '[' 'static' [type-qualifier-list] assignment-expression ']'
-//                   | direct-declarator '[' type-qualifier-list ['*'] ']'
-//                   | direct-declarator '[' type-qualifier-list ['static'] assignment-expression ']'
-//                   | direct-declarator '[' assignment-expression ']'
-//                   | direct-declarator '(' parameter-type-list ')'
-//                   | direct-declarator '(' ')'
+// suffic-declarator = '[' ['*'] ']'
+//                   | '[' 'static' [type-qualifier-list] assignment-expression ']'
+//                   | '[' type-qualifier-list ['*'] ']'
+//                   | '[' type-qualifier-list ['static'] assignment-expression ']'
+//                   | '[' assignment-expression ']'
+//                   | '(' parameter-type-list ')'
+//                   | '(' ')'
 void directdeclarator() {
-        if (_ct->kind == IDENT) consume("", IDENT);
-        if (_ct->kind == OPAR) {
-                // function
+        if (_ct->kind == IDENT)
+                consume("", IDENT);
+        else if (_ct->kind == OPAR) {
+                // abstract function
                 consume("", OPAR);
-                if (_ct->kind >= VOID && _ct->kind <= ENUM) {
+                declarator();
+                consume("", CPAR);
+        } else
+                return;
+
+        while ((_ct->kind == OPAR || _ct->kind == OBR) && _ct->kind != EOI) {
+                if (_ct->kind == OPAR) {
+                        // concrete function
+                        consume("", OPAR);
                         // params
                         if (_ct->kind == VOID) consume("", VOID);
                         consume("missing ')' of function definition/declaration", CPAR);
-                        return;
-                } else {
-                        declarator();
-                        consume("missing ')' of function definition/declaration", CPAR);
-                }
-        }
-        if (_ct->kind == OBR) {
-                // array
-                while (_ct->kind == OBR && _ct->kind != EOI) {
+                } else if (_ct->kind == OBR) {
+                        // array
                         consume("", OBR);
                         if (_ct->kind == INTCONST) consume("", INTCONST);
                         consume("missing '[' of array declaration", CBR);
-                }
+                } else
+                        assert(0);
         }
 }
 
