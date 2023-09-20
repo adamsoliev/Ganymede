@@ -95,14 +95,14 @@ int x[3][4], *y[3];
 int in[] = {10, 32, -1, 567, 3, 18, 1, -51, 789, 0};
 int queens(), print();
 
-int* a[10];                       // a is an array of pointer to int
-int (*a)[10];                     // a is a pointer to an array of int
-int* f();                         // f is a function returning a pointer to int
-int (*f)();                       // f is a pointer to a function returning int
-const int* p;                     // p is a non-const pointer to const int
-int const* p;                     // same as above
-int* const p;                     // p is a const pointer to non-const int
-void (*fptr)(void);               /* fptr is a pointer to a function that takes in
+int* a[10];                               // a is an array of pointer to int
+int (*a)[10];                             // a is a pointer to an array of int
+int* f();                                 // f is a function returning a pointer to int
+int (*f)();                               // f is a pointer to a function returning int
+const int* p;                             // p is a non-const pointer to const int
+int const* p;                             // same as above
+int* const p;                             // p is a const pointer to non-const int
+void (*fptr)(void);                       /* fptr is a pointer to a function that takes in
                                              no params and returns void */
 int (*fptr)(int, void (*)(void));         /* fptr is a function pointer that takes in int and
 //                                              pointer to the above function */
@@ -147,16 +147,16 @@ void (*signal(int, void (*fp)(int)))(int);
     -----------------
 */
 
-// int main(void) {
-//         unsigned long int a = 23;
-//         for (a = 0; a < 23; a++) {
-//                 if (a == 10) continue;
-//                 if (a == 16) break;
-//         }
+int main(void) {
+        unsigned long int a = 23;
+        for (a = 0; a < 23; a++) {
+                if (a == 10) continue;
+                if (a == 16) break;
+        }
 
-// L1:
-//         return 23;
+L1:
+        return 23;
 
-//         if (a == 100) goto L1;
-//         return 0;
-// }
+        if (a == 100) goto L1;
+        return 0;
+}

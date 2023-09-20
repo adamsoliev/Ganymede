@@ -215,6 +215,11 @@ void pointer() {
         while (_ct->kind >= CONST && _ct->kind <= VOLATILE) consume("", _ct->kind);
 }
 
+/*
+   abstract-declarators allow you to operate on types, without referencing an object.
+   (e.g., in function prototypes, cast expressions, and sizeof arguments)
+*/
+
 // direct-declarator = identifier
 //                   | '(' declarator ')'
 // suffic-declarator = '[' ['*'] ']'
@@ -228,7 +233,7 @@ void directdeclarator() {
         if (_ct->kind == IDENT)
                 consume("", IDENT);
         else if (_ct->kind == OPAR) {
-                // abstract function
+                // abstract
                 consume("", OPAR);
                 declarator();
                 consume("", CPAR);
@@ -309,7 +314,7 @@ void structorunionspec() {
 // struct-or-union = 'struct'
 //                 | 'union'
 
-// struct-declaration-list = struct-declaration {struct-declaration
+// struct-declaration-list = struct-declaration { struct-declaration }
 void structdeclarationlist() {
         while (_ct->kind != CCBR && _ct->kind != EOI) {
                 structdeclaration();
@@ -381,23 +386,6 @@ void specqual() {
         }
 }
 
-// abstract-declarator = pointer, [direct-abstract-declarator]
-//                     | direct-abstract-declarator
-
-// direct-abstract-declarator = '(' abstract-declarator ')'
-//                            | '(' parameter-type-list ')'
-//                            | '(' ')'
-//                            | '[' ['*'] ']'
-//                            | '[' 'static' [type-qualifier-list] assignment-expression ']'
-//                            | '[' type-qualifier-list [['static'] assignment-expression] ']'
-//                            | '[' assignment-expression ']'
-//                            | direct-abstract-declarator '[' ['*'] ']'
-//                            | direct-abstract-declarator '[' 'static' [type-qualifier-list] assignment-expression ']'
-//                            | direct-abstract-declarator '[' type-qualifier-list [['static'] assignment-expression] ']'
-//                            | direct-abstract-declarator '[' assignment-expression ']'
-//                            | direct-abstract-declarator '(' parameter-type-list ')'
-//                            | direct-abstract-declarator '(' ')'
-
 // struct-declarator-list = struct-declarator {',' struct-declarator}
 void structdeclaratorlist() {
         structdeclarator();
@@ -430,6 +418,7 @@ void paramlist() {
 // parameter-declaration = declaration-specifiers [declarator | abstract-declarator]
 void paramdeclaration() {
         declspec();
+        /* NOTE: directdeclarator() parses abstract-declarator */
         declarator();
 }
 
