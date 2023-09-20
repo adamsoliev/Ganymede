@@ -454,7 +454,7 @@ void structdeclarator() {
 
 // unary-expression = postfix-expression
 //                  | unary-operator unary-expression
-//                  | '(' type-name ')' unary-expression        /* cast expression?? */
+//                  | '(' type-name ')' unary-expression      /* cast or compound literal */
 //                  | 'sizeof' unary-expression
 //                  | 'sizeof' '(' type-name ')'
 
@@ -466,7 +466,7 @@ void structdeclarator() {
 //                  | '(' [assignment-expression {',' assignment-expression}] ')'
 //                  | ('.' | '->') identifier
 //                  | ('++' | '--')
-//                  | '(' type-name ')' '{' initializer-list [','] '}'
+//                  | '{' initializer-list [','] '}'          /* compound literal */
 
 // primary-expression = identifier
 //                    | constant
