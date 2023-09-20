@@ -438,76 +438,40 @@ void structdeclarator() {
         }
 }
 
-// assignment-operator = '='
-//                     | '*='
-//                     | '/='
-//                     | '%='
-//                     | '+='
-//                     | '-='
-//                     | '<<='
-//                     | '>>='
-//                     | '&='
-//                     | '^='
-//                     | '|='
-
-// expression = assignment-expression, {',', assignment-expression};
+// expression = assignment-expression {',' assignment-expression}
 
 // assignment-expression = conditional-expression
-//                       | unary-expression, assignment-operator, assignment-expression;
+//                       | unary-expression assignment-operator assignment-expression
 
-// conditional-expression = logical-or-expression, ['?', expression, ':', conditional-expression];
+// assignment-operator = '=' | '*=' | '/=' | '%=' | '+=' | '-=' | '<<=' | '>>=' | '&=' | '^=' | '|='
 
-// logical-or-expression = logical-and-expression, {'||', logical-and-expression};
+// conditional-expression = binary-expression [ '?' expression ':' conditional-expression ]
 
-// logical-and-expression = inclusive-or-expression, {'&&', inclusive-or-expression};
-
-// inclusive-or-expression = exclusive-or-expression, {'|', exclusive-or-expression};
-
-// exclusive-or-expression = and-expression, {'^', and-expression};
-
-// and-expression = equality-expression, {'&', equality-expression};
-
-// equality-expression = relational-expression, {('==' | '!='), relational-expression};
-
-// relational-expression = shift-expression, {('<' | '>' | '<=' | '>='), shift-expression};
-
-// shift-expression = additive-expression, {('<<' | '>>'), additive-expression};
-
-// additive-expression = multiplicative-expression, {('+' | '-'), multiplicative-expression};
-
-// multiplicative-expression = cast-expression, {('*' | '/' | '%'), cast-expression};
+// binary-expression = '||' | '&&' | '|' | '^' | '&' | '==' | '!=' | '<' | '>' | '<=' | '>=' | '<<' | '>>' | '+' | '-' | '*' | '/' | '%'
 
 // cast-expression = unary-expression
-//                 | '(', type-name, ')', cast-expression;
+//                 |
 
 // unary-expression = postfix-expression
-//                  | ('++' | '--'), unary-expression
-//                  | unary-operator, cast-expression
-//                  | 'sizeof', unary-expression
-//                  | 'sizeof', '(', type-name, ')'
-//                  | '_Alignof', '(', type-name, ')';
+//                  | unary-operator unary-expression
+//                  | '(' type-name ')' unary-expression        /* cast expression?? */
+//                  | 'sizeof' unary-expression
+//                  | 'sizeof' '(' type-name ')'
 
-// postfix-expression = primary-expression
-//                    | postfix-expression, '[', expression, ']'
-//                    | postfix-expression, '(', [argument-expression-list], ')'
-//                    | postfix-expression, ('.' | '->'), identifier
-//                    | postfix-expression, ('++' | '--')
-//                    | '(', type-name, ')', '{', initializer-list, [','], '}';
+// unary-operator = '&' | '*' | '+' | '-' | '~' | '!'
 
-// unary-operator = '&'
-//                | '*'
-//                | '+'
-//                | '-'
-//                | '~'
-//                | '!';
+// postfix-expression = primary-expression { postfix-operator }
+
+// postfix-operator = '[' expression ']'
+//                  | '(' [assignment-expression {',' assignment-expression}] ')'
+//                  | ('.' | '->') identifier
+//                  | ('++' | '--')
+//                  | '(' type-name ')' '{' initializer-list [','] '}'
 
 // primary-expression = identifier
 //                    | constant
 //                    | string
-//                    | '(', expression, ')'
-//                    | generic-selection;
-
-// argument-expression-list = assignment-expression, {',', assignment-expression};
+//                    | '(' expression ')'
 
 // constant = integer-constant
 //          | character-constant
@@ -516,13 +480,6 @@ void structdeclarator() {
 
 // string = string-literal
 //        | '__func__';
-
-// generic-selection = '_Generic', '(', assignment-expression, ',', generic-assoc-list, ')';
-
-// generic-assoc-list = generic-association, {',', generic-association};
-
-// generic-association = type-name, ':', assignment-expression
-//                     | 'default', ':', assignment-expression;
 
 // designation = designator-list '='
 void designation() {
