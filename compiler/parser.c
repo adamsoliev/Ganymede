@@ -54,6 +54,9 @@ void designator();
 void designtorlist();
 void designation();
 void designinitzer();
+void paramdeclaration();
+void paramlist();
+void paramtypelist();
 
 void parse(struct Token *token);
 
@@ -237,7 +240,12 @@ void directdeclarator() {
                         // concrete function
                         consume("", OPAR);
                         // params
-                        if (_ct->kind == VOID) consume("", VOID);
+                        if (_ct->kind >= VOID && _ct->kind <= ENUM) {
+                                if (_ct->kind == VOID)
+                                        consume("", VOID);
+                                else
+                                        paramtypelist();
+                        }
                         consume("missing ')' of function definition/declaration", CPAR);
                 } else if (_ct->kind == OBR) {
                         // array
@@ -402,6 +410,28 @@ void structdeclaratorlist() {
 // type-qualifier-list = type-qualifier {type-qualifier}
 
 // parameter-type-list = parameter-list [',' '...']
+void paramtypelist() {
+        paramlist();
+        if (_ct->kind == COMMA) {
+                consume("", COMMA);
+                consume("missing '...' of parameter-type-list\n", ELLIPSIS);
+        }
+}
+
+// parameter-list = parameter-declaration {',' parameter-declaration}
+void paramlist() {
+        paramdeclaration();
+        while (_ct->kind == COMMA && _ct->kind != EOI) {
+                consume("", COMMA);
+                paramdeclaration();
+        }
+}
+
+// parameter-declaration = declaration-specifiers [declarator | abstract-declarator]
+void paramdeclaration() {
+        declspec();
+        declarator();
+}
 
 // struct-declarator = ':' constant-expression
 //                   | declarator [':' constant-expression]
@@ -430,10 +460,6 @@ void structdeclarator() {
 //                     | '&='
 //                     | '^='
 //                     | '|='
-
-// parameter-list = parameter-declaration, {',', parameter-declaration};
-
-// parameter-declaration = declaration-specifiers, [declarator | abstract-declarator];
 
 // expression = assignment-expression, {',', assignment-expression};
 
