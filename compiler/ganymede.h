@@ -93,6 +93,11 @@ enum Kind {
         LSHASSIGN,  // <<=
         RSHASSIGN,  // >>=
 
+        /* jump stmt */
+        FOR,
+        WHILE,
+        DO,
+
         EOI,  // end of input
         IF,
         OBR,      // [
@@ -116,12 +121,9 @@ enum Kind {
         ELLIPSIS,
         CASE,
         DEFAULT,
-        DO,
         ELSE,
-        FOR,
         SIZEOF,
         SWITCH,
-        WHILE,
         DOT,
         COLON,
         RSHIFTASSIGN,

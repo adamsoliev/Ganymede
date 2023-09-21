@@ -153,6 +153,18 @@ int main(void) {
                 if (a == 10) continue;
                 if (a == 16) break;
         }
+        for (;;) {
+                break;
+        }
+        for (int i = 0; i < 10; i++) {
+                if (i == 10) return 0;
+        }
+        while (a < 23) {
+                a = 23 + 32;
+        }
+        do {
+                a = 23 + 54;
+        } while (a > 10);
 
 L1:
         return 23;

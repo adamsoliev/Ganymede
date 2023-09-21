@@ -67,6 +67,7 @@ void binaryexpr();
 void condexpr();
 void assignexpr();
 void expr();
+void exprstmt();
 
 void parse(struct Token *token);
 
@@ -525,6 +526,7 @@ void postfixexpr() {
         while (ctk == OBR || ctk == OPAR || ctk == DOT || ctk == DEREF || ctk == INCR ||
                ctk == DECR || ctk == OCBR) {
                 postfixoperator();
+                ctk = _ct->kind;
         }
 }
 
@@ -633,10 +635,13 @@ void designator() {
 void stmt() {
         enum Kind ctk = _ct->kind;
         if (ctk == IDENT) {
-                labelstmt();
+                if (_ct->next->kind == COLON)
+                        labelstmt();
+                else
+                        exprstmt();
         } else if (ctk >= GOTO && ctk <= RETURN) {
                 jumpstmt();
-        } else if (ctk == FOR) {
+        } else if (ctk >= FOR && ctk <= DO) {
                 iterstmt();
         } else if (ctk == IF) {
                 selectstmt();
@@ -658,6 +663,10 @@ void labelstmt() {
 }
 
 // expression-statement = [expression] ';'
+void exprstmt() {
+        if (_ct->kind != SEMIC) expr();
+        consume("", SEMIC);
+}
 
 // selection-statement = 'if' '(' expression ')' statement 'else' statement
 //                     | 'if' '(' expression ')' statement
@@ -684,16 +693,30 @@ void iterstmt() {
         if (ctk == FOR) {
                 consume("", FOR);
                 consume("", OPAR);
-                consume("", IDENT);
-                consume("", ASSIGN);
-                consume("", INTCONST);
+                if (_ct->kind >= VOID && _ct->kind <= ENUM) {
+                        declaration();
+                } else {
+                        if (_ct->kind != SEMIC) expr();
+                        consume("", SEMIC);
+                }
+                if (_ct->kind != SEMIC) expr();
                 consume("", SEMIC);
-                consume("", IDENT);
-                consume("", LT);
-                consume("", INTCONST);
+                if (_ct->kind != CPAR) expr();
+                consume("", CPAR);
+                stmt();
+        } else if (ctk == DO) {
+                consume("", DO);
+                stmt();
+                consume("", WHILE);
+                consume("", OPAR);
+                expr();
+                consume("", CPAR);
                 consume("", SEMIC);
-                consume("", IDENT);
-                consume("", INCR);
+        } else {
+                assert(ctk == WHILE);
+                consume("", WHILE);
+                consume("", OPAR);
+                expr();
                 consume("", CPAR);
                 stmt();
         }
