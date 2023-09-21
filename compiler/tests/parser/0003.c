@@ -158,5 +158,5 @@ L1:
         return 23;
 
         if (a == 100) goto L1;
-        return 0;
+        return 23 + 32 - 23 + 32;
 }

@@ -20,7 +20,9 @@ typedef struct ht ht;
 extern FILE *outfile;
 extern char *limit;
 
-/* NOTE: relative order matters */
+/* 
+  NOTE: if block-commented, relative order matters 
+*/
 enum Kind {
         /* storage-class specifiers */
         TYPEDEF = 1,
@@ -53,52 +55,59 @@ enum Kind {
         BREAK,
         RETURN,
 
+        /* binary ops - increasing groupped precedence */
+        OROR,    // ||
+        ANDAND,  // &&
+        OR,      // |
+        XOR,     // ^
+        AND,     // &
+        INCR,    // ++
+        EQ,      // ==
+        NEQ,     // !=
         LT,      // <
         GT,      // >
         LEQ,     // <=
         GEQ,     // >=
         LSHIFT,  // <<
         RSHIFT,  // >>
-        DEREF,   // ->
-        DECR,    // --
-        EQ,      // ==
-        NEQ,     // !=
-        ADD,
-        SUB,
-        MUL,
-        DIV,
-        MOD,        // %
+        ADD,     // +
+        SUB,     // -
+        MUL,     // *
+        DIV,     // /
+        MOD,     // %
+
+        DEREF,  // ->
+        DECR,   // --
+
+        /* assigns */
+        ASSIGN,     // =
         ADDASSIGN,  // +=
         SUBASSIGN,  // -=
         MULASSIGN,  // *=
         DIVASSIGN,  // /=
         MODASSIGN,  // %=
-        OROR,       // ||
-        ANDAND,     // &&
-        INCR,       // ++
-        EOI,        // end of input
-        IF,
-        OBR,        // [
-        CBR,        // ]
-        OCBR,       // {
-        CCBR,       // }
-        OPAR,       // (
-        CPAR,       // )
-        SEMIC,      // ;
-        COMMA,      // ,
-        TILDA,      // ~
-        AND,        // &
-        OR,         // |
-        XOR,        // ^
-        NOT,        // !
         ANDASSIGN,  // &=
         ORASSIGN,   // |=
         XORASSIGN,  // ^=
         NOTASSIGN,  // !=
-        STRGIZE,    // #
-        TKPASTE,    // ##
-        ASSIGN,     // =
-        QMARK,      // ?
+        LSHASSIGN,  // <<=
+        RSHASSIGN,  // >>=
+
+        EOI,  // end of input
+        IF,
+        OBR,      // [
+        CBR,      // ]
+        OCBR,     // {
+        CCBR,     // }
+        OPAR,     // (
+        CPAR,     // )
+        SEMIC,    // ;
+        COMMA,    // ,
+        TILDA,    // ~
+        NOT,      // !
+        STRGIZE,  // #
+        TKPASTE,  // ##
+        QMARK,    // ?
         IDENT,
         INTCONST,
         FLOATCONST,

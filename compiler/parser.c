@@ -58,6 +58,16 @@ void paramdeclaration();
 void paramlist();
 void paramtypelist();
 
+void constant();
+void primaryexpr();
+void postfixoperator();
+void postfixexpr();
+void unaryexpr();
+void binaryexpr();
+void condexpr();
+void assignexpr();
+void expr();
+
 void parse(struct Token *token);
 
 // translation-unit = {external-declaration}
@@ -440,17 +450,45 @@ void structdeclarator() {
 
 // expression = assignment-expression {',' assignment-expression}
 
+void expr() {
+        assignexpr();
+        while (_ct->kind == COMMA) assignexpr();
+}
+
 // assignment-expression = conditional-expression
 //                       | unary-expression assignment-operator assignment-expression
+void assignexpr() {
+        condexpr();
+        if (_ct->kind >= ASSIGN && _ct->kind <= RSHASSIGN) {
+                consume("", _ct->kind);  // assignment-operator
+                assignexpr();
+        }
+}
 
 // assignment-operator = '=' | '*=' | '/=' | '%=' | '+=' | '-=' | '<<=' | '>>=' | '&=' | '^=' | '|='
 
 // conditional-expression = binary-expression [ '?' expression ':' conditional-expression ]
+void condexpr() {
+        binaryexpr();
+        if (_ct->kind == QMARK) {
+                consume("", QMARK);
+                expr();
+                consume("", COLON);
+                condexpr();
+        }
+}
 
-// binary-expression = '||' | '&&' | '|' | '^' | '&' | '==' | '!=' | '<' | '>' | '<=' | '>=' | '<<' | '>>' | '+' | '-' | '*' | '/' | '%'
+// binary-expression = unary-expression { binary-operator unary-expression }
+void binaryexpr() {
+        unaryexpr();
+        while ((_ct->kind >= OROR && _ct->kind <= MOD)) {
+                consume("", _ct->kind);
+                unaryexpr();
+        }
+}
 
-// cast-expression = unary-expression
-//                 |
+// binary-operator = '||' | '&&' | '|' | '^' | '&' | '==' | '!=' | '<' | '>' | '<=' | '>=' | '<<'
+//                 | '>>' | '+' | '-' | '*' | '/' | '%'
 
 // unary-expression = postfix-expression
 //                  | unary-operator unary-expression
@@ -458,25 +496,105 @@ void structdeclarator() {
 //                  | 'sizeof' unary-expression
 //                  | 'sizeof' '(' type-name ')'
 
-// unary-operator = '&' | '*' | '+' | '-' | '~' | '!'
+void unaryexpr() {
+        enum Kind ctk = _ct->kind;
+        if (ctk == INCR || ctk == DECR || ctk == AND || ctk == MUL || ctk == ADD || ctk == SUB ||
+            ctk == TILDA || ctk == NOT) {
+                consume("", ctk);
+        } else if (ctk == OPAR) {
+                /* TODO */
+                assert(0);
+        } else if (ctk == SIZEOF) {
+                consume("", ctk);
+                if (_ct->kind == OPAR) {
+                        /* TODO */
+                        assert(0);
+                }
+                unaryexpr();
+        } else {
+                postfixexpr();
+        }
+}
+
+// unary-operator = '++' | '--' | '&' | '*' | '+' | '-' | '~' | '!'
 
 // postfix-expression = primary-expression { postfix-operator }
+void postfixexpr() {
+        primaryexpr();
+        enum Kind ctk = _ct->kind;
+        while (ctk == OBR || ctk == OPAR || ctk == DOT || ctk == DEREF || ctk == INCR ||
+               ctk == DECR || ctk == OCBR) {
+                postfixoperator();
+        }
+}
 
 // postfix-operator = '[' expression ']'
 //                  | '(' [assignment-expression {',' assignment-expression}] ')'
 //                  | ('.' | '->') identifier
 //                  | ('++' | '--')
 //                  | '{' initializer-list [','] '}'          /* compound literal */
+void postfixoperator() {
+        switch (_ct->kind) {
+                case OBR:
+                        consume("", OBR);
+                        expr();
+                        consume("", CBR);
+                        break;
+                case OPAR:
+                        consume("", OPAR);
+                        if (_ct->kind != CPAR) {
+                                assignexpr();
+                                while (_ct->kind == COMMA) assignexpr();
+                        }
+                        consume("", CPAR);
+                        break;
+                case DOT:
+                case DEREF:
+                        consume("", _ct->kind);
+                        consume("", IDENT);
+                        break;
+                case INCR:
+                case DECR: consume("", _ct->kind); break;
+                case OCBR:
+                        consume("", OCBR);
+                        initializerlist();
+                        if (_ct->kind == COMMA) consume("", COMMA);
+                        consume("", CCBR);
+                        break;
+                default: assert(0);
+        }
+}
 
 // primary-expression = identifier
 //                    | constant
 //                    | string
 //                    | '(' expression ')'
+void primaryexpr() {
+        switch (_ct->kind) {
+                case IDENT:
+                case INTCONST:
+                case STRCONST:
+                case FLOATCONST: consume("", _ct->kind); break;
+                case OPAR:
+                        expr();
+                        consume("", CPAR);
+                        break;
+                default: assert(0);
+        }
+}
 
 // constant = integer-constant
 //          | character-constant
 //          | floating-constant
 //          | enumeration-constant;
+void constant() {
+        switch (_ct->kind) {
+                case INTCONST:
+                case CHARCONST:
+                case FLOATCONST: consume("", _ct->kind); break;
+                default: assert(0);
+        }
+}
 
 // string = string-literal
 //        | '__func__';
@@ -589,7 +707,7 @@ void jumpstmt() {
         enum Kind ctk = _ct->kind;
         if (ctk == RETURN) {
                 consume("", ctk);
-                consume("", INTCONST);
+                if (_ct->kind != SEMIC) expr();
         } else if (ctk == BREAK) {
                 consume("", ctk);
         } else if (ctk == CONTINUE) {
