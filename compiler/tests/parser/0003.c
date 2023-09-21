@@ -151,6 +151,7 @@ int main(void) {
         unsigned long int a = 23;
         for (a = 0; a < 23; a++) {
                 if (a == 10) continue;
+                else a = a * 32;
                 if (a == 16) break;
         }
         for (;;) {
@@ -165,6 +166,11 @@ int main(void) {
         do {
                 a = 23 + 54;
         } while (a > 10);
+        // switch(a) {
+        //     case 1: break;
+        //     case 2: break;
+        //     default: a = 23;
+        // }
 
 L1:
         return 23;

@@ -634,16 +634,16 @@ void designator() {
 //           | jump-statement
 void stmt() {
         enum Kind ctk = _ct->kind;
-        if (ctk == IDENT) {
-                if (_ct->next->kind == COLON)
-                        labelstmt();
-                else
+        if (ctk == IDENT || ctk == CASE || ctk == DEFAULT) {
+                if (ctk == IDENT && _ct->next->kind != COLON)
                         exprstmt();
+                else
+                        labelstmt();
         } else if (ctk >= GOTO && ctk <= RETURN) {
                 jumpstmt();
         } else if (ctk >= FOR && ctk <= DO) {
                 iterstmt();
-        } else if (ctk == IF) {
+        } else if (ctk == IF || ctk == SWITCH) {
                 selectstmt();
         } else {
                 compstmt();
@@ -657,6 +657,16 @@ void labelstmt() {
         enum Kind ctk = _ct->kind;
         if (ctk == IDENT) {
                 consume("", IDENT);
+                consume("", COLON);
+                stmt();
+        } else if (ctk == CASE) {
+                consume("", CASE);
+                expr(); /* TODO: change this to constant expr */
+                consume("", COLON);
+                stmt();
+        } else {
+                assert(_ct->kind == DEFAULT);
+                consume("", DEFAULT);
                 consume("", COLON);
                 stmt();
         }
@@ -676,9 +686,18 @@ void selectstmt() {
         if (ctk == IF) {
                 consume("", IF);
                 consume("", OPAR);
-                consume("", IDENT);
-                consume("", EQ);
-                consume("", INTCONST);
+                expr();
+                consume("", CPAR);
+                stmt();
+                if (_ct->kind == ELSE) {
+                        consume("", ELSE);
+                        stmt();
+                }
+        } else {
+                assert(ctk == SWITCH);
+                consume("", SWITCH);
+                consume("", OPAR);
+                expr();
                 consume("", CPAR);
                 stmt();
         }
