@@ -125,6 +125,15 @@ const char* nm[] = {
         [member_one] = "member one",
 };
 
+/*
+we can't do this for now because it requires typedef internals
+div_t answer = { .quot = 2, .rem = -1 };
+*/
+
+struct {
+        int a[3], b;
+} w[] = {[0].a = {1}, [1].a[0] = 2};
+
 int queens(), print();
 
 int* a[10];                               // a is an array of pointer to int

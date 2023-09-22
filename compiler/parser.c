@@ -623,8 +623,8 @@ void designation() {
 
 // designator-list = designator {designator}
 void designtorlist() {
-        //
         designator();
+        while (_ct->kind == OBR || _ct->kind == DOT) designator();
 }
 
 // designator = '[' constant-expression ']'
@@ -636,6 +636,7 @@ void designator() {
                 consume("", CBR);
         } else {
                 assert(_ct->kind == DOT);
+                consume("", DOT);
                 consume("", IDENT);
         }
 }
