@@ -27,6 +27,14 @@ Token
     kind        // ident | keyword | punct | etc
     hash        // index to symbol table
 
+    have an array of tokens instead of linkedlist
+    each token is uint64_t
+        8 bits      - token kind (up to 256 kinds)
+        10 bits     - column (up to 1024 char in a line)
+        15 bits     - row (up to 32,768 lines per a file)
+        11 bits     - index into filenames array (up to 2048 files per project)
+        20 bits     - index into the symbol table
+        
 Symbol table
      -------------------------------------
     | name | type | sizes | params | body |
@@ -55,6 +63,13 @@ Symbol table
 
 A program 
     ExtDecl -> ExtDecl -> ExtDecl -> ...    // each ExtDecl is either declaration or function definition
+
+Performance
+    Lex & Parse     - 10 MLOC/s (MLOC - million lines of code)
+    Codegen         - 0.1 MLOC/s
+
+    Average 100 ns per line to lex & parse
+    Average 1 ms per line to semantic analysis
 
 
 [1] Types supported
