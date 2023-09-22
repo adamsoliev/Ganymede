@@ -305,10 +305,9 @@ void initializer() {
                 initializerlist();
                 if (_ct->kind == COMMA) consume("", COMMA);
                 consume("", CCBR);
-                return;
+        } else {
+                assignexpr();
         }
-        if (_ct->kind == SUB) consume("", SUB); /* negative intconst */
-        consume("", INTCONST);
 }
 
 // constant-expression = conditional-expression  (* with constraints *)
@@ -510,6 +509,7 @@ void unaryexpr() {
         if (ctk == INCR || ctk == DECR || ctk == AND || ctk == MUL || ctk == ADD || ctk == SUB ||
             ctk == TILDA || ctk == NOT) {
                 consume("", ctk);
+                unaryexpr();
         } else if (ctk == OPAR) {
                 /* TODO */
                 assert(0);

@@ -92,7 +92,7 @@ int up[15], down[15], rows[8], x[8];
 char*** ptrPtrPtr;
 int x[3][4], *y[3];
 
-int in[] = {10, 32, -1, 567, 3, 18, 1, -51, 789, 0};
+int in[] = {10, -32, 1, 567, 3, 18, 1, -51, 789, 0};
 int out[] = {
         10,
         32,
@@ -110,6 +110,14 @@ int y[4][3] = {
         {2, 4, 6},
         {3, 5, 7},
 };
+int z[4][3] = {{1}, {2}, {3}, {4}};
+struct {
+        int a[3], b;
+} w[] = {{1}, 2};
+short q[4][3][2] = {{1}, {2, 3}, {4, 5, 6}};
+int a[] = {1, 2}, b[] = {3, 4, 5};
+char s[] = "abc", t[3] = "abc";
+
 int queens(), print();
 
 int* a[10];                               // a is an array of pointer to int
@@ -185,11 +193,11 @@ int main(void) {
         do {
                 a = 23 + 54;
         } while (a > 10);
-        // switch(a) {
-        //     case 1: break;
-        //     case 2: break;
-        //     default: a = 23;
-        // }
+        switch (a) {
+                case 1: break;
+                case 2: break;
+                default: a = 23;
+        }
 
 L1:
         return 23;
