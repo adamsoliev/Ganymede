@@ -205,6 +205,8 @@ int main(void) {
         for (;;) {
                 break;
         }
+        for (;;)
+                ;
         for (int i = 0; i < 10; i++) {
                 if (i == 10) return 0;
         }
@@ -222,6 +224,40 @@ int main(void) {
         char* s;
         while (*s++ != '\0')
                 ;
+        while (loop1) {
+                /* ... */
+                while (loop2) {
+                        /* ... */
+                        if (want_out) goto end_loop1;
+                        /* ... */
+                }
+        /* ... */
+        end_loop1:;
+        }
+
+        /* ... */
+        goto first_time;
+        for (;;) {
+                // determine next operation
+                /* ... */
+                if (need_to_reinitialize) {
+                // reinitialize-only code
+                /* ... */
+                first_time:
+                        // general initialization code
+                        /* ... */
+                        continue;
+                }
+                // handle other operations
+                /* ... */
+        }
+
+        while (a < 23) {
+                /* ... */
+                continue;
+        /* ... */
+        contin:;
+        }
 
 L1:
         return 23;
