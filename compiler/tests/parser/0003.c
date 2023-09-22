@@ -135,6 +135,9 @@ struct {
 } w[] = {[0].a = {1}, [1].a[0] = 2};
 
 int a[MAX] = {1, 3, 5, 7, 9, [MAX - 5] = 8, 6, 4, 2, 0};
+union {
+        int any_member;
+} u = {.any_member = 42};
 
 int queens(), print();
 
