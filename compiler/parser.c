@@ -279,7 +279,15 @@ void initializerlist() {
         designinitzer();
         while (_ct->kind == COMMA) {
                 consume("", COMMA);
-                designinitzer();
+                /* 
+                  check to handle trailing comma in an initializer-list
+                  int y[4][3] = {1, 3, 5,};
+                                        ^
+                  ideally, it should be handled in initializer where you have [','],
+                  suggesting that this 'while' loop way might be wrong approach 
+                  to parse initializerlist. 
+                */
+                if (_ct->kind != CCBR) designinitzer();
         }
 }
 
@@ -665,7 +673,7 @@ void labelstmt() {
                 consume("", COLON);
                 stmt();
         } else {
-                assert(_ct->kind == DEFAULT);
+                assert(ctk == DEFAULT);
                 consume("", DEFAULT);
                 consume("", COLON);
                 stmt();

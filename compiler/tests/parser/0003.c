@@ -93,6 +93,23 @@ char*** ptrPtrPtr;
 int x[3][4], *y[3];
 
 int in[] = {10, 32, -1, 567, 3, 18, 1, -51, 789, 0};
+int out[] = {
+        10,
+        32,
+        -1,
+        567,
+        3,
+        18,
+        1,
+        -51,
+        789,
+        0,
+};
+int y[4][3] = {
+        {1, 3, 5},
+        {2, 4, 6},
+        {3, 5, 7},
+};
 int queens(), print();
 
 int* a[10];                               // a is an array of pointer to int
@@ -150,8 +167,10 @@ void (*signal(int, void (*fp)(int)))(int);
 int main(void) {
         unsigned long int a = 23;
         for (a = 0; a < 23; a++) {
-                if (a == 10) continue;
-                else a = a * 32;
+                if (a == 10)
+                        continue;
+                else
+                        a = a * 32;
                 if (a == 16) break;
         }
         for (;;) {
