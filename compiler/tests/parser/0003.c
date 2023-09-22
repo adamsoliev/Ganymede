@@ -222,7 +222,17 @@ void g(int func(void)) {
         func(); /* or (*func)(); ...*/
 }
 
+int f(int (*)(), double (*)[3]);
+int f(int (*)(char*), double (*)[]);
+int f(int (*)(char*), double (*)[3]);
+
+/* 6.5 Expressions */
+i = i + 1;
+a[i] = i;
+int x[3][5];
+
 int main(void) {
+        (*pf[f1()])(f2(), f3() + f4());
         g.u2.f3 = f();
         unsigned long int a = 23;
         for (a = 0; a < 23; a++) {

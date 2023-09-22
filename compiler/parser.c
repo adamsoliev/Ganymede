@@ -596,7 +596,10 @@ void postfixoperator() {
                         consume("", OPAR);
                         if (_ct->kind != CPAR) {
                                 assignexpr();
-                                while (_ct->kind == COMMA) assignexpr();
+                                while (_ct->kind == COMMA) {
+                                        consume("", COMMA);
+                                        assignexpr();
+                                }
                         }
                         consume("", CPAR);
                         break;
