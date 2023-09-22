@@ -226,10 +226,16 @@ int f(int (*)(), double (*)[3]);
 int f(int (*)(char*), double (*)[]);
 int f(int (*)(char*), double (*)[3]);
 
-/* 6.5 Expressions */
 i = i + 1;
 a[i] = i;
 int x[3][5];
+struct s {
+        int i;
+        const int ci;
+};
+struct s s;
+const struct s cs;
+volatile struct s vs;
 
 int main(void) {
         (*pf[f1()])(f2(), f3() + f4());

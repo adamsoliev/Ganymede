@@ -428,7 +428,7 @@ void specqual() {
         if (_ct->kind >= VOID && _ct->kind <= ENUM) {
                 typespec();
         }
-        if (_ct->kind >= CONST && _ct->kind == VOLATILE) {
+        else if (_ct->kind >= CONST && _ct->kind <= VOLATILE) {
                 typequal();
         }
 }
