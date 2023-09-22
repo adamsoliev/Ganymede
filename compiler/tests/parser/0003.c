@@ -217,6 +217,11 @@ void g(int (*funcp)(void)) {
         funcp();
 }
 
+void g(int func(void)) {
+        /* ... */
+        func(); /* or (*func)(); ...*/
+}
+
 int main(void) {
         g.u2.f3 = f();
         unsigned long int a = 23;
