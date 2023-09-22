@@ -219,6 +219,9 @@ int main(void) {
                 case 2: break;
                 default: a = 23;
         }
+        char* s;
+        while (*s++ != '\0')
+                ;
 
 L1:
         return 23;

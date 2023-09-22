@@ -672,8 +672,8 @@ void designator() {
 //           | jump-statement
 void stmt() {
         enum Kind ctk = _ct->kind;
-        if (ctk == IDENT || ctk == CASE || ctk == DEFAULT) {
-                if (ctk == IDENT && _ct->next->kind != COLON)
+        if (ctk == IDENT || ctk == CASE || ctk == DEFAULT || ctk == SEMIC) {
+                if ((ctk == IDENT && _ct->next->kind != COLON) || ctk == SEMIC)
                         exprstmt();
                 else
                         labelstmt();
