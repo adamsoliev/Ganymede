@@ -117,6 +117,13 @@ struct {
 short q[4][3][2] = {{1}, {2, 3}, {4, 5, 6}};
 int a[] = {1, 2}, b[] = {3, 4, 5};
 char s[] = "abc", t[3] = "abc";
+char s[] = {'a', 'b', 'c', '\0'}, t[] = {'a', 'b', 'c'};
+
+enum { member_one, member_two };
+const char* nm[] = {
+        [member_two] = "member two",
+        [member_one] = "member one",
+};
 
 int queens(), print();
 

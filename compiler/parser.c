@@ -68,6 +68,7 @@ void condexpr();
 void assignexpr();
 void expr();
 void exprstmt();
+void constexpr();
 
 void parse(struct Token *token);
 
@@ -311,6 +312,10 @@ void initializer() {
 }
 
 // constant-expression = conditional-expression  (* with constraints *)
+void constexpr() {
+        /* TODO: add constraints */
+        condexpr();
+}
 
 // struct-or-union-specifier = struct-or-union '{' struct-declaration-list '}'
 //                           | struct-or-union identifier ['{' struct-declaration-list '}']
@@ -378,7 +383,7 @@ void enumtor() {
         consume("", IDENT);
         if (_ct->kind == ASSIGN) {
                 consume("", ASSIGN);
-                consume("", INTCONST);
+                constexpr();
         }
 }
 
@@ -446,7 +451,7 @@ void structdeclarator() {
         //
         if (_ct->kind == COLON) {
                 consume("", COLON);
-                consume("", INTCONST);
+                constexpr();
                 return;
         }
         declarator();
@@ -584,6 +589,7 @@ void primaryexpr() {
                 case IDENT:
                 case INTCONST:
                 case STRCONST:
+                case CHARCONST:
                 case FLOATCONST: consume("", _ct->kind); break;
                 case OPAR:
                         expr();
@@ -626,7 +632,7 @@ void designtorlist() {
 void designator() {
         if (_ct->kind == OBR) {
                 consume("", OBR);
-                consume("", INTCONST);
+                constexpr();
                 consume("", CBR);
         } else {
                 assert(_ct->kind == DOT);
@@ -669,7 +675,7 @@ void labelstmt() {
                 stmt();
         } else if (ctk == CASE) {
                 consume("", CASE);
-                expr(); /* TODO: change this to constant expr */
+                constexpr();
                 consume("", COLON);
                 stmt();
         } else {
