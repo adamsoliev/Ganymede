@@ -156,11 +156,11 @@ int(*(*ptr_to_ptr)(int, void (*)(void))); /* ptr_to_ptr is a pointer to a pointe
 //                                              that points to the above function */
 void (*signal(int, void (*fp)(int)))(int);
 
-/*  
+/*
     1. -----------------
-    In both declarators and expressions, the '[]' and '()' operators have higher precedence 
-    than the '*' operator, so you need to explicitly group it with the identifier when working 
-    with pointers to arrays ((*a)[N]) and pointers to functions ((*f)()) 
+    In both declarators and expressions, the '[]' and '()' operators have higher precedence
+    than the '*' operator, so you need to explicitly group it with the identifier when working
+    with pointers to arrays ((*a)[N]) and pointers to functions ((*f)())
 
         signal                                  -- signal
         signal(                    )            -- is a function taking
@@ -170,7 +170,7 @@ void (*signal(int, void (*fp)(int)))(int);
         signal(int,      (*fp)     )            --     is a pointer
         signal(int,      (*fp)(   ))            --     to a function taking
         signal(int,      (*fp)(   ))            --       parameter unnamed
-        signal(int,      (*fp)(int))            --       of type int 
+        signal(int,      (*fp)(int))            --       of type int
         signal(int, void (*fp)(int))            --     returning void
         (*signal(int, void (*fp)(int)))         -- returning a pointer
         (*signal(int, void (*fp)(int)))(   )    --  to a function taking
@@ -179,16 +179,16 @@ void (*signal(int, void (*fp)(int)))(int);
     void (*signal(int, void (*fp)(int)))(int);  --   returning void
     -----------------
 
-    2. ----------------- 
-    C declarations are decoded from inside out using a simple rule: start from the identifier 
-    and check on the right side for '[]' (array) or '()' (function) then check on the left side 
-    for the type of the values (stored in the array or returned by the function), without 
+    2. -----------------
+    C declarations are decoded from inside out using a simple rule: start from the identifier
+    and check on the right side for '[]' (array) or '()' (function) then check on the left side
+    for the type of the values (stored in the array or returned by the function), without
     crossing the parentheses; escape from the parentheses and repeat.
 
     For example:
 
     void (*p)()
-    p is (nothing on the right) a pointer (on the left, don't cross the parentheses) to 
+    p is (nothing on the right) a pointer (on the left, don't cross the parentheses) to
     (escape the parentheses, read the next level) a function (right) that returns nothing (left).
     -----------------
 */
@@ -237,9 +237,33 @@ struct s s;
 const struct s cs;
 volatile struct s vs;
 
+union {
+        struct {
+                int alltypes;
+        } n;
+        struct {
+                int type;
+                int intnode;
+        } ni;
+        struct {
+                int type;
+                double doublenode;
+        } nf;
+} u;
+
 int main(void) {
         (*pf[f1()])(f2(), f3() + f4());
         g.u2.f3 = f();
+
+        u.nf.type = 1;
+        u.nf.doublenode = 3.14;
+        /* ... */
+        if (u.n.alltypes == 1) {
+                if (sin(u.nf.doublenode) == 0.0) {
+                        return 0;
+                }
+        }
+
         unsigned long int a = 23;
         for (a = 0; a < 23; a++) {
                 if (a == 10)

@@ -440,7 +440,18 @@ struct Token *scan(char *cp) {
                                         int err = 0;
                                         // octal
                                         // HANDLEME: overflow
-                                        // HANDLEME: floating point
+                                        if (*rcp == '.') {
+                                                enum Kind kind = floatconst(&rcp);
+                                                ck = new_token(kind, start, rcp - start);
+                                                if (kind == FLOATCONST)
+                                                        ck->fvalue = strtof(start, NULL);
+                                                else if (kind == DOUBLECONST)
+                                                        ck->dvalue = strtod(start, NULL);
+                                                else
+                                                        ck->ldvalue = strtold(start, NULL);
+                                                cp = rcp;
+                                                goto next;
+                                        }
                                         for (; map[*rcp] & DIGIT; rcp++) {
                                                 if (*rcp == '8' || *rcp == '9') err = 1;
                                                 n = (n << 3) + (*rcp - '0');

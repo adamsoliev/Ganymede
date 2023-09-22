@@ -427,8 +427,7 @@ void specquallist() {
 void specqual() {
         if (_ct->kind >= VOID && _ct->kind <= ENUM) {
                 typespec();
-        }
-        else if (_ct->kind >= CONST && _ct->kind <= VOLATILE) {
+        } else if (_ct->kind >= CONST && _ct->kind <= VOLATILE) {
                 typequal();
         }
 }
@@ -630,7 +629,8 @@ void primaryexpr() {
                 case INTCONST:
                 case STRCONST:
                 case CHARCONST:
-                case FLOATCONST: consume("", _ct->kind); break;
+                case FLOATCONST:
+                case DOUBLECONST: consume("", _ct->kind); break;
                 case OPAR:
                         consume("", OPAR);
                         expr();
