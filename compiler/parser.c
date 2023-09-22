@@ -69,6 +69,7 @@ void assignexpr();
 void expr();
 void exprstmt();
 void constexpr();
+void typequalifierlist();
 
 void parse(struct Token *token);
 
@@ -223,8 +224,9 @@ void funcspec() {
 
 // pointer = '*' [type-qualifier-list] [pointer]
 void pointer() {
-        while (_ct->kind == MUL && _ct->kind != EOI) consume("", MUL);
-        while (_ct->kind >= CONST && _ct->kind <= VOLATILE) consume("", _ct->kind);
+        consume("", MUL);
+        if (_ct->kind >= CONST && _ct->kind <= VOLATILE) typequalifierlist();
+        if (_ct->kind == MUL) pointer();
 }
 
 /*
@@ -267,7 +269,24 @@ void directdeclarator() {
                 } else if (_ct->kind == OBR) {
                         // array
                         consume("", OBR);
-                        if (_ct->kind == INTCONST) consume("", INTCONST);
+                        if (_ct->kind == MUL) {
+                                consume("", MUL);
+                        } else if (_ct->kind == STATIC) {
+                                consume("", STATIC);
+                                if (_ct->kind >= CONST && _ct->kind <= VOLATILE)
+                                        typequalifierlist();
+                                assignexpr();
+                        } else if (_ct->kind >= CONST && _ct->kind <= VOLATILE) {
+                                typequalifierlist();
+                                if (_ct->kind == MUL)
+                                        consume("", MUL);
+                                else {
+                                        if (_ct->kind == STATIC) consume("", STATIC);
+                                        assignexpr();
+                                }
+                        } else if (_ct->kind != CBR) {
+                                assignexpr();
+                        }
                         consume("missing '[' of array declaration", CBR);
                 } else
                         assert(0);
@@ -419,6 +438,10 @@ void structdeclaratorlist() {
 }
 
 // type-qualifier-list = type-qualifier {type-qualifier}
+void typequalifierlist() {
+        typequal();
+        while (_ct->kind >= CONST && _ct->kind <= VOLATILE) consume("", _ct->kind);
+}
 
 // parameter-type-list = parameter-list [',' '...']
 void paramtypelist() {

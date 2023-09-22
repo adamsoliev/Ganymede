@@ -134,6 +134,8 @@ struct {
         int a[3], b;
 } w[] = {[0].a = {1}, [1].a[0] = 2};
 
+int a[MAX] = {1, 3, 5, 7, 9, [MAX - 5] = 8, 6, 4, 2, 0};
+
 int queens(), print();
 
 int* a[10];                               // a is an array of pointer to int
