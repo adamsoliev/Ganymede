@@ -209,6 +209,14 @@ union {
 struct s f(void) { return g.u1.f2; }
 /* ... */
 
+extern int max(int a, int b) { return a > b ? a : b; }
+
+void g(int (*funcp)(void)) {
+        /* ... */
+        (*funcp)(); /* or funcp(); ... */
+        funcp();
+}
+
 int main(void) {
         g.u2.f3 = f();
         unsigned long int a = 23;

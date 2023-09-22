@@ -409,6 +409,11 @@ void enumtor() {
 // enumeration-constant = identifier
 
 // type-name = specifier-qualifier-list [abstract-declarator]
+void typename() {
+        //
+        specquallist();
+        directdeclarator();
+}
 
 // specifier-qualifier-list = specifier-qualifier {specifier-qualifier}
 void specquallist() {
@@ -539,19 +544,28 @@ void unaryexpr() {
                 consume("", ctk);
                 unaryexpr();
         } else if (ctk == OPAR) {
-                /* TODO */
-                assert(0);
+                /* 
+                   Note: stylistically, we should've consumed '(' and called 'typename()';
+                   we don't follow it here because type-name has abstract-declarator, which
+                   needs '(' to be recognized in the 'ddeclarator()', called in 'typename()') 
+                */
+                if (_ct->next->kind >= VOID && _ct->next->kind <= ENUM) {
+                        typename();
+                        unaryexpr();
+                } else {
+                        postfixexpr();
+                }
         } else if (ctk == SIZEOF) {
                 consume("", ctk);
                 if (_ct->kind == OPAR) {
-                        /* TODO */
-                        assert(0);
+                        typename();
                 }
                 unaryexpr();
         } else {
                 postfixexpr();
         }
 }
+//155
 
 // unary-operator = '++' | '--' | '&' | '*' | '+' | '-' | '~' | '!'
 
@@ -615,6 +629,7 @@ void primaryexpr() {
                 case CHARCONST:
                 case FLOATCONST: consume("", _ct->kind); break;
                 case OPAR:
+                        consume("", OPAR);
                         expr();
                         consume("", CPAR);
                         break;
@@ -672,11 +687,11 @@ void designator() {
 //           | jump-statement
 void stmt() {
         enum Kind ctk = _ct->kind;
-        if (ctk == IDENT || ctk == CASE || ctk == DEFAULT || ctk == SEMIC) {
-                if ((ctk == IDENT && _ct->next->kind != COLON) || ctk == SEMIC)
-                        exprstmt();
-                else
+        if (ctk == IDENT || ctk == CASE || ctk == DEFAULT || ctk == SEMIC || ctk == OPAR) {
+                if ((ctk == IDENT && _ct->next->kind == COLON) || ctk == CASE || ctk == DEFAULT)
                         labelstmt();
+                else
+                        exprstmt();
         } else if (ctk >= GOTO && ctk <= RETURN) {
                 jumpstmt();
         } else if (ctk >= FOR && ctk <= DO) {
