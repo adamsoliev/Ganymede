@@ -110,11 +110,26 @@ int y[4][3] = {
         {2, 4, 6},
         {3, 5, 7},
 };
+int y[4][3] = {1, 3, 5, 2, 4, 6, 3, 5, 7};
 int z[4][3] = {{1}, {2}, {3}, {4}};
 struct {
         int a[3], b;
 } w[] = {{1}, 2};
+struct {
+        int a[3], b;
+} w[] = {{1}, 2};
 short q[4][3][2] = {{1}, {2, 3}, {4, 5, 6}};
+short q[4][3][2] = {1, 0, 0, 0, 0, 0, 2, 3, 0, 0, 0, 0, 4, 5, 6};
+short q[4][3][2] = {{
+                            {1},
+                    },
+                    {
+                            {2, 3},
+                    },
+                    {
+                            {4, 5},
+                            {6},
+                    }};
 int a[] = {1, 2}, b[] = {3, 4, 5};
 char s[] = "abc", t[3] = "abc";
 char s[] = {'a', 'b', 'c', '\0'}, t[] = {'a', 'b', 'c'};
@@ -424,6 +439,8 @@ void f(double (*restrict a)[5]);
 void f(double a[restrict][5]);
 void f(double a[restrict 3][5]);
 void f(double a[restrict static 3][5]);
+
+int x[] = {1, 3, 5};
 
 int main(void) {
         if (*cp != burgundy) a = 23;
