@@ -495,7 +495,10 @@ void structdeclarator() {
 
 void expr() {
         assignexpr();
-        while (_ct->kind == COMMA) assignexpr();
+        while (_ct->kind == COMMA) {
+                consume("", COMMA);
+                assignexpr();
+        }
 }
 
 // assignment-expression = conditional-expression
@@ -551,7 +554,7 @@ void unaryexpr() {
                    we don't follow it here because type-name has abstract-declarator, which
                    needs '(' to be recognized in the 'ddeclarator()', called in 'typename()') 
                 */
-                if (_ct->next->kind >= VOID && _ct->next->kind <= ENUM) {
+                if (_ct->next->kind >= CONST && _ct->next->kind <= ENUM) {
                         consume("", OPAR);
                         typename();
                         consume("", CPAR);

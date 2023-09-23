@@ -253,7 +253,32 @@ union {
 
 int* p = (int[]){2, 4};
 
+void f(void) {
+        int* p;
+        /*...*/
+        p = (int[2]){*p};
+        /*...*/
+}
+
+const float* readOnlyFloatArray = (const float[]){1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6};
+const char* readOnlyCharArray = (const char[]){"/tmp/fileXXXXXX"};
+
+struct s {
+        int i;
+};
+int f(void) {
+        struct s *p = 0, *q;
+        int j = 0;
+again:
+        q = p, p = &((struct s){j++});
+        if (j < 2) goto again;
+        return p == q && q->i == 1;
+}
+
 int main(void) {
+        if ((const char[]){"abc"} == "abc") {
+                a = 32;
+        }
         (*pf[f1()])(f2(), f3() + f4());
         g.u2.f3 = f();
 
