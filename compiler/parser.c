@@ -700,8 +700,13 @@ void designator() {
 //           | iteration-statement
 //           | jump-statement
 void stmt() {
+        /* 
+          TODO: refactor given every stmt has a clear indicator except the exprstmt, 
+          which should be in the else part. 
+        */
         enum Kind ctk = _ct->kind;
-        if (ctk == IDENT || ctk == CASE || ctk == DEFAULT || ctk == SEMIC || ctk == OPAR) {
+        if (ctk == IDENT || ctk == CASE || ctk == DEFAULT || ctk == SEMIC || ctk == OPAR ||
+            ctk == MUL) {
                 if ((ctk == IDENT && _ct->next->kind == COLON) || ctk == CASE || ctk == DEFAULT)
                         labelstmt();
                 else
