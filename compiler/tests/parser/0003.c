@@ -342,6 +342,26 @@ extern int c[];
 void f(int n, int* restrict p, int* restrict q) {
         while (n-- > 0) *p++ = *q++;
 }
+void g(void) {
+        extern int d[100];
+        f(50, d + 50, d);  // valid
+}
+void h(int n, int* restrict p, int* restrict q, int* restrict r) {
+        int i;
+        for (i = 0; i < n; i++) p[i] = q[i] + r[i];
+}
+typedef struct {
+        int n;
+        float* restrict v;
+} vector;
+inline double fahr(double t) { return (9.0 * t) / 5.0 + 32.0; }
+inline double cels(double t) { return (5.0 * (t - 32.0)) / 9.0; }
+extern double fahr(double);
+// creates an external definition
+double convert(int is_fahr, double temp) {
+        /* A translator may perform inline substitutions */
+        return is_fahr ? cels(temp) : fahr(temp);
+}
 
 int main(void) {
         if (*cp != burgundy) a = 23;

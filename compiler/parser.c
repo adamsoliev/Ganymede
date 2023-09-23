@@ -144,7 +144,7 @@ void compstmt() {
 
 // declaration-or-statement = declaration | statement
 void declorstmt() {
-        if (_ct->kind >= VOID && _ct->kind <= ENUM) {
+        if (_ct->kind >= TYPEDEF && _ct->kind <= ENUM) {
                 _cdecllevel = LOCAL;
                 declaration();
         } else {

@@ -356,6 +356,11 @@ struct Token *scan(char *cp) {
                                     !(map[rcp[2]] & (DIGIT | LETTER))) {
                                         HANDLE_TOKEN(INT, 2);
                                 }
+                                if (rcp[0] == 'n' && rcp[1] == 'l' && rcp[2] == 'i' &&
+                                    rcp[3] == 'n' && rcp[4] == 'e' &&
+                                    !(map[rcp[5]] & (DIGIT | LETTER))) {
+                                        HANDLE_TOKEN(INLINE, 5);
+                                }
                                 goto id;
                         case 'h':
                         case 'j':
