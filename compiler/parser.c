@@ -9,7 +9,7 @@ static struct Token *_ct;
 enum { GLOBAL = 1, LOCAL, PARAM } _cdecllevel;
 
 /* utility functions */
-static void consume(const char *msg, enum Kind kind) {
+static inline void consume(const char *msg, enum Kind kind) {
         if (_ct->kind != kind) {
                 error("%s: expected %s, got %s\n", msg, token_names[kind], token_names[_ct->kind]);
         }
@@ -565,7 +565,10 @@ void unaryexpr() {
         } else if (ctk == SIZEOF) {
                 consume("", ctk);
                 if (_ct->kind == OPAR) {
+                        consume("", OPAR);
                         typename();
+                        consume("", CPAR);
+                        return;
                 }
                 unaryexpr();
         } else {

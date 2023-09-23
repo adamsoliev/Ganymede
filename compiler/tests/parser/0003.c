@@ -275,7 +275,43 @@ again:
         return p == q && q->i == 1;
 }
 
+extern void* alloc(unsigned int);
+double* dp = alloc(sizeof *dp);
+int ssize = sizeof array / sizeof array[0];
+int fsize3(int n) {
+        char b[n + 3];
+        return sizeof b;
+}
+
+const void* c_vp;
+void* vp;
+const int* c_ip;
+volatile int* v_ip;
+int* ip;
+const char* c_cp;
+
+static int i = 2 || 1 / 0;
+struct s { int n; double d[]; };
+struct s* p = malloc(sizeof(struct s) + sizeof(double[m]));
+
 int main(void) {
+        char c;
+        int i;
+        long l;
+        l = (c = i);
+
+        f(a, (t = 3, t + 2), c);
+        if ((c = f()) == -1) {
+                char c = '\n';
+        }
+        /* ... */
+        int n = 4, m = 3;
+        int a[n][m];
+        int(*p)[m] = a;  // p == &a[0]
+        p += 1;          // p == &a[1]
+        (*p)[2] = 99;    // a[1][2] == 99
+        n = p - a;       // n == 1
+
         if ((const char[]){"abc"} == "abc") {
                 a = 32;
         }
