@@ -462,7 +462,8 @@ void paramtypelist() {
 // parameter-list = parameter-declaration {',' parameter-declaration}
 void paramlist() {
         paramdeclaration();
-        while (_ct->kind == COMMA && _ct->kind != EOI) {
+        while (_ct->kind == COMMA && _ct->kind != EOI && _ct->next->kind >= TYPEDEF &&
+               _ct->next->kind <= ENUM) {
                 consume("", COMMA);
                 paramdeclaration();
         }
