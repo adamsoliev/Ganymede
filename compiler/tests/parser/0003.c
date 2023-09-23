@@ -363,6 +363,46 @@ double convert(int is_fahr, double temp) {
         return is_fahr ? cels(temp) : fahr(temp);
 }
 
+const int* ptr_to_constant;
+int* const constant_ptr;
+typedef int* int_ptr;
+float fa[11], *afp[17];
+extern int* x;
+extern int y[];
+extern int n;
+extern int m;
+void fcompat(void) {
+        int a[n][6][m];
+        int(*p)[4][n + 1];
+        int c[n][n][6][m];
+        int(*r)[n][n][n + 1];
+        p = a;
+        // invalid: not compatible because 4 != 6
+        r = c;
+        // compatible, but defined behavior only if
+        // n == 6 and m == n+1
+}
+extern int n;
+int A[n];                        // invalid: file scope VM
+extern int (*p2)[n];             // invalid: file scope VLA
+int B[100];                      // valid: file scope but not VM
+void fvla(int m, int C[m][m]);   // valid: VLA with prototype scope
+void fvla(int m, int C[m][m]) {  // valid: adjusted to auto pointer to VLA
+        typedef int VLA[m][m];   // valid: block scope typedef VLA
+        struct tag {
+                int (*y)[n];  // invalid: y not ordinary identifier
+                int z[n];     // invalid: z not ordinary identifier
+        };
+        int D[m];                // valid: auto VLA
+        static int E[m];         // invalid: static block scope VLA
+        extern int F[m];         // invalid: F has linkage and is VLA
+        int(*s)[m];              // valid: auto pointer to VLA
+        extern int(*r)[m];       // invalid: r has linkage and points to VLA
+        static int(*q)[m] = &B;  // valid: q is a static block pointer to VLA
+}
+int f(void), *fip(), (*pfi)();
+int (*apfi[3])(int* x, int* y);
+
 int main(void) {
         if (*cp != burgundy) a = 23;
         char c;
