@@ -416,6 +416,14 @@ void addscalar(int n, int m, double a[n][n * m + 300], double x) {
                         // a is a pointer to a VLA with n*m+300 elements
                         a[i][j] += x;
 }
+double maximum(int n, int m, double a[n][m]);
+double maximum(int n, int m, double a[*][*]);
+double maximum(int n, int m, double a[][*]);
+double maximum(int n, int m, double a[][m]);
+void f(double (*restrict a)[5]);
+void f(double a[restrict][5]);
+void f(double a[restrict 3][5]);
+void f(double a[restrict static 3][5]);
 
 int main(void) {
         if (*cp != burgundy) a = 23;

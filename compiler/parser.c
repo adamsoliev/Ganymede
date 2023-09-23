@@ -282,7 +282,7 @@ void directdeclarator() {
                                 typequalifierlist();
                                 if (_ct->kind == MUL)
                                         consume("", MUL);
-                                else {
+                                else if (_ct->kind != CBR) {
                                         if (_ct->kind == STATIC) consume("", STATIC);
                                         assignexpr();
                                 }
