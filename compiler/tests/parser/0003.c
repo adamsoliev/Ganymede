@@ -1,304 +1,352 @@
-/* storage class specifiers */
-static float pi;
-static int counter;
-extern double temperature;
-long id;
-const char* message;
-volatile unsigned int flag;
+// /* storage class specifiers */
+// static float pi;
+// static int counter;
+// extern double temperature;
+// long id;
+// const char* message;
+// volatile unsigned int flag;
 
-/* type specifiers */
-short short_var;
-long long_var;
-long long long_long_var;
-unsigned int unsigned_int_var;
-unsigned short unsigned_short_var;
-unsigned long unsigned_long_var;
-unsigned long long unsigned_long_long_var;
-float float_var;
-double double_var;
-long double long_double_var;
-char char_var;
-unsigned char unsigned_char_var;
-signed char signed_char_var;
-void* void_ptr;
-long long int x;
+// /* type specifiers */
+// short short_var;
+// long long_var;
+// long long long_long_var;
+// unsigned int unsigned_int_var;
+// unsigned short unsigned_short_var;
+// unsigned long unsigned_long_var;
+// unsigned long long unsigned_long_long_var;
+// float float_var;
+// double double_var;
+// long double long_double_var;
+// char char_var;
+// unsigned char unsigned_char_var;
+// signed char signed_char_var;
+// void* void_ptr;
+// long long int x;
 
-struct Shape;
-struct Point {
-        int x;
-        int y;
-};
-union Color {
-        int rgb;
-        char name;
-        char name[10];
-};
-struct employee {
-        char name[20];
-        int id;
-        long class;
-} temp;
-struct employee student, faculty, staff;
-/* anonymous struct */
-struct {
-        float x, y;
-} complex;
-struct sample {
-        char c;
-        float* pf;
-        struct sample* next;
-} x;
-struct somestruct {
-        /* Anonymous struct */
-        struct {
-                int x, y;
-        } point;
-        int type;
-} w;
-struct {
-        unsigned short icon : 8;
-        unsigned short color : 4;
-        unsigned short underline : 1;
-        unsigned short blink : 1;
-} screen[25][80];
+// struct Shape;
+// struct Point {
+//         int x;
+//         int y;
+// };
+// union Color {
+//         int rgb;
+//         char name;
+//         char name[10];
+// };
+// struct employee {
+//         char name[20];
+//         int id;
+//         long class;
+// } temp;
+// struct employee student, faculty, staff;
+// /* anonymous struct */
+// struct {
+//         float x, y;
+// } complex;
+// struct sample {
+//         char c;
+//         float* pf;
+//         struct sample* next;
+// } x;
+// struct somestruct {
+//         /* Anonymous struct */
+//         struct {
+//                 int x, y;
+//         } point;
+//         int type;
+// } w;
+// struct {
+//         unsigned short icon : 8;
+//         unsigned short color : 4;
+//         unsigned short underline : 1;
+//         unsigned short blink : 1;
+// } screen[25][80];
 
-enum Days { MON, TUE, WED, THU, FRI };
-enum MColor { RED, GREEN, BLUE } color_var;
+// enum Days { MON, TUE, WED, THU, FRI };
+// enum MColor { RED, GREEN, BLUE } color_var;
 
-typedef int Integer;
-typedef struct Point Point;
-typedef enum Days Weekday;
+// typedef int Integer;
+// typedef struct Point Point;
+// typedef enum Days Weekday;
 
-signed char c;
-signed short s;
-signed int i;
-signed long int l;
-unsigned char C;
-unsigned short S;
-unsigned int I;
-unsigned long int L;
-float f;
-double d;
-long double D;
-int b;
-const int a, *x;
-int i, j, *p;
-int b, *y;
-volatile unsigned z;
-void* p;
+// signed char c;
+// signed short s;
+// signed int i;
+// signed long int l;
+// unsigned char C;
+// unsigned short S;
+// unsigned int I;
+// unsigned long int L;
+// float f;
+// double d;
+// long double D;
+// int b;
+// const int a, *x;
+// int i, j, *p;
+// int b, *y;
+// volatile unsigned z;
+// void* p;
 
-float f[128];
-int up[15], down[15], rows[8], x[8];
-char*** ptrPtrPtr;
-int x[3][4], *y[3];
+// float f[128];
+// int up[15], down[15], rows[8], x[8];
+// char*** ptrPtrPtr;
+// int x[3][4], *y[3];
 
-int in[] = {10, -32, 1, 567, 3, 18, 1, -51, 789, 0};
-int out[] = {
-        10,
-        32,
-        -1,
-        567,
-        3,
-        18,
-        1,
-        -51,
-        789,
-        0,
-};
-int y[4][3] = {
-        {1, 3, 5},
-        {2, 4, 6},
-        {3, 5, 7},
-};
-int z[4][3] = {{1}, {2}, {3}, {4}};
-struct {
-        int a[3], b;
-} w[] = {{1}, 2};
-short q[4][3][2] = {{1}, {2, 3}, {4, 5, 6}};
-int a[] = {1, 2}, b[] = {3, 4, 5};
-char s[] = "abc", t[3] = "abc";
-char s[] = {'a', 'b', 'c', '\0'}, t[] = {'a', 'b', 'c'};
+// int in[] = {10, -32, 1, 567, 3, 18, 1, -51, 789, 0};
+// int out[] = {
+//         10,
+//         32,
+//         -1,
+//         567,
+//         3,
+//         18,
+//         1,
+//         -51,
+//         789,
+//         0,
+// };
+// int y[4][3] = {
+//         {1, 3, 5},
+//         {2, 4, 6},
+//         {3, 5, 7},
+// };
+// int z[4][3] = {{1}, {2}, {3}, {4}};
+// struct {
+//         int a[3], b;
+// } w[] = {{1}, 2};
+// short q[4][3][2] = {{1}, {2, 3}, {4, 5, 6}};
+// int a[] = {1, 2}, b[] = {3, 4, 5};
+// char s[] = "abc", t[3] = "abc";
+// char s[] = {'a', 'b', 'c', '\0'}, t[] = {'a', 'b', 'c'};
 
-enum { member_one, member_two };
-const char* nm[] = {
-        [member_two] = "member two",
-        [member_one] = "member one",
-};
+// enum { member_one, member_two };
+// const char* nm[] = {
+//         [member_two] = "member two",
+//         [member_one] = "member one",
+// };
 
-/*
-we can't do this for now because it requires typedef internals
-div_t answer = { .quot = 2, .rem = -1 };
-*/
+// /*
+// we can't do this for now because it requires typedef internals
+// div_t answer = { .quot = 2, .rem = -1 };
+// */
 
-struct {
-        int a[3], b;
-} w[] = {[0].a = {1}, [1].a[0] = 2};
+// struct {
+//         int a[3], b;
+// } w[] = {[0].a = {1}, [1].a[0] = 2};
 
-int a[MAX] = {1, 3, 5, 7, 9, [MAX - 5] = 8, 6, 4, 2, 0};
-union {
-        int any_member;
-} u = {.any_member = 42};
+// int a[MAX] = {1, 3, 5, 7, 9, [MAX - 5] = 8, 6, 4, 2, 0};
+// union {
+//         int any_member;
+// } u = {.any_member = 42};
 
-int queens(), print();
+// int queens(), print();
 
-int* a[10];                               // a is an array of pointer to int
-int (*a)[10];                             // a is a pointer to an array of int
-int* f();                                 // f is a function returning a pointer to int
-int (*f)();                               // f is a pointer to a function returning int
-const int* p;                             // p is a non-const pointer to const int
-int const* p;                             // same as above
-int* const p;                             // p is a const pointer to non-const int
-void (*fptr)(void);                       /* fptr is a pointer to a function that takes in
-                                             no params and returns void */
-int (*fptr)(int, void (*)(void));         /* fptr is a function pointer that takes in int and
-//                                              pointer to the above function */
-int(*(*ptr_to_ptr)(int, void (*)(void))); /* ptr_to_ptr is a pointer to a pointer
-//                                              that points to the above function */
-void (*signal(int, void (*fp)(int)))(int);
+// int* a[10];                               // a is an array of pointer to int
+// int (*a)[10];                             // a is a pointer to an array of int
+// int* f();                                 // f is a function returning a pointer to int
+// int (*f)();                               // f is a pointer to a function returning int
+// const int* p;                             // p is a non-const pointer to const int
+// int const* p;                             // same as above
+// int* const p;                             // p is a const pointer to non-const int
+// void (*fptr)(void);                       /* fptr is a pointer to a function that takes in
+//                                              no params and returns void */
+// int (*fptr)(int, void (*)(void));         /* fptr is a function pointer that takes in int and
+// //                                              pointer to the above function */
+// int(*(*ptr_to_ptr)(int, void (*)(void))); /* ptr_to_ptr is a pointer to a pointer
+// //                                              that points to the above function */
+// void (*signal(int, void (*fp)(int)))(int);
 
-/*
-    1. -----------------
-    In both declarators and expressions, the '[]' and '()' operators have higher precedence
-    than the '*' operator, so you need to explicitly group it with the identifier when working
-    with pointers to arrays ((*a)[N]) and pointers to functions ((*f)())
+// /*
+//     1. -----------------
+//     In both declarators and expressions, the '[]' and '()' operators have higher precedence
+//     than the '*' operator, so you need to explicitly group it with the identifier when working
+//     with pointers to arrays ((*a)[N]) and pointers to functions ((*f)())
 
-        signal                                  -- signal
-        signal(                    )            -- is a function taking
-        signal(                    )            --   parameter unnamed
-        signal(int,                )            --     of type int
-        signal(int,        fp      )            --   parameter fp
-        signal(int,      (*fp)     )            --     is a pointer
-        signal(int,      (*fp)(   ))            --     to a function taking
-        signal(int,      (*fp)(   ))            --       parameter unnamed
-        signal(int,      (*fp)(int))            --       of type int
-        signal(int, void (*fp)(int))            --     returning void
-        (*signal(int, void (*fp)(int)))         -- returning a pointer
-        (*signal(int, void (*fp)(int)))(   )    --  to a function taking
-        (*signal(int, void (*fp)(int)))(   )    --    parameter unnamed
-        (*signal(int, void (*fp)(int)))(int)    --    of type int
-    void (*signal(int, void (*fp)(int)))(int);  --   returning void
-    -----------------
+//         signal                                  -- signal
+//         signal(                    )            -- is a function taking
+//         signal(                    )            --   parameter unnamed
+//         signal(int,                )            --     of type int
+//         signal(int,        fp      )            --   parameter fp
+//         signal(int,      (*fp)     )            --     is a pointer
+//         signal(int,      (*fp)(   ))            --     to a function taking
+//         signal(int,      (*fp)(   ))            --       parameter unnamed
+//         signal(int,      (*fp)(int))            --       of type int
+//         signal(int, void (*fp)(int))            --     returning void
+//         (*signal(int, void (*fp)(int)))         -- returning a pointer
+//         (*signal(int, void (*fp)(int)))(   )    --  to a function taking
+//         (*signal(int, void (*fp)(int)))(   )    --    parameter unnamed
+//         (*signal(int, void (*fp)(int)))(int)    --    of type int
+//     void (*signal(int, void (*fp)(int)))(int);  --   returning void
+//     -----------------
 
-    2. -----------------
-    C declarations are decoded from inside out using a simple rule: start from the identifier
-    and check on the right side for '[]' (array) or '()' (function) then check on the left side
-    for the type of the values (stored in the array or returned by the function), without
-    crossing the parentheses; escape from the parentheses and repeat.
+//     2. -----------------
+//     C declarations are decoded from inside out using a simple rule: start from the identifier
+//     and check on the right side for '[]' (array) or '()' (function) then check on the left side
+//     for the type of the values (stored in the array or returned by the function), without
+//     crossing the parentheses; escape from the parentheses and repeat.
 
-    For example:
+//     For example:
 
-    void (*p)()
-    p is (nothing on the right) a pointer (on the left, don't cross the parentheses) to
-    (escape the parentheses, read the next level) a function (right) that returns nothing (left).
-    -----------------
-*/
+//     void (*p)()
+//     p is (nothing on the right) a pointer (on the left, don't cross the parentheses) to
+//     (escape the parentheses, read the next level) a function (right) that returns nothing (left).
+//     -----------------
+// */
 
-struct s {
-        double i;
-} f(void);
-union {
-        struct {
-                int f1;
-                struct s f2;
-        } u1;
-        struct {
-                struct s f3;
-                int f4;
-        } u2;
-} g;
-struct s f(void) { return g.u1.f2; }
-/* ... */
+// struct s {
+//         double i;
+// } f(void);
+// union {
+//         struct {
+//                 int f1;
+//                 struct s f2;
+//         } u1;
+//         struct {
+//                 struct s f3;
+//                 int f4;
+//         } u2;
+// } g;
+// struct s f(void) { return g.u1.f2; }
+// /* ... */
 
-extern int max(int a, int b) { return a > b ? a : b; }
+// extern int max(int a, int b) { return a > b ? a : b; }
 
-void g(int (*funcp)(void)) {
-        /* ... */
-        (*funcp)(); /* or funcp(); ... */
-        funcp();
-}
+// void g(int (*funcp)(void)) {
+//         /* ... */
+//         (*funcp)(); /* or funcp(); ... */
+//         funcp();
+// }
 
-void g(int func(void)) {
-        /* ... */
-        func(); /* or (*func)(); ...*/
-}
+// void g(int func(void)) {
+//         /* ... */
+//         func(); /* or (*func)(); ...*/
+// }
 
-int f(int (*)(), double (*)[3]);
-int f(int (*)(char*), double (*)[]);
-int f(int (*)(char*), double (*)[3]);
+// int f(int (*)(), double (*)[3]);
+// int f(int (*)(char*), double (*)[]);
+// int f(int (*)(char*), double (*)[3]);
 
-i = i + 1;
-a[i] = i;
-int x[3][5];
-struct s {
-        int i;
-        const int ci;
-};
-struct s s;
-const struct s cs;
-volatile struct s vs;
+// i = i + 1;
+// a[i] = i;
+// int x[3][5];
+// struct s {
+//         int i;
+//         const int ci;
+// };
+// struct s s;
+// const struct s cs;
+// volatile struct s vs;
 
-union {
-        struct {
-                int alltypes;
-        } n;
-        struct {
-                int type;
-                int intnode;
-        } ni;
-        struct {
-                int type;
-                double doublenode;
-        } nf;
-} u;
+// union {
+//         struct {
+//                 int alltypes;
+//         } n;
+//         struct {
+//                 int type;
+//                 int intnode;
+//         } ni;
+//         struct {
+//                 int type;
+//                 double doublenode;
+//         } nf;
+// } u;
 
-int* p = (int[]){2, 4};
+// int* p = (int[]){2, 4};
 
-void f(void) {
-        int* p;
-        /*...*/
-        p = (int[2]){*p};
-        /*...*/
-}
+// void f(void) {
+//         int* p;
+//         /*...*/
+//         p = (int[2]){*p};
+//         /*...*/
+// }
 
-const float* readOnlyFloatArray = (const float[]){1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6};
-const char* readOnlyCharArray = (const char[]){"/tmp/fileXXXXXX"};
+// const float* readOnlyFloatArray = (const float[]){1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6};
+// const char* readOnlyCharArray = (const char[]){"/tmp/fileXXXXXX"};
 
-struct s {
-        int i;
-};
-int f(void) {
-        struct s *p = 0, *q;
-        int j = 0;
-again:
-        q = p, p = &((struct s){j++});
-        if (j < 2) goto again;
-        return p == q && q->i == 1;
-}
+// struct s {
+//         int i;
+// };
+// int f(void) {
+//         struct s *p = 0, *q;
+//         int j = 0;
+// again:
+//         q = p, p = &((struct s){j++});
+//         if (j < 2) goto again;
+//         return p == q && q->i == 1;
+// }
 
-extern void* alloc(unsigned int);
-double* dp = alloc(sizeof *dp);
-int ssize = sizeof array / sizeof array[0];
-int fsize3(int n) {
-        char b[n + 3];
-        return sizeof b;
-}
+// extern void* alloc(unsigned int);
+// double* dp = alloc(sizeof *dp);
+// int ssize = sizeof array / sizeof array[0];
+// int fsize3(int n) {
+//         char b[n + 3];
+//         return sizeof b;
+// }
 
-const void* c_vp;
-void* vp;
-const int* c_ip;
-volatile int* v_ip;
-int* ip;
-const char* c_cp;
+// const void* c_vp;
+// void* vp;
+// const int* c_ip;
+// volatile int* v_ip;
+// int* ip;
+// const char* c_cp;
 
-static int i = 2 || 1 / 0;
-struct s { int n; double d[]; };
-struct s* p = malloc(sizeof(struct s) + sizeof(double[m]));
+// static int i = 2 || 1 / 0;
+// struct s {
+//         int n;
+//         double d[];
+// };
+// struct s* p = malloc(sizeof(struct s) + sizeof(double[m]));
+// struct {
+//         int n;
+//         double d[m];
+// }* p;
+// struct s t1 = {0};  // valid
+// struct s* s1;
+// struct s* s2;
+// s1 = malloc(sizeof(struct s) + 64);
+// s2 = malloc(sizeof(struct s) + 46);
+// struct {
+//         int n;
+//         double d[8];
+// }* s1;
+// struct {
+//         int n;
+//         double d[5];
+// }* s2;
+// double* dp;
+// dp = &(s1->d[0]);  // valid
+// *dp = 42;          // valid
+// dp = &(s2->d[0]);  // valid
+// enum hue { chartreuse, burgundy, claret = 20, winedark };
+// enum hue col, *cp;
+// col = claret;
+// cp = &col;
+// struct tnode {
+//         int count;
+//         struct tnode *left, *right;
+// };
+// struct tnode s, *sp;
+// extern const volatile int real_time_clock;
+// const struct s {
+//         int mem;
+// } cs = {1};
+// struct s ncs;  // the object ncs is modifiable
+// int* pi;
+// const int* pci;
+// ncs = cs;       // valid
+// pi = &ncs.mem;  // valid
+// pci = &cs.mem;  // valid
+int* restrict a;
+int* restrict b;
+extern int c[];
 
 int main(void) {
+        if (*cp != burgundy) a = 23;
         char c;
         int i;
         long l;
         l = (c = i);
+        t1.n = 4;  // valid
 
         f(a, (t = 3, t + 2), c);
         if ((c = f()) == -1) {

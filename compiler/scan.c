@@ -676,6 +676,11 @@ struct Token *scan(char *cp) {
                                     !(map[rcp[5]] & (DIGIT | LETTER))) {
                                         HANDLE_TOKEN(RETURN, 5);
                                 }
+                                if (rcp[0] == 'e' && rcp[1] == 's' && rcp[2] == 't' &&
+                                    rcp[3] == 'r' && rcp[4] == 'i' && rcp[5] == 'c' &&
+                                    rcp[6] == 't' && !(map[rcp[7]] & (DIGIT | LETTER))) {
+                                        HANDLE_TOKEN(RESTRICT, 7);
+                                }
                                 goto id;
                         case 's':
                                 if (rcp[0] == 'h' && rcp[1] == 'o' && rcp[2] == 'r' &&
