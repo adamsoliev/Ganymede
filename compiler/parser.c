@@ -251,7 +251,9 @@ void directdeclarator() {
                 consume("", OPAR);
                 declarator();
                 consume("", CPAR);
-        } else
+        } else if (_ct->kind == OBR)
+                ;
+        else
                 return;
 
         while ((_ct->kind == OPAR || _ct->kind == OBR) && _ct->kind != EOI) {
@@ -412,7 +414,8 @@ void enumtor() {
 void typename() {
         //
         specquallist();
-        directdeclarator();
+        enum Kind ctk = _ct->kind;
+        if (ctk == MUL || ctk == OPAR || ctk == OBR) declarator();
 }
 
 // specifier-qualifier-list = specifier-qualifier {specifier-qualifier}
@@ -549,7 +552,9 @@ void unaryexpr() {
                    needs '(' to be recognized in the 'ddeclarator()', called in 'typename()') 
                 */
                 if (_ct->next->kind >= VOID && _ct->next->kind <= ENUM) {
+                        consume("", OPAR);
                         typename();
+                        consume("", CPAR);
                         unaryexpr();
                 } else {
                         postfixexpr();
@@ -564,12 +569,20 @@ void unaryexpr() {
                 postfixexpr();
         }
 }
-//155
+//88
 
 // unary-operator = '++' | '--' | '&' | '*' | '+' | '-' | '~' | '!'
 
 // postfix-expression = primary-expression { postfix-operator }
+//                    | '{' initializer-list [','] '}'          /* compound literal */
 void postfixexpr() {
+        if (_ct->kind == OCBR) {
+                consume("", OCBR);
+                initializerlist();
+                if (_ct->kind == COMMA) consume("", COMMA);
+                consume("", CCBR);
+                return;
+        }
         primaryexpr();
         enum Kind ctk = _ct->kind;
         while (ctk == OBR || ctk == OPAR || ctk == DOT || ctk == DEREF || ctk == INCR ||
@@ -583,7 +596,6 @@ void postfixexpr() {
 //                  | '(' [assignment-expression {',' assignment-expression}] ')'
 //                  | ('.' | '->') identifier
 //                  | ('++' | '--')
-//                  | '{' initializer-list [','] '}'          /* compound literal */
 void postfixoperator() {
         switch (_ct->kind) {
                 case OBR:
@@ -609,12 +621,6 @@ void postfixoperator() {
                         break;
                 case INCR:
                 case DECR: consume("", _ct->kind); break;
-                case OCBR:
-                        consume("", OCBR);
-                        initializerlist();
-                        if (_ct->kind == COMMA) consume("", COMMA);
-                        consume("", CCBR);
-                        break;
                 default: assert(0);
         }
 }

@@ -251,6 +251,8 @@ union {
         } nf;
 } u;
 
+int* p = (int[]){2, 4};
+
 int main(void) {
         (*pf[f1()])(f2(), f3() + f4());
         g.u2.f3 = f();
