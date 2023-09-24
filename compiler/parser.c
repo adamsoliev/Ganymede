@@ -250,7 +250,7 @@ void directdeclarator() {
                 // abstract
                 consume("", OPAR);
                 declarator();
-                consume("", CPAR);
+                consume("missing ')' of direct declarator", CPAR);
         } else if (_ct->kind == OBR)
                 ;
         else
@@ -268,7 +268,7 @@ void directdeclarator() {
                                         paramtypelist();
                         }
                         consume("missing ')' of function definition/declaration", CPAR);
-                } else if (_ct->kind == OBR) {
+                } else {
                         // array
                         consume("", OBR);
                         if (_ct->kind == MUL) {
@@ -290,8 +290,7 @@ void directdeclarator() {
                                 assignexpr();
                         }
                         consume("missing '[' of array declaration", CBR);
-                } else
-                        assert(0);
+                }
         }
 }
 
@@ -325,7 +324,7 @@ void initializer() {
                 consume("", OCBR);
                 initializerlist();
                 if (_ct->kind == COMMA) consume("", COMMA);
-                consume("", CCBR);
+                consume("missing '}' of initializer", CCBR);
         } else {
                 assignexpr();
         }
@@ -484,7 +483,7 @@ void structdeclarator() {
         declarator();
         if (_ct->kind == COLON) {
                 consume("", COLON);
-                consume("", INTCONST);
+                constexpr();
         }
 }
 
@@ -515,7 +514,7 @@ void condexpr() {
         if (_ct->kind == QMARK) {
                 consume("", QMARK);
                 expr();
-                consume("", COLON);
+                consume("missing ':' of conditional expr", COLON);
                 condexpr();
         }
 }
@@ -547,7 +546,7 @@ void unaryexpr() {
                 if (_ct->next->kind >= CONST && _ct->next->kind <= ENUM) {
                         consume("", OPAR);
                         typename();
-                        consume("", CPAR);
+                        consume("missing ')' of unary expr", CPAR);
                         unaryexpr();
                 } else {
                         postfixexpr();
@@ -557,7 +556,7 @@ void unaryexpr() {
                 if (_ct->kind == OPAR) {
                         consume("", OPAR);
                         typename();
-                        consume("", CPAR);
+                        consume("missing ')' of unary expr", CPAR);
                         return;
                 }
                 unaryexpr();
@@ -575,7 +574,7 @@ void postfixexpr() {
                 consume("", OCBR);
                 initializerlist();
                 if (_ct->kind == COMMA) consume("", COMMA);
-                consume("", CCBR);
+                consume("missing '{' of postfix expr", CCBR);
                 return;
         }
         primaryexpr();
@@ -596,7 +595,7 @@ void postfixoperator() {
                 case OBR:
                         consume("", OBR);
                         expr();
-                        consume("", CBR);
+                        consume("missing '[' of postfix operator", CBR);
                         break;
                 case OPAR:
                         consume("", OPAR);
@@ -607,16 +606,16 @@ void postfixoperator() {
                                         assignexpr();
                                 }
                         }
-                        consume("", CPAR);
+                        consume("missing ')' of postfix operator", CPAR);
                         break;
                 case DOT:
                 case DEREF:
                         consume("", _ct->kind);
-                        consume("", IDENT);
+                        consume("missing 'identity' of postfix operator", IDENT);
                         break;
                 case INCR:
                 case DECR: consume("", _ct->kind); break;
-                default: assert(0);
+                default: error("unknown postfix operator: %s\n", token_names[_ct->kind]);
         }
 }
 
@@ -635,9 +634,9 @@ void primaryexpr() {
                 case OPAR:
                         consume("", OPAR);
                         expr();
-                        consume("", CPAR);
+                        consume("missing ')' of primary expr", CPAR);
                         break;
-                default: assert(0);
+                default: error("unknown primary expr: %s\n", token_names[_ct->kind]);
         }
 }
 
@@ -650,7 +649,7 @@ void constant() {
                 case INTCONST:
                 case CHARCONST:
                 case FLOATCONST: consume("", _ct->kind); break;
-                default: assert(0);
+                default: error("unknown constant: %s\n", token_names[_ct->kind]);
         }
 }
 
@@ -675,11 +674,11 @@ void designator() {
         if (_ct->kind == OBR) {
                 consume("", OBR);
                 constexpr();
-                consume("", CBR);
+                consume("missing '[' of designator", CBR);
         } else {
                 assert(_ct->kind == DOT);
                 consume("", DOT);
-                consume("", IDENT);
+                consume("missing 'identity' of designator", IDENT);
         }
 }
 
@@ -719,17 +718,17 @@ void labelstmt() {
         enum Kind ctk = _ct->kind;
         if (ctk == IDENT) {
                 consume("", IDENT);
-                consume("", COLON);
+                consume("missing ':' of label stmt", COLON);
                 stmt();
         } else if (ctk == CASE) {
                 consume("", CASE);
                 constexpr();
-                consume("", COLON);
+                consume("missing ':' of label stmt", COLON);
                 stmt();
         } else {
                 assert(ctk == DEFAULT);
                 consume("", DEFAULT);
-                consume("", COLON);
+                consume("missing ':' of label stmt", COLON);
                 stmt();
         }
 }
@@ -737,7 +736,7 @@ void labelstmt() {
 // expression-statement = [expression] ';'
 void exprstmt() {
         if (_ct->kind != SEMIC) expr();
-        consume("", SEMIC);
+        consume("missing ';' of expr stmt", SEMIC);
 }
 
 // selection-statement = 'if' '(' expression ')' statement 'else' statement
@@ -747,9 +746,9 @@ void selectstmt() {
         enum Kind ctk = _ct->kind;
         if (ctk == IF) {
                 consume("", IF);
-                consume("", OPAR);
+                consume("missing '(' of if-stmt", OPAR);
                 expr();
-                consume("", CPAR);
+                consume("missing ')' of if-stmt", CPAR);
                 stmt();
                 if (_ct->kind == ELSE) {
                         consume("", ELSE);
@@ -758,9 +757,9 @@ void selectstmt() {
         } else {
                 assert(ctk == SWITCH);
                 consume("", SWITCH);
-                consume("", OPAR);
+                consume("missing '(' of switch-stmt", OPAR);
                 expr();
-                consume("", CPAR);
+                consume("missing ')' of switch-stmt", CPAR);
                 stmt();
         }
 }
@@ -773,32 +772,32 @@ void iterstmt() {
         enum Kind ctk = _ct->kind;
         if (ctk == FOR) {
                 consume("", FOR);
-                consume("", OPAR);
+                consume("missing '(' of for-stmt", OPAR);
                 if (_ct->kind >= VOID && _ct->kind <= ENUM) {
                         declaration();
                 } else {
                         if (_ct->kind != SEMIC) expr();
-                        consume("", SEMIC);
+                        consume("missing ';' of for-stmt", SEMIC);
                 }
                 if (_ct->kind != SEMIC) expr();
-                consume("", SEMIC);
+                consume("missing ';' of for-stmt", SEMIC);
                 if (_ct->kind != CPAR) expr();
-                consume("", CPAR);
+                consume("missing ')' of for-stmt", CPAR);
                 stmt();
         } else if (ctk == DO) {
                 consume("", DO);
                 stmt();
-                consume("", WHILE);
-                consume("", OPAR);
+                consume("missing 'while' of do-stmt", WHILE);
+                consume("missing '(' of do-stmt", OPAR);
                 expr();
-                consume("", CPAR);
-                consume("", SEMIC);
+                consume("missing ')' of do-stmt", CPAR);
+                consume("missing ';' of do-stmt", SEMIC);
         } else {
                 assert(ctk == WHILE);
                 consume("", WHILE);
-                consume("", OPAR);
+                consume("missing '(' of while-stmt", OPAR);
                 expr();
-                consume("", CPAR);
+                consume("missing ')' of while-stmt", CPAR);
                 stmt();
         }
 }
