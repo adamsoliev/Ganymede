@@ -29,7 +29,7 @@ Token
     col     // 8   bits - column (up to 256 chars in a line)                            
     row     // 16  bits - row (up to 65536 lines per a file)                               [1]
     ifn     // 16  bits - index into the filenames array (up to 65536 files per project)   [2]
-    ---     // 16  bits - unused
+    isn     // 16  bits - index into the symbol table (up to 65536 symbols per project)
             [1] - longest file in linux has 56,473 LOC
             [2] - linux has ~33k .c files
         

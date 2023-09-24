@@ -9,31 +9,7 @@
 typedef struct Token Token;
 typedef struct ExcDecl ExcDecl;
 
-// clang-format off
-// https://stackoverflow.com/questions/111928/is-there-a-printf-converter-to-print-in-binary-format/25108449#25108449
-#define BB_P8 "%c%c%c%c,%c%c%c%c" // byte to binary pattern
-#define BB8(byte)                  \
-  ((byte) & (uint8_t)0x80 ? '1' : '0'),     \
-  ((byte) & (uint8_t)0x40 ? '1' : '0'), \
-  ((byte) & (uint8_t)0x20 ? '1' : '0'), \
-  ((byte) & (uint8_t)0x10 ? '1' : '0'), \
-  ((byte) & (uint8_t)0x08 ? '1' : '0'), \
-  ((byte) & (uint8_t)0x04 ? '1' : '0'), \
-  ((byte) & (uint8_t)0x02 ? '1' : '0'), \
-  ((byte) & (uint8_t)0x01 ? '1' : '0')
 
-#define BB_P16 \
-  BB_P8 "," BB_P8
-#define BB16(i) \
-  BB8((i) >> 8), BB8(i)
-#define BB_P32 \
-  BB_P16 "," BB_P16
-#define BB32(i) \
-  BB16((i) >> 16), BB16(i)
-#define BB_P64 \
-  BB_P32 "," BB_P32
-#define BB64(i) \
-  BB32((i) >> 32), BB32(i)
 
                       // 0xff,ff,ff,ff,ff,ff,ff,ff 
                       // 0x00,00,00,00,00,00,00,00 
