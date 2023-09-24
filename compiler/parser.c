@@ -817,9 +817,9 @@ void jumpstmt() {
                 consume("", ctk);
         } else if (ctk == GOTO) {
                 consume("", ctk);
-                consume("", IDENT);
+                consume("missing 'identity' of goto-stmt", IDENT);
         } else {
-                error("invalid jump statement\n");
+                error("invalid jump statement: %s\n", token_names[ctk]);
         }
         consume("missing ';' of jump stmt", SEMIC);
 }
