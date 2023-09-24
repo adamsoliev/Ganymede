@@ -222,7 +222,7 @@ struct Token *scan(char *cp) {
                         case '<':
                                 if (rcp[0] == '<' && rcp[1] == '=') {
                                         rcp += 2;
-                                        ck = new_token(LSHIFTASSIGN, NULL, 0);
+                                        ck = new_token(LSHASSIGN, NULL, 0);
                                         goto next;
                                 }
                                 CHECK_PUNCTUATION('=', LEQ, 1)
@@ -234,7 +234,7 @@ struct Token *scan(char *cp) {
                         case '>':
                                 if (rcp[0] == '>' && rcp[1] == '=') {
                                         rcp += 2;
-                                        ck = new_token(RSHIFTASSIGN, NULL, 0);
+                                        ck = new_token(RSHASSIGN, NULL, 0);
                                         goto next;
                                 }
                                 CHECK_PUNCTUATION('=', GEQ, 1)
@@ -826,7 +826,7 @@ void printTokenKind(enum TokenKind kind, FILE *output) {
                 "SIZEOF",    "STATIC",       "STRUCT",       "SWITCH",
                 "TYPEDEF",   "UNION",        "UNSIGNED",     "VOID",
                 "VOLATILE",  "WHILE",        "DOT",          "BREAK",
-                "COLON",     "RSHIFTASSIGN", "LSHIFTASSIGN", "INCLUDE",
+                "COLON",     "RSHASSIGN", "LSHASSIGN", "INCLUDE",
                 "DEFINE"};
         size_t numTokenStrs = sizeof(tokenStrs) / sizeof(tokenStrs[0]);
 

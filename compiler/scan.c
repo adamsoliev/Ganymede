@@ -4,27 +4,10 @@
 #include "ganymede.h"
 enum { BLANK = 01, NEWLINE = 02, LETTER = 04, DIGIT = 010, HEX = 020, OTHER = 040 };
 
-// clang-format off
 char *token_names[] = {
-        "EMPTY", "TYPEDEF", "EXTERN", "STATIC", "AUTO",
-        "REGISTER", "CONST", "RESTRICT", "VOLATILE",
-        "INLINE", "VOID", "CHAR", "SHORT", "INT", "LONG",
-        "FLOAT", "DOUBLE", "SIGNED", "UNSIGNED", "STRUCT",
-        "UNION", "ENUM", "GOTO", "CONTINUE", "BREAK", "RETURN",
-        "OROR", "ANDAND", "OR", "XOR", "AND", "INCR", "EQ",
-        "NEQ", "LT", "GT", "LEQ", "GEQ", "LSHIFT", "RSHIFT", "ADD",
-        "SUB", "MUL", "DIV", "MOD", "DEREF", "DECR", "ASSIGN",
-        "ADDASSIGN", "SUBASSIGN", "MULASSIGN", "DIVASSIGN",
-        "MODASSIGN", "ANDASSIGN", "ORASSIGN", "XORASSIGN",
-        "NOTASSIGN", "LSHASSIGN", "RSHASSIGN", "FOR", "WHILE",
-        "DO", "EOI", "IF", "OBR", "CBR", "OCBR", "CCBR", "OPAR",
-        "CPAR", "SEMIC", "COMMA", "TILDA", "NOT", "STRGIZE",
-        "TKPASTE", "QMARK", "IDENT", "INTCONST", "FLOATCONST",
-        "STRCONST", "CHARCONST", "ELLIPSIS", "CASE", "DEFAULT",
-        "ELSE", "SIZEOF", "SWITCH", "DOT", "COLON", "RSHIFTASSIGN",
-        "LSHIFTASSIGN", "INCLUDE", "DEFINE", "BACKSLASH", "STMT_EXPR",
-        "STMT_COMPOUND", "DOUBLECONST", "LONGDOUBLECONST", "NONE"};
-// clang-format on
+#define xx(x, b, c) c,
+#include "token.h"
+};
 
 static unsigned char map[256] = {
         /* 000 nul */ 0,
@@ -238,7 +221,7 @@ struct Token *scan(char *cp) {
                         case '<':
                                 if (rcp[0] == '<' && rcp[1] == '=') {
                                         rcp += 2;
-                                        ck = new_token(LSHIFTASSIGN, NULL, 0);
+                                        ck = new_token(LSHASSIGN, NULL, 0);
                                         goto next;
                                 }
                                 CHECK_PUNCTUATION('=', LEQ, 1)
@@ -250,7 +233,7 @@ struct Token *scan(char *cp) {
                         case '>':
                                 if (rcp[0] == '>' && rcp[1] == '=') {
                                         rcp += 2;
-                                        ck = new_token(RSHIFTASSIGN, NULL, 0);
+                                        ck = new_token(RSHASSIGN, NULL, 0);
                                         goto next;
                                 }
                                 CHECK_PUNCTUATION('=', GEQ, 1)

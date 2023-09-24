@@ -34,7 +34,7 @@ enum Kind {
         CONST,
         RESTRICT,
         VOLATILE,
-        /* func-specifier*/
+        /* func-specifier */
         INLINE,
         /* type-specifier */
         VOID,
@@ -49,19 +49,12 @@ enum Kind {
         STRUCT,
         UNION,
         ENUM,
-        /* jump stmt */
-        GOTO,
-        CONTINUE,
-        BREAK,
-        RETURN,
-
-        /* binary ops - increasing groupped precedence */
+        /* binary ops - increasing grouped precedence */
         OROR,    // ||
         ANDAND,  // &&
         OR,      // |
         XOR,     // ^
         AND,     // &
-        INCR,    // ++
         EQ,      // ==
         NEQ,     // !=
         LT,      // <
@@ -75,67 +68,71 @@ enum Kind {
         MUL,     // *
         DIV,     // /
         MOD,     // %
-
-        DEREF,  // ->
-        DECR,   // --
-
+        /* unary ops */
+        DECR,  // --
+        INCR,  // ++
+        /* postfix ops */
+        DEREF,  // -->
+        DOT,    // .
         /* assigns */
-        ASSIGN,     // =
-        ADDASSIGN,  // +=
-        SUBASSIGN,  // -=
-        MULASSIGN,  // *=
-        DIVASSIGN,  // /=
-        MODASSIGN,  // %=
-        ANDASSIGN,  // &=
-        ORASSIGN,   // |=
-        XORASSIGN,  // ^=
-        NOTASSIGN,  // !=
-        LSHASSIGN,  // <<=
-        RSHASSIGN,  // >>=
-
-        /* jump stmt */
+        ASSIGN,
+        ADDASSIGN,
+        SUBASSIGN,
+        MULASSIGN,
+        DIVASSIGN,
+        MODASSIGN,
+        ANDASSIGN,
+        ORASSIGN,
+        XORASSIGN,
+        NOTASSIGN,
+        LSHASSIGN,
+        RSHASSIGN,
+        /* iter stmt */
         FOR,
         WHILE,
         DO,
-
-        EOI,  // end of input
+        /* select stmt */
         IF,
-        OBR,      // [
-        CBR,      // ]
-        OCBR,     // {
-        CCBR,     // }
-        OPAR,     // (
-        CPAR,     // )
-        SEMIC,    // ;
-        COMMA,    // ,
-        TILDA,    // ~
-        NOT,      // !
-        STRGIZE,  // #
-        TKPASTE,  // ##
-        QMARK,    // ?
+        SWITCH,
+        ELSE,
+        /* jump stmt */
+        GOTO,
+        CONTINUE,
+        BREAK,
+        RETURN,
+        /* label stmt */
+        CASE,
+        DEFAULT,
+        /* consts */
         IDENT,
         INTCONST,
         FLOATCONST,
-        STRCONST,
-        CHARCONST,
-        ELLIPSIS,
-        CASE,
-        DEFAULT,
-        ELSE,
-        SIZEOF,
-        SWITCH,
-        DOT,
-        COLON,
-        RSHIFTASSIGN,
-        LSHIFTASSIGN,
-        INCLUDE,
-        DEFINE,
-        BACKSLASH,
-        STMT_EXPR,  // different from other stmt types
-        STMT_COMPOUND,
         DOUBLECONST,
         LONGDOUBLECONST,
-        NONE,  // for error handling
+        STRCONST,
+        CHARCONST,
+        /* preprocess */
+        INCLUDE,
+        STRGIZE,  // #
+        TKPASTE,  // ##
+        DEFINE,
+        /* punct */
+        OBR,    // [
+        CBR,    // ]
+        OCBR,   // {
+        CCBR,   // }
+        OPAR,   // (
+        CPAR,   // )
+        SEMIC,  // ;
+        COMMA,  // ,
+        TILDA,  // ~
+        NOT,    // !
+        QMARK,  // ?
+        COLON,
+        ELLIPSIS,
+        BACKSLASH,
+        SIZEOF,
+        EOI
 };
 
 struct Token {

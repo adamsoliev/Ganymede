@@ -24,16 +24,14 @@ assembly      -> | opt passes | -> optimized assembly
                   ------------
 
 Token 
-    kind        // ident | keyword | punct | etc
-    hash        // index to symbol table
-
-    have an array of tokens instead of linkedlist
-    each token is uint64_t
-        8 bits      - token kind (up to 256 kinds)
-        10 bits     - column (up to 1024 char in a line)
-        15 bits     - row (up to 32,768 lines per a file)
-        11 bits     - index into filenames array (up to 2048 files per project)
-        20 bits     - index into the symbol table
+    uint64_t
+    kind    // 8   bits - token kind (up to 256 kinds)
+    col     // 8   bits - column (up to 256 chars in a line)                            
+    row     // 16  bits - row (up to 65536 lines per a file)                               [1]
+    ifn     // 16  bits - index into the filenames array (up to 65536 files per project)   [2]
+    ---     // 16  bits - unused
+            [1] - longest file in linux has 56,473 LOC
+            [2] - linux has ~33k .c files
         
 Symbol table
      -------------------------------------
