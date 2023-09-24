@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 typedef struct Token Token;
 typedef struct ExcDecl ExcDecl;
@@ -12,14 +13,14 @@ typedef struct ExcDecl ExcDecl;
 // https://stackoverflow.com/questions/111928/is-there-a-printf-converter-to-print-in-binary-format/25108449#25108449
 #define BB_P8 "%c%c%c%c,%c%c%c%c" // byte to binary pattern
 #define BB8(byte)                  \
-  ((byte) & 0x80 ? '1' : '0'),     \
-      ((byte) & 0x40 ? '1' : '0'), \
-      ((byte) & 0x20 ? '1' : '0'), \
-      ((byte) & 0x10 ? '1' : '0'), \
-      ((byte) & 0x08 ? '1' : '0'), \
-      ((byte) & 0x04 ? '1' : '0'), \
-      ((byte) & 0x02 ? '1' : '0'), \
-      ((byte) & 0x01 ? '1' : '0')
+  ((byte) & (uint8_t)0x80 ? '1' : '0'),     \
+  ((byte) & (uint8_t)0x40 ? '1' : '0'), \
+  ((byte) & (uint8_t)0x20 ? '1' : '0'), \
+  ((byte) & (uint8_t)0x10 ? '1' : '0'), \
+  ((byte) & (uint8_t)0x08 ? '1' : '0'), \
+  ((byte) & (uint8_t)0x04 ? '1' : '0'), \
+  ((byte) & (uint8_t)0x02 ? '1' : '0'), \
+  ((byte) & (uint8_t)0x01 ? '1' : '0')
 
 #define BB_P16 \
   BB_P8 "," BB_P8
