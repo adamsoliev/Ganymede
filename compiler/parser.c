@@ -206,7 +206,7 @@ void typespec() {
         }
 }
 
-// (* NOTE: Please define typedef-name as result of 'typedef'. *)
+// (* NOTE: Define typedef-name as result of 'typedef'. *)
 // typedef-name = identifier;
 
 // type-qualifier = 'const'
@@ -297,7 +297,6 @@ void directdeclarator() {
 
 // initializer-list = designative-initializer {',' designative-initializer}
 void initializerlist() {
-        //
         designinitzer();
         while (_ct->kind == COMMA) {
                 consume("", COMMA);
@@ -412,7 +411,6 @@ void enumtor() {
 
 // type-name = specifier-qualifier-list [abstract-declarator]
 void typename() {
-        //
         specquallist();
         enum Kind ctk = _ct->kind;
         if (ctk == MUL || ctk == OPAR || ctk == OBR) declarator();
@@ -420,7 +418,6 @@ void typename() {
 
 // specifier-qualifier-list = specifier-qualifier {specifier-qualifier}
 void specquallist() {
-        //
         while (_ct->kind >= CONST && _ct->kind <= ENUM && _ct->kind != INLINE && _ct->kind != EOI) {
                 specqual();
         }
@@ -479,7 +476,6 @@ void paramdeclaration() {
 // struct-declarator = ':' constant-expression
 //                   | declarator [':' constant-expression]
 void structdeclarator() {
-        //
         if (_ct->kind == COLON) {
                 consume("", COLON);
                 constexpr();
@@ -493,7 +489,6 @@ void structdeclarator() {
 }
 
 // expression = assignment-expression {',' assignment-expression}
-
 void expr() {
         assignexpr();
         while (_ct->kind == COMMA) {
@@ -542,7 +537,6 @@ void binaryexpr() {
 //                  | '(' type-name ')' unary-expression      /* cast or compound literal */
 //                  | 'sizeof' unary-expression
 //                  | 'sizeof' '(' type-name ')'
-
 void unaryexpr() {
         enum Kind ctk = _ct->kind;
         if (ctk == INCR || ctk == DECR || ctk == AND || ctk == MUL || ctk == ADD || ctk == SUB ||
@@ -550,11 +544,6 @@ void unaryexpr() {
                 consume("", ctk);
                 unaryexpr();
         } else if (ctk == OPAR) {
-                /* 
-                   Note: stylistically, we should've consumed '(' and called 'typename()';
-                   we don't follow it here because type-name has abstract-declarator, which
-                   needs '(' to be recognized in the 'ddeclarator()', called in 'typename()') 
-                */
                 if (_ct->next->kind >= CONST && _ct->next->kind <= ENUM) {
                         consume("", OPAR);
                         typename();
