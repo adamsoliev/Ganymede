@@ -181,109 +181,11 @@ void error(char *fmt, ...);
 void scan(char *stream);
 
 // parser
-// void parse(struct Token *tokens);
+void parse(void);
 
 struct scope {
         struct scope *next;
         ht *vars;  // key: name, value: declspec
-};
-
-/*
-int array[4] = {1, 2, 3, 4}
-                   -------------               
-ExcDecl --init--> | INITIALIZER | --chilren--> 1 --> 2 --> 3 --> 4
-                   -------------               
-
-int array[3][4] = {{1, 2, 3, 4}, {5, 6, 7, 8}, {9, 10, 11, 12}}
-                   -------------                -------------
-ExcDecl --init--> | INITIALIZER | --chilren--> | INITIALIZER | --children--> 1 --> 2 --> 3 --> 4
-                   -------------                -------------
-                                                      |
-                                                     next
-                                                      |
-                                                      V
-                                                ------------- 
-                                               | INITIALIZER | --children--> 5 --> 6 --> 7 --> 8
-                                                ------------- 
-                                                      |
-                                                     next
-                                                      |
-                                                      V
-                                                ------------- 
-                                               | INITIALIZER | --children--> 9 --> 10 --> 11 --> 12
-                                                ------------- 
-*/
-struct initializer {
-        struct initializer *next;
-        struct initializer *children;
-        union {
-                int ivalue;
-        } value;
-        enum Kind type;
-};
-
-struct expr {
-        enum Kind kind;
-        union {
-                int ivalue;
-                float fvalue;
-                double dvalue;
-        };
-        char *strLit;
-
-        struct expr *lhs;
-        struct expr *rhs;
-};
-
-// statement or declaration
-struct block {
-        struct block *next;
-        struct ExtDecl *decl;
-        struct stmt *stmt;
-};
-
-/*
-label_stmt
-    ident ':' stmt                              | value then
-    'case' expr ':' stmt                        | cond then
-    'default' ':' stmt                          | then
-
-compound_stmt
-    '{' block '}'                               | body
-
-expression_stmt
-    expr ';'                                    | value 
-
-selection_stmt
-    'if' '(' expr ')' stmt                      | cond then
-    'if' '(' expr ')' stmt 'else' stmt          | cond then els
-    'switch' '(' expr ')' stmt                  | cond then
-
-iteration_stmt
-    'while' '(' expr ')' stmt                   | cond then
-    'do' stmt 'while' '(' expr ')' ';'          | then cond
-    'for' '(' expr ';' expr ';' expr ')' stmt   | init cond inc then
-    'for' '(' decl expr ';' expr ')' stmt       | init cond inc then
-
-jump_stmt
-    'goto' ident ';'                            | value
-    'continue' ';'                              | 
-    'break' ';'                                 | 
-    'return' expr ';'                           | value
-*/
-struct stmt {
-        enum Kind kind;
-        struct expr *cond;
-        struct stmt *then;
-        struct stmt *els;
-        union {
-                struct expr *expr;
-                struct ExtDecl *decl;
-        } init;
-        int init_kind;  // 0 for expr, 1 for decl
-        struct expr *inc;
-        struct expr *value;
-        struct block *body;
 };
 
 // hashmap.c

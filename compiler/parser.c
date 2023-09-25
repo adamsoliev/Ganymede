@@ -4,16 +4,20 @@
 #include "ganymede.h"
 
 /* global variables */
-static struct Token *_ct;
+uint64_t _CTK;
+uint64_t _INDEX = 0;
 /* if GLOBAL, first declarator is parsed upfront to diff funcdef */
 enum { GLOBAL = 1, LOCAL, PARAM } _cdecllevel;
 
 /* utility functions */
 static inline void consume(const char *msg, enum Kind kind) {
-        if (_ct->kind != kind) {
-                error("%s: expected %s, got %s\n", msg, token_names[kind], token_names[_ct->kind]);
+        if (TGETKIND(_CTK) != kind) {
+                error("%s: expected %s, got %s\n",
+                      msg,
+                      token_names[kind],
+                      token_names[TGETKIND(_CTK)]);
         }
-        _ct = _ct->next;
+        _CTK = tokens[++_INDEX];
 }
 
 /* ---------- RECURSIVE DESCENT PARSER ---------- */
@@ -71,12 +75,10 @@ void exprstmt();
 void constexpr();
 void typequalifierlist();
 
-void parse(struct Token *token);
-
 // translation-unit = {external-declaration}
-void parse(struct Token *token) {
-        _ct = token;
-        while (_ct->kind != EOI) {
+void parse(void) {
+        _CTK = tokens[_INDEX];
+        while (TGETKIND(_CTK) != EOI) {
                 extdecl();
         }
 }
@@ -97,10 +99,10 @@ void declaration() {
         declspec();
         declarator();
         /* TODO: resolve type info here since declarator collected it */
-        if (_cdecllevel == GLOBAL && _ct->kind == OCBR) {
-                /* TODO: funcdef if 
+        if (_cdecllevel == GLOBAL && TGETKIND(_CTK) == OCBR) {
+                /* TODO: funcdef if
                         0) level is global
-                        1) 1st declarator specifies FUNCT 
+                        1) 1st declarator specifies FUNCT
                         2) 1st declarator includes IDENT
                         3) next token is '{' (we don't support old stype funcdef)
                 */
@@ -117,7 +119,7 @@ void declaration() {
 //                       | type-qualifier
 //                       | function-specifier
 void declspec() {
-        while (_ct->kind >= TYPEDEF && _ct->kind <= ENUM) {
+        while (TGETKIND(_CTK) >= TYPEDEF && TGETKIND(_CTK) <= ENUM) {
                 sclass();
                 typespec();
                 typequal();
@@ -127,7 +129,7 @@ void declspec() {
 
 // declarator = [pointer] direct-declarator {suffix-declarator}
 void declarator() {
-        if (_ct->kind == MUL) pointer();
+        if (TGETKIND(_CTK) == MUL) pointer();
         directdeclarator();
 }
 
@@ -136,7 +138,7 @@ void declarator() {
 // compound-statement = '{' {declaration-or-statement} '}'
 void compstmt() {
         consume("missing '{' of compound statement", OCBR);
-        while (_ct->kind != CCBR && _ct->kind != EOI) {
+        while (TGETKIND(_CTK) != CCBR && TGETKIND(_CTK) != EOI) {
                 declorstmt();
         }
         consume("missing '}' of compound statement", CCBR);
@@ -144,7 +146,7 @@ void compstmt() {
 
 // declaration-or-statement = declaration | statement
 void declorstmt() {
-        if (_ct->kind >= TYPEDEF && _ct->kind <= ENUM) {
+        if (TGETKIND(_CTK) >= TYPEDEF && TGETKIND(_CTK) <= ENUM) {
                 _cdecllevel = LOCAL;
                 declaration();
         } else {
@@ -155,16 +157,16 @@ void declorstmt() {
 // init-declarator-list = ['=' initializer] {',' declarator ['=' initializer]}
 void initdeclaratorlist() {
         /* first declarator is already parsed. now see if it has initializer */
-        if (_ct->kind == ASSIGN) {
+        if (TGETKIND(_CTK) == ASSIGN) {
                 consume("", ASSIGN);
                 initializer();
         }
         /* rest of the declarators */
-        while (_ct->kind == COMMA && _ct->kind != EOI) {
+        while (TGETKIND(_CTK) == COMMA && TGETKIND(_CTK) != EOI) {
                 consume("", COMMA);
                 /* TODO: you can't have params here, so ensure that path is never taken in this call path */
                 declarator();
-                if (_ct->kind == ASSIGN) {
+                if (TGETKIND(_CTK) == ASSIGN) {
                         consume("", ASSIGN);
                         initializer();
                 }
@@ -177,7 +179,7 @@ void initdeclaratorlist() {
 //                         | 'auto'
 //                         | 'register'
 void sclass() {
-        enum Kind ctk = _ct->kind;
+        enum Kind ctk = TGETKIND(_CTK);
         if (ctk >= TYPEDEF && ctk <= REGISTER) consume("", ctk);
 }
 
@@ -194,7 +196,7 @@ void sclass() {
 //                | enum-specifier
 //                | typedef-name
 void typespec() {
-        enum Kind ctk = _ct->kind;
+        enum Kind ctk = TGETKIND(_CTK);
         if (ctk >= VOID && ctk <= ENUM) {
                 if (ctk == STRUCT || ctk == UNION) {
                         structorunionspec();
@@ -213,20 +215,20 @@ void typespec() {
 //                | 'restrict'
 //                | 'volatile'
 void typequal() {
-        enum Kind ctk = _ct->kind;
+        enum Kind ctk = TGETKIND(_CTK);
         if (ctk >= CONST && ctk <= VOLATILE) consume("", ctk);
 }
 
 // function-specifier = 'inline'
 void funcspec() {
-        if (_ct->kind == INLINE) consume("", _ct->kind);
+        if (TGETKIND(_CTK) == INLINE) consume("", TGETKIND(_CTK));
 }
 
 // pointer = '*' [type-qualifier-list] [pointer]
 void pointer() {
         consume("", MUL);
-        if (_ct->kind >= CONST && _ct->kind <= VOLATILE) typequalifierlist();
-        if (_ct->kind == MUL) pointer();
+        if (TGETKIND(_CTK) >= CONST && TGETKIND(_CTK) <= VOLATILE) typequalifierlist();
+        if (TGETKIND(_CTK) == MUL) pointer();
 }
 
 /*
@@ -244,25 +246,25 @@ void pointer() {
 //                   | '(' parameter-type-list ')'
 //                   | '(' ')'
 void directdeclarator() {
-        if (_ct->kind == IDENT)
+        if (TGETKIND(_CTK) == IDENT)
                 consume("", IDENT);
-        else if (_ct->kind == OPAR) {
+        else if (TGETKIND(_CTK) == OPAR) {
                 // abstract
                 consume("", OPAR);
                 declarator();
                 consume("missing ')' of direct declarator", CPAR);
-        } else if (_ct->kind == OBR)
+        } else if (TGETKIND(_CTK) == OBR)
                 ;
         else
                 return;
 
-        while ((_ct->kind == OPAR || _ct->kind == OBR) && _ct->kind != EOI) {
-                if (_ct->kind == OPAR) {
+        while ((TGETKIND(_CTK) == OPAR || TGETKIND(_CTK) == OBR) && TGETKIND(_CTK) != EOI) {
+                if (TGETKIND(_CTK) == OPAR) {
                         // concrete function
                         consume("", OPAR);
                         // params
-                        if (_ct->kind >= VOID && _ct->kind <= ENUM) {
-                                if (_ct->kind == VOID)
+                        if (TGETKIND(_CTK) >= VOID && TGETKIND(_CTK) <= ENUM) {
+                                if (TGETKIND(_CTK) == VOID)
                                         consume("", VOID);
                                 else
                                         paramtypelist();
@@ -271,22 +273,22 @@ void directdeclarator() {
                 } else {
                         // array
                         consume("", OBR);
-                        if (_ct->kind == MUL) {
+                        if (TGETKIND(_CTK) == MUL) {
                                 consume("", MUL);
-                        } else if (_ct->kind == STATIC) {
+                        } else if (TGETKIND(_CTK) == STATIC) {
                                 consume("", STATIC);
-                                if (_ct->kind >= CONST && _ct->kind <= VOLATILE)
+                                if (TGETKIND(_CTK) >= CONST && TGETKIND(_CTK) <= VOLATILE)
                                         typequalifierlist();
                                 assignexpr();
-                        } else if (_ct->kind >= CONST && _ct->kind <= VOLATILE) {
+                        } else if (TGETKIND(_CTK) >= CONST && TGETKIND(_CTK) <= VOLATILE) {
                                 typequalifierlist();
-                                if (_ct->kind == MUL)
+                                if (TGETKIND(_CTK) == MUL)
                                         consume("", MUL);
-                                else if (_ct->kind != CBR) {
-                                        if (_ct->kind == STATIC) consume("", STATIC);
+                                else if (TGETKIND(_CTK) != CBR) {
+                                        if (TGETKIND(_CTK) == STATIC) consume("", STATIC);
                                         assignexpr();
                                 }
-                        } else if (_ct->kind != CBR) {
+                        } else if (TGETKIND(_CTK) != CBR) {
                                 assignexpr();
                         }
                         consume("missing '[' of array declaration", CBR);
@@ -297,33 +299,33 @@ void directdeclarator() {
 // initializer-list = designative-initializer {',' designative-initializer}
 void initializerlist() {
         designinitzer();
-        while (_ct->kind == COMMA) {
+        while (TGETKIND(_CTK) == COMMA) {
                 consume("", COMMA);
-                /* 
+                /*
                   check to handle trailing comma in an initializer-list
                   int y[4][3] = {1, 3, 5,};
                                         ^
                   ideally, it should be handled in initializer where you have [','],
-                  suggesting that this 'while' loop way might be wrong approach 
-                  to parse initializerlist. 
+                  suggesting that this 'while' loop way might be wrong approach
+                  to parse initializerlist.
                 */
-                if (_ct->kind != CCBR) designinitzer();
+                if (TGETKIND(_CTK) != CCBR) designinitzer();
         }
 }
 
 // designative-initializer = [designation] initializer
 void designinitzer() {
-        if (_ct->kind == OBR || _ct->kind == DOT) designation();
+        if (TGETKIND(_CTK) == OBR || TGETKIND(_CTK) == DOT) designation();
         initializer();
 }
 
 // initializer = '{' initializer-list [','] '}'
 //             | assignment-expression;
 void initializer() {
-        if (_ct->kind == OCBR) {
+        if (TGETKIND(_CTK) == OCBR) {
                 consume("", OCBR);
                 initializerlist();
-                if (_ct->kind == COMMA) consume("", COMMA);
+                if (TGETKIND(_CTK) == COMMA) consume("", COMMA);
                 consume("missing '}' of initializer", CCBR);
         } else {
                 assignexpr();
@@ -340,12 +342,12 @@ void constexpr() {
 //                           | struct-or-union identifier ['{' struct-declaration-list '}']
 //                           | struct-or-union identifier
 void structorunionspec() {
-        if (_ct->kind == STRUCT || _ct->kind == UNION) {
-                consume("", _ct->kind);
-                if (_ct->kind == IDENT) {
+        if (TGETKIND(_CTK) == STRUCT || TGETKIND(_CTK) == UNION) {
+                consume("", TGETKIND(_CTK));
+                if (TGETKIND(_CTK) == IDENT) {
                         consume("", IDENT);
                 }
-                if (_ct->kind == OCBR) {
+                if (TGETKIND(_CTK) == OCBR) {
                         consume("", OCBR);
                         structdeclarationlist();
                         consume("missing '}' of struct\n", CCBR);
@@ -358,7 +360,7 @@ void structorunionspec() {
 
 // struct-declaration-list = struct-declaration { struct-declaration }
 void structdeclarationlist() {
-        while (_ct->kind != CCBR && _ct->kind != EOI) {
+        while (TGETKIND(_CTK) != CCBR && TGETKIND(_CTK) != EOI) {
                 structdeclaration();
         }
 }
@@ -366,7 +368,7 @@ void structdeclarationlist() {
 // struct-declaration = specifier-qualifier-list struct-declarator-list ';'
 void structdeclaration() {
         specquallist();
-        if (_ct->kind == SEMIC)
+        if (TGETKIND(_CTK) == SEMIC)
                 consume("", SEMIC);
         else {
                 structdeclaratorlist();
@@ -378,11 +380,11 @@ void structdeclaration() {
 //                | 'enum' identifier ['{' enumerator-list [','] '}']
 void enumspec() {
         consume("", ENUM);
-        if (_ct->kind == IDENT) consume("", IDENT);
-        if (_ct->kind == OCBR) {
+        if (TGETKIND(_CTK) == IDENT) consume("", IDENT);
+        if (TGETKIND(_CTK) == OCBR) {
                 consume("", OCBR);
                 enumtorlist();
-                while (_ct->kind == COMMA && _ct->kind != EOI) enumtorlist();
+                while (TGETKIND(_CTK) == COMMA && TGETKIND(_CTK) != EOI) enumtorlist();
                 consume("missing '}' of enum\n", CCBR);
         }
 }
@@ -390,7 +392,7 @@ void enumspec() {
 // enumerator-list = enumerator {',' enumerator}
 void enumtorlist() {
         enumtor();
-        while (_ct->kind == COMMA && _ct->kind != EOI) {
+        while (TGETKIND(_CTK) == COMMA && TGETKIND(_CTK) != EOI) {
                 consume("", COMMA);
                 enumtor();
         }
@@ -400,7 +402,7 @@ void enumtorlist() {
 // enumerator = identifier ['=' constant-expression];
 void enumtor() {
         consume("", IDENT);
-        if (_ct->kind == ASSIGN) {
+        if (TGETKIND(_CTK) == ASSIGN) {
                 consume("", ASSIGN);
                 constexpr();
         }
@@ -411,22 +413,23 @@ void enumtor() {
 // type-name = specifier-qualifier-list [abstract-declarator]
 void typename() {
         specquallist();
-        enum Kind ctk = _ct->kind;
+        enum Kind ctk = TGETKIND(_CTK);
         if (ctk == MUL || ctk == OPAR || ctk == OBR) declarator();
 }
 
 // specifier-qualifier-list = specifier-qualifier {specifier-qualifier}
 void specquallist() {
-        while (_ct->kind >= CONST && _ct->kind <= ENUM && _ct->kind != INLINE && _ct->kind != EOI) {
+        while (TGETKIND(_CTK) >= CONST && TGETKIND(_CTK) <= ENUM && TGETKIND(_CTK) != INLINE &&
+               TGETKIND(_CTK) != EOI) {
                 specqual();
         }
 }
 
 // specifier-qualifier = type-specifier | type-qualifier
 void specqual() {
-        if (_ct->kind >= VOID && _ct->kind <= ENUM) {
+        if (TGETKIND(_CTK) >= VOID && TGETKIND(_CTK) <= ENUM) {
                 typespec();
-        } else if (_ct->kind >= CONST && _ct->kind <= VOLATILE) {
+        } else if (TGETKIND(_CTK) >= CONST && TGETKIND(_CTK) <= VOLATILE) {
                 typequal();
         }
 }
@@ -434,7 +437,7 @@ void specqual() {
 // struct-declarator-list = struct-declarator {',' struct-declarator}
 void structdeclaratorlist() {
         structdeclarator();
-        while (_ct->kind == COMMA && _ct->kind != EOI) {
+        while (TGETKIND(_CTK) == COMMA && TGETKIND(_CTK) != EOI) {
                 consume("", COMMA);
                 structdeclarator();
         }
@@ -443,13 +446,13 @@ void structdeclaratorlist() {
 // type-qualifier-list = type-qualifier {type-qualifier}
 void typequalifierlist() {
         typequal();
-        while (_ct->kind >= CONST && _ct->kind <= VOLATILE) consume("", _ct->kind);
+        while (TGETKIND(_CTK) >= CONST && TGETKIND(_CTK) <= VOLATILE) consume("", TGETKIND(_CTK));
 }
 
 // parameter-type-list = parameter-list [',' '...']
 void paramtypelist() {
         paramlist();
-        if (_ct->kind == COMMA) {
+        if (TGETKIND(_CTK) == COMMA) {
                 consume("", COMMA);
                 consume("missing '...' of parameter-type-list\n", ELLIPSIS);
         }
@@ -458,8 +461,8 @@ void paramtypelist() {
 // parameter-list = parameter-declaration {',' parameter-declaration}
 void paramlist() {
         paramdeclaration();
-        while (_ct->kind == COMMA && _ct->kind != EOI && _ct->next->kind >= TYPEDEF &&
-               _ct->next->kind <= ENUM) {
+        while (TGETKIND(_CTK) == COMMA && TGETKIND(_CTK) != EOI &&
+               TGETKIND(tokens[_INDEX + 1]) >= TYPEDEF && TGETKIND(tokens[_INDEX + 1]) <= ENUM) {
                 consume("", COMMA);
                 paramdeclaration();
         }
@@ -475,13 +478,13 @@ void paramdeclaration() {
 // struct-declarator = ':' constant-expression
 //                   | declarator [':' constant-expression]
 void structdeclarator() {
-        if (_ct->kind == COLON) {
+        if (TGETKIND(_CTK) == COLON) {
                 consume("", COLON);
                 constexpr();
                 return;
         }
         declarator();
-        if (_ct->kind == COLON) {
+        if (TGETKIND(_CTK) == COLON) {
                 consume("", COLON);
                 constexpr();
         }
@@ -490,7 +493,7 @@ void structdeclarator() {
 // expression = assignment-expression {',' assignment-expression}
 void expr() {
         assignexpr();
-        while (_ct->kind == COMMA) {
+        while (TGETKIND(_CTK) == COMMA) {
                 consume("", COMMA);
                 assignexpr();
         }
@@ -500,8 +503,8 @@ void expr() {
 //                       | unary-expression assignment-operator assignment-expression
 void assignexpr() {
         condexpr();
-        if (_ct->kind >= ASSIGN && _ct->kind <= RSHASSIGN) {
-                consume("", _ct->kind);  // assignment-operator
+        if (TGETKIND(_CTK) >= ASSIGN && TGETKIND(_CTK) <= RSHASSIGN) {
+                consume("", TGETKIND(_CTK));  // assignment-operator
                 assignexpr();
         }
 }
@@ -511,7 +514,7 @@ void assignexpr() {
 // conditional-expression = binary-expression [ '?' expression ':' conditional-expression ]
 void condexpr() {
         binaryexpr();
-        if (_ct->kind == QMARK) {
+        if (TGETKIND(_CTK) == QMARK) {
                 consume("", QMARK);
                 expr();
                 consume("missing ':' of conditional expr", COLON);
@@ -522,8 +525,8 @@ void condexpr() {
 // binary-expression = unary-expression { binary-operator unary-expression }
 void binaryexpr() {
         unaryexpr();
-        while ((_ct->kind >= OROR && _ct->kind <= MOD)) {
-                consume("", _ct->kind);
+        while ((TGETKIND(_CTK) >= OROR && TGETKIND(_CTK) <= MOD)) {
+                consume("", TGETKIND(_CTK));
                 unaryexpr();
         }
 }
@@ -537,13 +540,13 @@ void binaryexpr() {
 //                  | 'sizeof' unary-expression
 //                  | 'sizeof' '(' type-name ')'
 void unaryexpr() {
-        enum Kind ctk = _ct->kind;
+        enum Kind ctk = TGETKIND(_CTK);
         if (ctk == INCR || ctk == DECR || ctk == AND || ctk == MUL || ctk == ADD || ctk == SUB ||
             ctk == TILDA || ctk == NOT) {
                 consume("", ctk);
                 unaryexpr();
         } else if (ctk == OPAR) {
-                if (_ct->next->kind >= CONST && _ct->next->kind <= ENUM) {
+                if (TGETKIND(tokens[_INDEX + 1]) >= CONST && TGETKIND(tokens[_INDEX + 1]) <= ENUM) {
                         consume("", OPAR);
                         typename();
                         consume("missing ')' of unary expr", CPAR);
@@ -553,7 +556,7 @@ void unaryexpr() {
                 }
         } else if (ctk == SIZEOF) {
                 consume("", ctk);
-                if (_ct->kind == OPAR) {
+                if (TGETKIND(_CTK) == OPAR) {
                         consume("", OPAR);
                         typename();
                         consume("missing ')' of unary expr", CPAR);
@@ -570,19 +573,19 @@ void unaryexpr() {
 // postfix-expression = primary-expression { postfix-operator }
 //                    | '{' initializer-list [','] '}'          /* compound literal */
 void postfixexpr() {
-        if (_ct->kind == OCBR) {
+        if (TGETKIND(_CTK) == OCBR) {
                 consume("", OCBR);
                 initializerlist();
-                if (_ct->kind == COMMA) consume("", COMMA);
+                if (TGETKIND(_CTK) == COMMA) consume("", COMMA);
                 consume("missing '{' of postfix expr", CCBR);
                 return;
         }
         primaryexpr();
-        enum Kind ctk = _ct->kind;
+        enum Kind ctk = TGETKIND(_CTK);
         while (ctk == OBR || ctk == OPAR || ctk == DOT || ctk == DEREF || ctk == INCR ||
                ctk == DECR || ctk == OCBR) {
                 postfixoperator();
-                ctk = _ct->kind;
+                ctk = TGETKIND(_CTK);
         }
 }
 
@@ -591,7 +594,7 @@ void postfixexpr() {
 //                  | ('.' | '->') identifier
 //                  | ('++' | '--')
 void postfixoperator() {
-        switch (_ct->kind) {
+        switch (TGETKIND(_CTK)) {
                 case OBR:
                         consume("", OBR);
                         expr();
@@ -599,9 +602,9 @@ void postfixoperator() {
                         break;
                 case OPAR:
                         consume("", OPAR);
-                        if (_ct->kind != CPAR) {
+                        if (TGETKIND(_CTK) != CPAR) {
                                 assignexpr();
-                                while (_ct->kind == COMMA) {
+                                while (TGETKIND(_CTK) == COMMA) {
                                         consume("", COMMA);
                                         assignexpr();
                                 }
@@ -610,12 +613,12 @@ void postfixoperator() {
                         break;
                 case DOT:
                 case DEREF:
-                        consume("", _ct->kind);
+                        consume("", TGETKIND(_CTK));
                         consume("missing 'identity' of postfix operator", IDENT);
                         break;
                 case INCR:
-                case DECR: consume("", _ct->kind); break;
-                default: error("unknown postfix operator: %s\n", token_names[_ct->kind]);
+                case DECR: consume("", TGETKIND(_CTK)); break;
+                default: error("unknown postfix operator: %s\n", token_names[TGETKIND(_CTK)]);
         }
 }
 
@@ -624,19 +627,19 @@ void postfixoperator() {
 //                    | string
 //                    | '(' expression ')'
 void primaryexpr() {
-        switch (_ct->kind) {
+        switch (TGETKIND(_CTK)) {
                 case IDENT:
                 case INTCONST:
                 case STRCONST:
                 case CHARCONST:
                 case FLOATCONST:
-                case DOUBLECONST: consume("", _ct->kind); break;
+                case DOUBLECONST: consume("", TGETKIND(_CTK)); break;
                 case OPAR:
                         consume("", OPAR);
                         expr();
                         consume("missing ')' of primary expr", CPAR);
                         break;
-                default: error("unknown primary expr: %s\n", token_names[_ct->kind]);
+                default: error("unknown primary expr: %s\n", token_names[TGETKIND(_CTK)]);
         }
 }
 
@@ -645,11 +648,11 @@ void primaryexpr() {
 //          | floating-constant
 //          | enumeration-constant;
 void constant() {
-        switch (_ct->kind) {
+        switch (TGETKIND(_CTK)) {
                 case INTCONST:
                 case CHARCONST:
-                case FLOATCONST: consume("", _ct->kind); break;
-                default: error("unknown constant: %s\n", token_names[_ct->kind]);
+                case FLOATCONST: consume("", TGETKIND(_CTK)); break;
+                default: error("unknown constant: %s\n", token_names[TGETKIND(_CTK)]);
         }
 }
 
@@ -659,24 +662,24 @@ void constant() {
 // designation = designator-list '='
 void designation() {
         designtorlist();
-        if (_ct->kind == ASSIGN) consume("", ASSIGN);
+        if (TGETKIND(_CTK) == ASSIGN) consume("", ASSIGN);
 }
 
 // designator-list = designator {designator}
 void designtorlist() {
         designator();
-        while (_ct->kind == OBR || _ct->kind == DOT) designator();
+        while (TGETKIND(_CTK) == OBR || TGETKIND(_CTK) == DOT) designator();
 }
 
 // designator = '[' constant-expression ']'
 //            | '.' identifier
 void designator() {
-        if (_ct->kind == OBR) {
+        if (TGETKIND(_CTK) == OBR) {
                 consume("", OBR);
                 constexpr();
                 consume("missing '[' of designator", CBR);
         } else {
-                assert(_ct->kind == DOT);
+                assert(TGETKIND(_CTK) == DOT);
                 consume("", DOT);
                 consume("missing 'identity' of designator", IDENT);
         }
@@ -689,14 +692,15 @@ void designator() {
 //           | iteration-statement
 //           | jump-statement
 void stmt() {
-        /* 
-          TODO: refactor given every stmt has a clear indicator except the exprstmt, 
-          which should be in the else part. 
+        /*
+          TODO: refactor given every stmt has a clear indicator except the exprstmt,
+          which should be in the else part.
         */
-        enum Kind ctk = _ct->kind;
+        enum Kind ctk = TGETKIND(_CTK);
         if (ctk == IDENT || ctk == CASE || ctk == DEFAULT || ctk == SEMIC || ctk == OPAR ||
             ctk == MUL) {
-                if ((ctk == IDENT && _ct->next->kind == COLON) || ctk == CASE || ctk == DEFAULT)
+                if ((ctk == IDENT && TGETKIND(tokens[_INDEX + 1]) == COLON) || ctk == CASE ||
+                    ctk == DEFAULT)
                         labelstmt();
                 else
                         exprstmt();
@@ -715,7 +719,7 @@ void stmt() {
 //                   | 'case' constant-expression ':' statement
 //                   | 'default' ':' statement
 void labelstmt() {
-        enum Kind ctk = _ct->kind;
+        enum Kind ctk = TGETKIND(_CTK);
         if (ctk == IDENT) {
                 consume("", IDENT);
                 consume("missing ':' of label stmt", COLON);
@@ -735,7 +739,7 @@ void labelstmt() {
 
 // expression-statement = [expression] ';'
 void exprstmt() {
-        if (_ct->kind != SEMIC) expr();
+        if (TGETKIND(_CTK) != SEMIC) expr();
         consume("missing ';' of expr stmt", SEMIC);
 }
 
@@ -743,14 +747,14 @@ void exprstmt() {
 //                     | 'if' '(' expression ')' statement
 //                     | 'switch' '(' expression ')' statement
 void selectstmt() {
-        enum Kind ctk = _ct->kind;
+        enum Kind ctk = TGETKIND(_CTK);
         if (ctk == IF) {
                 consume("", IF);
                 consume("missing '(' of if-stmt", OPAR);
                 expr();
                 consume("missing ')' of if-stmt", CPAR);
                 stmt();
-                if (_ct->kind == ELSE) {
+                if (TGETKIND(_CTK) == ELSE) {
                         consume("", ELSE);
                         stmt();
                 }
@@ -769,19 +773,19 @@ void selectstmt() {
 //                      | 'for' '(' [expression] ';' [expression] ';' [expression] ')' statement
 //                      | 'for' '(' declaration [expression] ';' [expression] ')' statement
 void iterstmt() {
-        enum Kind ctk = _ct->kind;
+        enum Kind ctk = TGETKIND(_CTK);
         if (ctk == FOR) {
                 consume("", FOR);
                 consume("missing '(' of for-stmt", OPAR);
-                if (_ct->kind >= VOID && _ct->kind <= ENUM) {
+                if (TGETKIND(_CTK) >= VOID && TGETKIND(_CTK) <= ENUM) {
                         declaration();
                 } else {
-                        if (_ct->kind != SEMIC) expr();
+                        if (TGETKIND(_CTK) != SEMIC) expr();
                         consume("missing ';' of for-stmt", SEMIC);
                 }
-                if (_ct->kind != SEMIC) expr();
+                if (TGETKIND(_CTK) != SEMIC) expr();
                 consume("missing ';' of for-stmt", SEMIC);
-                if (_ct->kind != CPAR) expr();
+                if (TGETKIND(_CTK) != CPAR) expr();
                 consume("missing ')' of for-stmt", CPAR);
                 stmt();
         } else if (ctk == DO) {
@@ -807,10 +811,10 @@ void iterstmt() {
 //                | 'break' ';'
 //                | 'return' [expression] ';'
 void jumpstmt() {
-        enum Kind ctk = _ct->kind;
+        enum Kind ctk = TGETKIND(_CTK);
         if (ctk == RETURN) {
                 consume("", ctk);
-                if (_ct->kind != SEMIC) expr();
+                if (TGETKIND(_CTK) != SEMIC) expr();
         } else if (ctk == BREAK) {
                 consume("", ctk);
         } else if (ctk == CONTINUE) {

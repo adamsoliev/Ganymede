@@ -128,13 +128,13 @@ int main(int argc, char **argv) {
                 }                                    \
         }
         scan(input);
-        for (int i = 0; i < INDEX; i++) {
-                uint64_t tk = tokens[i];
-                uint64_t kd = TGETKIND(tk);
-                printf("%d) %s\n", i, token_names[kd]);
-        }
+        // for (int i = 0; i < INDEX; i++) {
+        //         uint64_t tk = tokens[i];
+        //         uint64_t kd = TGETKIND(tk);
+        //         printf("%d) %s\n", i, token_names[kd]);
+        // }
         // RUNTEST("scan", printTokens(tokens, outfile));
-        // parse(tokens);
+        parse();
 
         return 0;
 }

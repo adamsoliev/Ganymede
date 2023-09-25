@@ -399,13 +399,13 @@ void scan(char *cp) {
                                                 CTK = kind;
                                                 if (kind == FLOATCONST)
                                                         // CTK->fvalue = strtof(start, NULL);
-                                                        break;
+                                                        ;
                                                 else if (kind == DOUBLECONST)
                                                         // CTK->dvalue = strtod(start, NULL);
-                                                        break;
+                                                        ;
                                                 else
                                                         // CTK->ldvalue = strtold(start, NULL);
-                                                        break;
+                                                        ;
                                                 cp = rcp;
                                                 goto next;
                                         }
@@ -446,13 +446,13 @@ void scan(char *cp) {
                                                 CTK = kind;
                                                 if (kind == FLOATCONST)
                                                         // CTK->fvalue = strtof(start, NULL);
-                                                        break;
+                                                        ;
                                                 else if (kind == DOUBLECONST)
                                                         // CTK->dvalue = strtod(start, NULL);
-                                                        break;
+                                                        ;
                                                 else
                                                         // CTK->ldvalue = strtold(start, NULL);
-                                                        break;
+                                                        ;
                                                 cp = rcp;
                                                 goto next;
                                         }
@@ -488,13 +488,13 @@ void scan(char *cp) {
                                         CTK = kind;
                                         if (kind == FLOATCONST)
                                                 // CTK->fvalue = strtof(start, NULL);
-                                                break;
+                                                ;
                                         else if (kind == DOUBLECONST)
                                                 // CTK->dvalue = strtod(start, NULL);
-                                                break;
+                                                ;
                                         else
                                                 // CTK->ldvalue = strtold(start, NULL);
-                                                break;
+                                                ;
                                         cp = rcp;
                                         goto next;
                                 }
