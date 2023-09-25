@@ -12,10 +12,12 @@ enum { GLOBAL = 1, LOCAL, PARAM } _cdecllevel;
 /* utility functions */
 static inline void consume(const char *msg, enum Kind kind) {
         if (TGETKIND(_CTK) != kind) {
-                error("%s: expected %s, got %s\n",
+                uint64_t line = TGETROW(_CTK);
+                error("%s: expected '%s', but got '%s' in line %d\n ",
                       msg,
                       token_names[kind],
-                      token_names[TGETKIND(_CTK)]);
+                      token_names[TGETKIND(_CTK)],
+                      line);
         }
         _CTK = tokens[++_INDEX];
 }

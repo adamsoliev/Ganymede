@@ -142,7 +142,6 @@ static unsigned char map[256] = {
 static uint64_t CTK;
 static int LINE = 1;
 uint64_t INDEX = 0;
-// uint64_t SIZE = 16384;
 uint64_t SIZE = 32768;
 uint64_t *tokens;
 
@@ -355,6 +354,7 @@ void scan(char *cp) {
                                 goto next;
                         }
                         next: {
+                                CTK |= TSET(0, LINE, 0, 0);
                                 tokens[INDEX++] = CTK;
                                 continue;
                         }
