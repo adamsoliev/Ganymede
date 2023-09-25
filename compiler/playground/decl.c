@@ -410,32 +410,27 @@
 
 /* given a uint64_t token, exctract its respective field */
 #define TGETKIND(num) ((num) & 0xFF)
-#define TGETCOL(num) (((num) >> 8) & 0xFF)
-#define TGETROW(num) (((num) >> 16) & 0xFFFF)
-#define TGETIFN(num) (((num) >> 32) & 0xFFFF)
-#define TGETISN(num) (((num) >> 48) & 0xFFFF)
-#define TSET(kind, col, row, ifn, isn)                                                \
-        ((uint64_t)kind & 0xFF) | (((uint64_t)col & 0xFF) << 8) |                     \
-                (((uint64_t)row & 0xFFFF) << 16) | (((uint64_t)ifn & 0xFFFF) << 32) | \
-                (((uint64_t)isn & 0xFFFF) << 48);
+#define TGETROW(num) (((num) >> 8) & 0xFFFF)
+#define TGETIFN(num) (((num) >> 24) & 0xFFFF)
+#define TGETISN(num) (((num) >> 40) & 0xFFFF)
+#define TSET(kind, row, ifn, isn)                                   \
+        ((uint64_t)kind & 0xFF) | (((uint64_t)row & 0xFFFF) << 8) | \
+                (((uint64_t)ifn & 0xFFFF) << 24) | (((uint64_t)isn & 0xFFFF) << 40);
 
-void test(uint64_t kind, uint64_t col, uint64_t row, uint64_t ifn, uint64_t isn) {
-        uint64_t token = TSET(kind, col, row, ifn, isn);
+void test(uint64_t kind, uint64_t row, uint64_t ifn, uint64_t isn) {
+        uint64_t token = TSET(kind, row, ifn, isn);
         assert(TGETKIND(token) == (kind & 0xFF));
-        assert(TGETCOL(token) == (col & 0xFF));
         assert(TGETROW(token) == (row & 0xFFFF));
         assert(TGETIFN(token) == (ifn & 0xFFFF));
         assert(TGETISN(token) == (isn & 0xFFFF));
 }
 
-void test1(uint64_t kind, uint64_t col, uint64_t row, uint64_t ifn, uint64_t isn) {
-        uint64_t token = TSET(kind, 0, 0, 0, 0);
-        token |= TSET(0, col, 0, 0, 0);
-        token |= TSET(0, 0, row, 0, 0);
-        token |= TSET(0, 0, 0, ifn, 0);
-        token |= TSET(0, 0, 0, 0, isn);
+void test1(uint64_t kind, uint64_t row, uint64_t ifn, uint64_t isn) {
+        uint64_t token = TSET(kind, 0, 0, 0);
+        token |= TSET(0, row, 0, 0);
+        token |= TSET(0, 0, ifn, 0);
+        token |= TSET(0, 0, 0, isn);
         assert(TGETKIND(token) == (kind & 0xFF));
-        assert(TGETCOL(token) == (col & 0xFF));
         assert(TGETROW(token) == (row & 0xFFFF));
         assert(TGETIFN(token) == (ifn & 0xFFFF));
         assert(TGETISN(token) == (isn & 0xFFFF));
@@ -443,31 +438,30 @@ void test1(uint64_t kind, uint64_t col, uint64_t row, uint64_t ifn, uint64_t isn
 
 int main(void) {
         // Test 1: Basic Test Case
-        test(1, 2, 3, 4, 5);
-        test1(1, 2, 3, 4, 5);
+        test(1, 3, 4, 5);
+        test1(1, 3, 4, 5);
 
         // Test 2: Test with Maximum Values
-        test(255, 255, 65535, 65535, 65535);
-        test(257, 257, 65537, 65537, 65537);
-        test1(255, 255, 65535, 65535, 65535);
-        test1(257, 257, 65537, 65537, 65537);
+        test(255, 65535, 65535, 65535);
+        test(257, 65537, 65537, 65537);
+        test1(255, 65535, 65535, 65535);
+        test1(257, 65537, 65537, 65537);
 
         // Test 3: Test with Minimum Values
-        test(0, 0, 0, 0, 0);
-        test1(0, 0, 0, 0, 0);
+        test(0, 0, 0, 0);
+        test1(0, 0, 0, 0);
 
         // Test 4: Test with Different Kind
-        test(42, 7, 128, 500, 800);
-        test1(42, 7, 128, 500, 800);
+        test(42, 128, 500, 800);
+        test1(42, 128, 500, 800);
 
         // Test 5: Test with Random Values
         srand(time(NULL));
         uint64_t random_kind = rand() % 256;
-        uint64_t random_col = rand() % 256;
         uint64_t random_row = rand() % 65536;
         uint64_t random_ifn = rand() % 65536;
         uint64_t random_isn = rand() % 65536;
-        test(random_kind, random_col, random_row, random_ifn, random_isn);
-        test1(random_kind, random_col, random_row, random_ifn, random_isn);
+        test(random_kind, random_row, random_ifn, random_isn);
+        test1(random_kind, random_row, random_ifn, random_isn);
         return 0;
 }

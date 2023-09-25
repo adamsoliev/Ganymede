@@ -148,7 +148,7 @@ static struct Token *new_token(enum TokenKind kind, char *start, int len) {
 }
 
 static struct Token *ck;
-static int line = 1;
+static int LINE = 1;
 
 void error(char *fmt, ...);
 void printTokens(struct Token *head, FILE *outfile);
@@ -189,7 +189,7 @@ struct Token *scan(char *cp) {
                                         if (rcp >= limit) {
                                                 error("Unterminated comment in "
                                                       "line %d\n",
-                                                      line);
+                                                      LINE);
                                         }
                                         cp = rcp;
                                         continue;
@@ -205,7 +205,7 @@ struct Token *scan(char *cp) {
                                                               "comment: %s in "
                                                               "line %d\n",
                                                               rcp - 1,
-                                                              line);
+                                                              LINE);
                                                 }
                                                 if (*rcp == '\\')
                                                         rcp += 2;
@@ -213,7 +213,7 @@ struct Token *scan(char *cp) {
                                                         rcp++;
                                         }
                                         rcp++;
-                                        line++;
+                                        LINE++;
                                         cp = rcp;
                                         continue;
                                 }
@@ -298,7 +298,7 @@ struct Token *scan(char *cp) {
                         case '}': ck = new_token(CCBR, NULL, 0); goto next;
                         case '(': ck = new_token(OPAR, NULL, 0); goto next;
                         case ')': ck = new_token(CPAR, NULL, 0); goto next;
-                        case '\n': line++;
+                        case '\n': LINE++;
                         case '\v':
                         case '\r':
                         case '\f': continue;
@@ -415,7 +415,7 @@ struct Token *scan(char *cp) {
                                                       "%d\n",
                                                       rcp - start,
                                                       start,
-                                                      line);
+                                                      LINE);
 
                                         if ((*rcp == 'u' || *rcp == 'U') &&
                                                     (rcp[1] == 'l' ||
@@ -505,7 +505,7 @@ struct Token *scan(char *cp) {
                                                       "constant: %s in line "
                                                       "%d\n",
                                                       start,
-                                                      line);
+                                                      LINE);
                                         }
                                         rcp++;
                                 }
@@ -525,7 +525,7 @@ struct Token *scan(char *cp) {
                                                       "constant: %s in line "
                                                       "%d\n",
                                                       start,
-                                                      line);
+                                                      LINE);
                                         }
                                         rcp++;
                                 }
@@ -746,11 +746,11 @@ struct Token *scan(char *cp) {
                                 error("Invalid preprocessor directive: %s in "
                                       "line %d\n",
                                       rcp - 1,
-                                      line);
+                                      LINE);
                         default:
                                 error("Unhandled character: %c in line %d\n",
                                       *(rcp - 1),
-                                      line);
+                                      LINE);
                 }
         }
 exit_loop:
@@ -772,7 +772,7 @@ void floatconst(char **start) {
                         error("Invalid floating point constant: %s in line "
                               "%d\n",
                               *start,
-                              line);
+                              LINE);
                 }
         }
         if (**start == 'f' || **start == 'F') {
@@ -833,6 +833,6 @@ void printTokenKind(enum TokenKind kind, FILE *output) {
         if (kind >= 0 && kind < numTokenStrs) {
                 fprintf(output, "%s", tokenStrs[kind]);
         } else {
-                fprintf(output, "Unknown token in line %d\n", line);
+                fprintf(output, "Unknown token in line %d\n", LINE);
         }
 }

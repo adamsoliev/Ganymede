@@ -19,12 +19,16 @@ typedef struct ht ht;
 // scan.c
 extern FILE *outfile;
 extern char *limit;
+extern uint64_t *tokens;
+extern uint64_t SIZE;
+extern uint64_t INDEX;
 
 /* 
   NOTE: if block-commented, relative order matters 
 */
 enum Kind {
         /* storage-class specifiers */
+        NONE,
         TYPEDEF = 1,
         EXTERN,
         STATIC,
@@ -164,41 +168,20 @@ enum Kind {
 
 /* token getters/setter */
 #define TGETKIND(num) ((num) & 0xFF)
-#define TGETCOL(num) (((num) >> 8) & 0xFF)
-#define TGETROW(num) (((num) >> 16) & 0xFFFF)
-#define TGETIFN(num) (((num) >> 32) & 0xFFFF)
-#define TGETISN(num) (((num) >> 48) & 0xFFFF)
-#define TSET(kind, col, row, ifn, isn)                                                \
-        ((uint64_t)kind & 0xFF) | (((uint64_t)col & 0xFF) << 8) |                     \
-                (((uint64_t)row & 0xFFFF) << 16) | (((uint64_t)ifn & 0xFFFF) << 32) | \
-                (((uint64_t)isn & 0xFFFF) << 48);
-
-struct tokens {
-        uint64_t index;
-        uint64_t size;
-        uint64_t tokens[];
-};
-
-struct Token {
-        enum Kind kind;
-        char *start;  // for IDENT
-        int len;      // for IDENT
-        struct Token *next;
-        union {
-                int ivalue;
-                float fvalue;
-                double dvalue;
-                long double ldvalue;
-        };
-};
+#define TGETROW(num) (((num) >> 8) & 0xFFFF)
+#define TGETIFN(num) (((num) >> 24) & 0xFFFF)
+#define TGETISN(num) (((num) >> 40) & 0xFFFF)
+#define TSET(kind, row, ifn, isn)                                   \
+        ((uint64_t)kind & 0xFF) | (((uint64_t)row & 0xFFFF) << 8) | \
+                (((uint64_t)ifn & 0xFFFF) << 24) | (((uint64_t)isn & 0xFFFF) << 40);
 
 extern char *token_names[];
 void error(char *fmt, ...);
-void printTokens(struct Token *head, FILE *outfile);
-struct Token *scan(char *stream);
+// void printTokens(struct Token *head, FILE *outfile);
+void scan(char *stream);
 
 // parser
-void parse(struct Token *tokens);
+// void parse(struct Token *tokens);
 
 struct scope {
         struct scope *next;

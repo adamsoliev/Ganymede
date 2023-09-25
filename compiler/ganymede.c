@@ -5,6 +5,7 @@ const char *outfile_name = NULL;
 const char *test_suite = NULL;
 bool run_tests = false;
 char *limit = NULL;
+// uint64_t tokens[];
 
 char *readFile(const char *filename) {
         // Open the file in read mode
@@ -126,10 +127,14 @@ int main(int argc, char **argv) {
                         return 0;                    \
                 }                                    \
         }
-
-        struct Token *tokens = scan(input);
-        RUNTEST("scan", printTokens(tokens, outfile));
-        parse(tokens);
+        scan(input);
+        for (int i = 0; i < INDEX; i++) {
+                uint64_t tk = tokens[i];
+                uint64_t kd = TGETKIND(tk);
+                printf("%d) %s\n", i, token_names[kd]);
+        }
+        // RUNTEST("scan", printTokens(tokens, outfile));
+        // parse(tokens);
 
         return 0;
 }

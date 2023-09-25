@@ -139,38 +139,30 @@ static unsigned char map[256] = {
         /* 176 ~   */ OTHER,
 };
 
-static struct Token *new_token(enum Kind kind, char *start, int len) {
-        struct Token *token = calloc(1, sizeof(struct Token));
-        token->kind = kind;
-        token->start = start;
-        token->len = len;
-        return token;
-}
-
-static struct Token *ck;
-static int line = 1;
+static uint64_t CTK;
+static int LINE = 1;
+uint64_t INDEX = 0;
+// uint64_t SIZE = 16384;
+uint64_t SIZE = 32768;
+uint64_t *tokens;
 
 void error(char *fmt, ...);
-void printTokens(struct Token *head, FILE *outfile);
-struct Token *scan(char *cp);
-
-static void printTokenKind(enum Kind kind, FILE *outfile);
+void scan(char *cp);
 static enum Kind floatconst(char **rcp);
 
-struct Token *scan(char *cp) {
+void scan(char *cp) {
+        tokens = malloc(SIZE * sizeof(uint64_t));
 #define CHECK_PUNCTUATION(op, token, incr) \
         if (*rcp == op) {                  \
                 HANDLE_TOKEN(token, incr); \
         }
 
-#define HANDLE_TOKEN(kind, length)     \
-        rcp += length;                 \
-        ck = new_token(kind, NULL, 0); \
-        cp = rcp;                      \
+#define HANDLE_TOKEN(kind, length) \
+        rcp += length;             \
+        CTK = kind;                \
+        cp = rcp;                  \
         goto next;
 
-        struct Token head = {};
-        struct Token *cur = &head;
         char *rcp = cp;
         for (;;) {
                 while (map[*rcp] & BLANK) rcp++;
@@ -188,7 +180,7 @@ struct Token *scan(char *cp) {
                                         if (rcp >= limit) {
                                                 error("Unterminated comment in "
                                                       "line %d\n",
-                                                      line);
+                                                      LINE);
                                         }
                                         cp = rcp;
                                         continue;
@@ -204,7 +196,7 @@ struct Token *scan(char *cp) {
                                                               "comment: %s in "
                                                               "line %d\n",
                                                               rcp - 1,
-                                                              line);
+                                                              LINE);
                                                 }
                                                 if (*rcp == '\\')
                                                         rcp += 2;
@@ -212,7 +204,7 @@ struct Token *scan(char *cp) {
                                                         rcp++;
                                         }
                                         rcp++;
-                                        line++;
+                                        LINE++;
                                         cp = rcp;
                                         continue;
                                 }
@@ -221,89 +213,89 @@ struct Token *scan(char *cp) {
                         case '<':
                                 if (rcp[0] == '<' && rcp[1] == '=') {
                                         rcp += 2;
-                                        ck = new_token(LSHASSIGN, NULL, 0);
+                                        CTK = LSHASSIGN;
                                         goto next;
                                 }
                                 CHECK_PUNCTUATION('=', LEQ, 1)
                                 CHECK_PUNCTUATION('<', LSHIFT, 1)
                                 CHECK_PUNCTUATION(':', OBR, 1)
                                 CHECK_PUNCTUATION('%', OPAR, 1)
-                                ck = new_token(LT, NULL, 0);
+                                CTK = LT;
                                 goto next;
                         case '>':
                                 if (rcp[0] == '>' && rcp[1] == '=') {
                                         rcp += 2;
-                                        ck = new_token(RSHASSIGN, NULL, 0);
+                                        CTK = RSHASSIGN;
                                         goto next;
                                 }
                                 CHECK_PUNCTUATION('=', GEQ, 1)
                                 CHECK_PUNCTUATION('>', RSHIFT, 1)
-                                ck = new_token(GT, NULL, 0);
+                                CTK = GT;
                                 goto next;
                         case '-':
                                 CHECK_PUNCTUATION('>', DEREF, 1)
                                 CHECK_PUNCTUATION('-', DECR, 1)
                                 CHECK_PUNCTUATION('=', SUBASSIGN, 1)
-                                ck = new_token(SUB, NULL, 0);
+                                CTK = SUB;
                                 goto next;
                         case '=':
                                 CHECK_PUNCTUATION('=', EQ, 1)
-                                ck = new_token(ASSIGN, NULL, 0);
+                                CTK = ASSIGN;
                                 goto next;
                         case '!':
                                 CHECK_PUNCTUATION('=', NEQ, 1)
-                                ck = new_token(NOT, NULL, 0);
+                                CTK = NOT;
                                 goto next;
                         case '|':
                                 CHECK_PUNCTUATION('|', OROR, 1)
                                 CHECK_PUNCTUATION('=', ORASSIGN, 1)
-                                ck = new_token(OR, NULL, 0);
+                                CTK = OR;
                                 goto next;
                         case '&':
                                 CHECK_PUNCTUATION('&', ANDAND, 1)
                                 CHECK_PUNCTUATION('=', ANDASSIGN, 1)
-                                ck = new_token(AND, NULL, 0);
+                                CTK = AND;
                                 goto next;
                         case '+':
                                 CHECK_PUNCTUATION('+', INCR, 1)
                                 CHECK_PUNCTUATION('=', ADDASSIGN, 1)
-                                ck = new_token(ADD, NULL, 0);
+                                CTK = ADD;
                                 goto next;
-                        case ';': ck = new_token(SEMIC, NULL, 0); goto next;
-                        case ',': ck = new_token(COMMA, NULL, 0); goto next;
+                        case ';': CTK = SEMIC; goto next;
+                        case ',': CTK = COMMA; goto next;
                         case ':':
                                 CHECK_PUNCTUATION('>', CBR, 1)
-                                ck = new_token(COLON, NULL, 0);
+                                CTK = COLON;
                                 goto next;
                         case '*':
                                 CHECK_PUNCTUATION('=', MULASSIGN, 1)
-                                ck = new_token(MUL, NULL, 0);
+                                CTK = MUL;
                                 goto next;
-                        case '~': ck = new_token(TILDA, NULL, 0); goto next;
+                        case '~': CTK = TILDA; goto next;
                         case '%':
                                 CHECK_PUNCTUATION('>', CPAR, 1)
                                 CHECK_PUNCTUATION('=', MODASSIGN, 1)
                                 CHECK_PUNCTUATION(':', STRGIZE, 1)
-                                ck = new_token(MOD, NULL, 0);
+                                CTK = MOD;
                                 goto next;
                         case '^':
                                 CHECK_PUNCTUATION('=', XORASSIGN, 1)
-                                ck = new_token(XOR, NULL, 0);
+                                CTK = XOR;
                                 goto next;
-                        case '?': ck = new_token(QMARK, NULL, 0); goto next;
-                        case '[': ck = new_token(OBR, NULL, 0); goto next;
-                        case ']': ck = new_token(CBR, NULL, 0); goto next;
-                        case '{': ck = new_token(OCBR, NULL, 0); goto next;
-                        case '}': ck = new_token(CCBR, NULL, 0); goto next;
-                        case '(': ck = new_token(OPAR, NULL, 0); goto next;
-                        case ')': ck = new_token(CPAR, NULL, 0); goto next;
-                        case '\n': line++;
+                        case '?': CTK = QMARK; goto next;
+                        case '[': CTK = OBR; goto next;
+                        case ']': CTK = CBR; goto next;
+                        case '{': CTK = OCBR; goto next;
+                        case '}': CTK = CCBR; goto next;
+                        case '(': CTK = OPAR; goto next;
+                        case ')': CTK = CPAR; goto next;
+                        case '\n': LINE++;
                         case '\v':
                         case '\r':
                         case '\f': continue;
                         case '\0':
-                                ck = new_token(EOI, NULL, 0);
-                                cur = cur->next = ck;
+                                CTK = EOI;
+                                tokens[INDEX++] = CTK;
                                 goto exit_loop;
                         case 'i':
                                 if (rcp[0] == 'f' && !(map[rcp[1]] & (DIGIT | LETTER))) {
@@ -356,14 +348,14 @@ struct Token *scan(char *cp) {
                         case 'Y':
                         case 'Z':
                         id: {
-                                char *start = rcp - 1;
+                                // char *start = rcp - 1;
                                 while (map[*rcp] & (DIGIT | LETTER)) rcp++;
-                                ck = new_token(IDENT, start, rcp - start);
+                                CTK = IDENT;
                                 cp = rcp;
                                 goto next;
                         }
                         next: {
-                                cur = cur->next = ck;
+                                tokens[INDEX++] = CTK;
                                 continue;
                         }
                         case '0':
@@ -394,8 +386,8 @@ struct Token *scan(char *cp) {
                                                 n = (n << 4) | d;
                                         }
                                         if (*rcp == 'l' || *rcp == 'L') rcp++;
-                                        ck = new_token(INTCONST, start, rcp - start);
-                                        ck->ivalue = n;
+                                        CTK = INTCONST;
+                                        // CTK->ivalue = n;
                                         cp = rcp;
                                         goto next;
                                 } else if (*start == '0') {
@@ -404,13 +396,16 @@ struct Token *scan(char *cp) {
                                         // HANDLEME: overflow
                                         if (*rcp == '.') {
                                                 enum Kind kind = floatconst(&rcp);
-                                                ck = new_token(kind, start, rcp - start);
+                                                CTK = kind;
                                                 if (kind == FLOATCONST)
-                                                        ck->fvalue = strtof(start, NULL);
+                                                        // CTK->fvalue = strtof(start, NULL);
+                                                        break;
                                                 else if (kind == DOUBLECONST)
-                                                        ck->dvalue = strtod(start, NULL);
+                                                        // CTK->dvalue = strtod(start, NULL);
+                                                        break;
                                                 else
-                                                        ck->ldvalue = strtold(start, NULL);
+                                                        // CTK->ldvalue = strtold(start, NULL);
+                                                        break;
                                                 cp = rcp;
                                                 goto next;
                                         }
@@ -424,7 +419,7 @@ struct Token *scan(char *cp) {
                                                       "%d\n",
                                                       rcp - start,
                                                       start,
-                                                      line);
+                                                      LINE);
 
                                         if (((*rcp == 'u' || *rcp == 'U') &&
                                              (rcp[1] == 'l' || rcp[1] == 'L')) ||
@@ -436,8 +431,8 @@ struct Token *scan(char *cp) {
                                                 rcp++;
                                         }
                                         if (*rcp == 'l' || *rcp == 'L') rcp++;
-                                        ck = new_token(INTCONST, start, rcp - start);
-                                        ck->ivalue = n;
+                                        CTK = INTCONST;
+                                        // CTK->ivalue = n;
                                         cp = rcp;
                                         goto next;
                                 } else {
@@ -448,13 +443,16 @@ struct Token *scan(char *cp) {
                                         }
                                         if (*rcp == '.' || *rcp == 'e' || *rcp == 'E') {
                                                 enum Kind kind = floatconst(&rcp);
-                                                ck = new_token(kind, start, rcp - start);
+                                                CTK = kind;
                                                 if (kind == FLOATCONST)
-                                                        ck->fvalue = strtof(start, NULL);
+                                                        // CTK->fvalue = strtof(start, NULL);
+                                                        break;
                                                 else if (kind == DOUBLECONST)
-                                                        ck->dvalue = strtod(start, NULL);
+                                                        // CTK->dvalue = strtod(start, NULL);
+                                                        break;
                                                 else
-                                                        ck->ldvalue = strtold(start, NULL);
+                                                        // CTK->ldvalue = strtold(start, NULL);
+                                                        break;
                                                 cp = rcp;
                                                 goto next;
                                         }
@@ -470,31 +468,33 @@ struct Token *scan(char *cp) {
                                         if (*rcp == 'l' || *rcp == 'L') {
                                                 rcp++;
                                         }
-                                        ck = new_token(INTCONST, start, rcp - start);
-                                        ck->ivalue = n;
+                                        CTK = INTCONST;
+                                        // CTK->ivalue = n;
                                         cp = rcp;
                                         goto next;
                                 }
                         }
                         case '.':
                                 if (rcp[0] == '.' && rcp[1] == '.') {
-                                        ck = new_token(ELLIPSIS, NULL, 0);
+                                        CTK = ELLIPSIS;
                                         rcp += 2;
                                         cp = rcp;
                                         goto next;
                                 }
                                 if ((map[*rcp] & DIGIT)) {
-                                        char *start = --rcp;
+                                        // char *start = --rcp;
 
                                         enum Kind kind = floatconst(&rcp);
-                                        ck = new_token(kind, start, rcp - start);
+                                        CTK = kind;
                                         if (kind == FLOATCONST)
-                                                ck->fvalue = strtof(start, NULL);
+                                                // CTK->fvalue = strtof(start, NULL);
+                                                break;
                                         else if (kind == DOUBLECONST)
-                                                ck->dvalue = strtod(start, NULL);
+                                                // CTK->dvalue = strtod(start, NULL);
+                                                break;
                                         else
-                                                ck->ldvalue = strtold(start, NULL);
-
+                                                // CTK->ldvalue = strtold(start, NULL);
+                                                break;
                                         cp = rcp;
                                         goto next;
                                 }
@@ -515,12 +515,12 @@ struct Token *scan(char *cp) {
                                                       "constant: %s in line "
                                                       "%d\n",
                                                       start,
-                                                      line);
+                                                      LINE);
                                         }
                                         rcp++;
                                 }
                                 rcp++;
-                                ck = new_token(CHARCONST, start, rcp - start);
+                                CTK = CHARCONST;
                                 cp = rcp;
                                 goto next;
                         }
@@ -535,12 +535,12 @@ struct Token *scan(char *cp) {
                                                       "constant: %s in line "
                                                       "%d\n",
                                                       start,
-                                                      line);
+                                                      LINE);
                                         }
                                         rcp++;
                                 }
                                 rcp++;
-                                ck = new_token(STRCONST, start, rcp - start);
+                                CTK = STRCONST;
                                 cp = rcp;
                                 goto next;
                         }
@@ -726,13 +726,13 @@ struct Token *scan(char *cp) {
                                 error("Invalid preprocessor directive: %s in "
                                       "line %d\n",
                                       rcp - 1,
-                                      line);
+                                      LINE);
                         case '\\': HANDLE_TOKEN(BACKSLASH, 0);
-                        default: error("Unhandled character: %c in line %d\n", *(rcp - 1), line);
+                        default: error("Unhandled character: %c in line %d\n", *(rcp - 1), LINE);
                 }
         }
 exit_loop:
-        return head.next;
+        return;
 }
 
 // float, double and long double
@@ -751,7 +751,7 @@ enum Kind floatconst(char **start) {
                         error("Invalid floating point constant: %s in line "
                               "%d\n",
                               *start,
-                              line);
+                              LINE);
                 }
         }
         if (**start == 'f' || **start == 'F') {
@@ -771,23 +771,4 @@ void error(char *fmt, ...) {
         vfprintf(outfile, fmt, args);
         va_end(args);
         exit(1);
-}
-
-void printTokens(struct Token *head, FILE *outfile) {
-        struct Token *current = head;
-        while (current != NULL) {
-                printTokenKind(current->kind, outfile);
-                fprintf(outfile, "\n");
-                // fprintf(outfile, ": %.*s\n", current->len, current->start);
-                current = current->next;
-        }
-}
-
-void printTokenKind(enum Kind kind, FILE *output) {
-        size_t numTokenStrs = sizeof(token_names) / sizeof(token_names[0]);
-        if (kind >= 0 && kind < numTokenStrs) {
-                fprintf(output, "%s", token_names[kind]);
-        } else {
-                fprintf(output, "Unknown token in line %d\n", line);
-        }
 }

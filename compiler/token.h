@@ -1,3 +1,4 @@
+xx(NONE,             0, "NONE")
 /* storage-class specifiers */
 xx(TYPEDEF,          1, "TYPEDEF")
 xx(EXTERN,           2, "EXTERN")
