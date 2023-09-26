@@ -2,12 +2,8 @@
 #pragma clang diagnostic ignored "-Wgnu-empty-initializer"
 
 #include "ganymede.h"
-enum { BLANK = 01, NEWLINE = 02, LETTER = 04, DIGIT = 010, HEX = 020, OTHER = 040 };
 
-char *token_names[] = {
-#define xx(x, b, c) c,
-#include "token.h"
-};
+enum { BLANK = 01, NEWLINE = 02, LETTER = 04, DIGIT = 010, HEX = 020, OTHER = 040 };
 
 static unsigned char map[256] = {
         // clang-format off
@@ -40,18 +36,23 @@ static unsigned char map[256] = {
         // clang-format on
 };
 
+char *token_names[] = {
+#define xx(x, b, c) c,
+#include "token.h"
+};
+
 static uint64_t CTK;
 static int LINE = 1;
 uint64_t INDEX = 0;
-uint64_t SIZE = 32768;
+uint64_t TKARRAYSIZE = 32768;
 uint64_t *tokens;
 
-void error(char *fmt, ...);
 void scan(char *cp);
 static enum Kind floatconst(char **rcp);
+void error(char *fmt, ...);
 
 void scan(char *cp) {
-        tokens = malloc(SIZE * sizeof(uint64_t));
+        tokens = malloc(TKARRAYSIZE * sizeof(uint64_t));
 #define CHECK_PUNCTUATION(op, token, incr) \
         if (*rcp == op) {                  \
                 HANDLE_TOKEN(token, incr); \

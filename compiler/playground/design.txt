@@ -34,14 +34,14 @@ Token
             [2] - linux has ~33k .c files
         
 Symbol table
-     -------------------------------------
-    | name | type | sizes | params | body |
-     -------------------------------------
-    |      |      |       |        |      |
+     --------------------------------------------------------
+    | name | token | type | size | dimention | params | body |
+     --------------------------------------------------------
+    |      |       |      |      |           |        |      |
     ...
 
     name : char *
-
+    token:  
     type[1] : uint64_t 
         0x
         00,     // unused for now 
@@ -52,12 +52,9 @@ Symbol table
         00,     // storage-class specifiers 
         00,     // short | long | signed | unsigned
         00      // basic types (void, char, int, float, double, struct, union, enum)
-
-    sizes :     // linkedlist of ints for array dimentions
-
+    size :      // total # of bytes the symbol takes
     params :    // linkedlist of function parameters
-
-    body :      // compound statement of function
+    body :      // a pointer to compound statement of function
 
 A program 
     ExtDecl -> ExtDecl -> ExtDecl -> ...    // each ExtDecl is either declaration or function definition
@@ -86,11 +83,11 @@ Performance
             /* ignored */ decimal float: _Decimal32, _Decimal64, _Decimal128 (since C23)
         /* ignored */ complex types: float _Complex, double _Complex, long double _Complex
         /* ignored */ imaginary types: float _Imaginary, double _Imaginary, long double _Imaginary (since C99)
-    enum                        // TODO
+    enum                        
     derived types
         array
-        structure               // TODO
-        union                   // TODO
+        structure               
+        union                   
         function 
         pointer 
         /* ignored */ atomic (since C11)

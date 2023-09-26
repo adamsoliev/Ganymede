@@ -16,62 +16,23 @@
 
 typedef struct ht ht;
 
-// scan.c
-extern FILE *outfile;
-extern char *limit;
-extern uint64_t *tokens;
-extern uint64_t SIZE;
-extern uint64_t INDEX;
-
+// clang-format off
 /* 
   NOTE: if block-commented, relative order matters 
 */
 enum Kind {
         /* storage-class specifiers */
-        NONE,
-        TYPEDEF = 1,
-        EXTERN,
-        STATIC,
-        AUTO,
-        REGISTER,
+        NONE, TYPEDEF = 1, EXTERN, STATIC, AUTO, REGISTER,
         /* type-qualifier */
-        CONST,
-        RESTRICT,
-        VOLATILE,
+        CONST, RESTRICT, VOLATILE,
         /* func-specifier */
         INLINE,
         /* type-specifier */
-        VOID,
-        CHAR,
-        SHORT,
-        INT,
-        LONG,
-        FLOAT,
-        DOUBLE,
-        SIGNED,
-        UNSIGNED,
-        STRUCT,
-        UNION,
-        ENUM,
+        VOID, CHAR, SHORT, INT, LONG, FLOAT, DOUBLE, SIGNED, UNSIGNED, STRUCT, UNION, ENUM,
         /* binary ops - increasing grouped precedence */
-        OROR,    // ||
-        ANDAND,  // &&
-        OR,      // |
-        XOR,     // ^
-        AND,     // &
-        EQ,      // ==
-        NEQ,     // !=
-        LT,      // <
-        GT,      // >
-        LEQ,     // <=
-        GEQ,     // >=
-        LSHIFT,  // <<
-        RSHIFT,  // >>
-        ADD,     // +
-        SUB,     // -
-        MUL,     // *
-        DIV,     // /
-        MOD,     // %
+        OROR, ANDAND, OR, XOR, AND, EQ, NEQ,  
+        LT, GT, LEQ, GEQ, LSHIFT, RSHIFT, 
+        ADD, SUB, MUL, DIV, MOD,  
         /* unary ops */
         DECR,  // --
         INCR,  // ++
@@ -79,45 +40,20 @@ enum Kind {
         DEREF,  // -->
         DOT,    // .
         /* assigns */
-        ASSIGN,
-        ADDASSIGN,
-        SUBASSIGN,
-        MULASSIGN,
-        DIVASSIGN,
-        MODASSIGN,
-        ANDASSIGN,
-        ORASSIGN,
-        XORASSIGN,
-        NOTASSIGN,
-        LSHASSIGN,
-        RSHASSIGN,
+        ASSIGN, ADDASSIGN, SUBASSIGN, MULASSIGN, DIVASSIGN, MODASSIGN,
+        ANDASSIGN, ORASSIGN, XORASSIGN, NOTASSIGN, LSHASSIGN, RSHASSIGN,
         /* iter stmt */
-        FOR,
-        WHILE,
-        DO,
+        FOR, WHILE, DO,
         /* select stmt */
-        IF,
-        SWITCH,
-        ELSE,
+        IF, SWITCH, ELSE,
         /* jump stmt */
-        GOTO,
-        CONTINUE,
-        BREAK,
-        RETURN,
+        GOTO, CONTINUE, BREAK, RETURN,
         /* label stmt */
-        CASE,
-        DEFAULT,
+        CASE, DEFAULT,
         /* consts */
-        IDENT,
-        INTCONST,
-        FLOATCONST,
-        DOUBLECONST,
-        LONGDOUBLECONST,
-        STRCONST,
-        CHARCONST,
+        IDENT, INTCONST, FLOATCONST, DOUBLECONST, LONGDOUBLECONST, STRCONST, CHARCONST,
         /* preprocess */
-        INCLUDE,
-        STRGIZE,  // #
+        INCLUDE, STRGIZE,  // #
         TKPASTE,  // ##
         DEFINE,
         /* punct */
@@ -139,7 +75,6 @@ enum Kind {
         EOI
 };
 
-// clang-format off
 // https://stackoverflow.com/questions/111928/is-there-a-printf-converter-to-print-in-binary-format/25108449#25108449
 #define BB_P8 "%c%c%c%c,%c%c%c%c" // byte to binary pattern
 #define BB8(byte)                  \
@@ -175,9 +110,16 @@ enum Kind {
         ((uint64_t)kind & 0xFF) | (((uint64_t)row & 0xFFFF) << 8) | \
                 (((uint64_t)ifn & 0xFFFF) << 24) | (((uint64_t)isn & 0xFFFF) << 40);
 
+// ganymede.c
+extern FILE *outfile;
+
+// scan.c
+extern char *limit;
+extern uint64_t *tokens;
+extern uint64_t TKARRAYSIZE;
+extern uint64_t INDEX;
 extern char *token_names[];
 void error(char *fmt, ...);
-// void printTokens(struct Token *head, FILE *outfile);
 void scan(char *stream);
 
 // parser
@@ -189,7 +131,6 @@ struct scope {
 };
 
 // hashmap.c
-
 typedef struct {
         const char *key;  // current key
         void *value;      // current value
