@@ -9,48 +9,11 @@
     ht_length
 */
 
-// #include <assert.h>
-// #include <stdbool.h>
-// #include <stddef.h>
-// #include <stdint.h>
-// #include <stdio.h>
-// #include <stdlib.h>
-// #include <string.h>
-
 #include "ganymede.h"
 
 #define INITIAL_CAPACITY 16  // must not be zero & must be power of 2
 #define FNV_OFFSET 14695981039346656037UL
 #define FNV_PRIME 1099511628211UL
-
-// typedef struct ht ht;
-
-// typedef struct {
-//         const char* key;  // current key
-//         void* value;      // current value
-
-//         ht* _table;     // reference to hash table being iterated
-//         size_t _index;  // current index into ht._entries
-// } hti;
-
-// typedef struct {
-//         const char* key;  // key is NULL if this slot is empty
-//         void* value;
-// } ht_entry;
-
-// struct ht {
-//         ht_entry* entries;  // hash slots
-//         size_t capacity;    // size of _entries array
-//         size_t length;      // number of items in hash table
-// };
-
-// ht* ht_create(void);
-// void ht_destroy(ht* table);
-// void* ht_get(ht* table, const char* key);
-// const char* ht_set(ht* table, const char* key, void* value);
-// size_t ht_length(ht* table);
-// hti ht_iterator(ht* table);
-// bool ht_next(hti* it);
 
 ht* ht_create(void) {
         // Allocate space for hash table struct.
