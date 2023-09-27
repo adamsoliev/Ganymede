@@ -32,12 +32,19 @@ Token
     ---     // 8   bits - unused
             [1] - longest file in linux has 56,473 LOC
             [2] - linux has ~33k .c files
-        
+
+Constants table
+     ---------------
+    | token | value |
+     ---------------
+    |       |       | 
+    ...
+
 Symbol table
-     --------------------------------------------------------
-    | name | token | type | size | dimention | params | body |
-     --------------------------------------------------------
-    |      |       |      |      |           |        |      |
+     --------------------------------------------------------------
+    | name | type | size | dimention | params | body | decl | uses |
+     --------------------------------------------------------------
+    |      |      |      |           |        |      |      |      |
     ...
 
     name : char *
