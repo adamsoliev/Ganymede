@@ -119,6 +119,16 @@ extern uint64_t *tokens;
 extern uint64_t TKARRAYSIZE;
 extern uint64_t INDEX;
 extern char *token_names[];
+extern ht *symtable;  // key: name, value: struct
+struct symbol {
+        char *name;
+};
+// union {
+//         uint64_t icon;
+//         long double fcon;
+//         char *scon;
+//         char ccon;
+// } con;
 void error(char *fmt, ...);
 void scan(char *stream);
 

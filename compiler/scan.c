@@ -46,13 +46,17 @@ static int LINE = 1;
 uint64_t INDEX = 0;
 uint64_t TKARRAYSIZE = 32768;
 uint64_t *tokens;
+ht *symtable;  // key: name, value: struct
 
 void scan(char *cp);
+static struct symbol *new_symbol(void);
+static void copystr(char **dest, char **src, int len);
 static enum Kind floatconst(char **rcp);
 void error(char *fmt, ...);
 
 void scan(char *cp) {
         tokens = malloc(TKARRAYSIZE * sizeof(uint64_t));
+        symtable = ht_create();
 #define CHECK_PUNCTUATION(op, token, incr) \
         if (*rcp == op) {                  \
                 HANDLE_TOKEN(token, incr); \
@@ -223,9 +227,16 @@ void scan(char *cp) {
                         case 'Z':
                                 // clang-format on
                         id: {
-                                // char *start = rcp - 1;
+                                char *start = rcp - 1;
                                 while (map[*rcp] & (DIGIT | LETTER)) rcp++;
                                 CTK = IDENT;
+
+                                /* symbol table maintenance */
+                                struct symbol *symbol = new_symbol();
+                                symbol->name = malloc((rcp - start) * sizeof(char));
+                                copystr(&symbol->name, &start, rcp - start);
+                                ht_set(symtable, symbol->name, symbol);
+
                                 cp = rcp;
                                 goto next;
                         }
@@ -604,6 +615,19 @@ void scan(char *cp) {
         }
 exit_loop:
         return;
+}
+
+static struct symbol *new_symbol(void) {
+        struct symbol *sym = calloc(1, sizeof(struct symbol));
+        return sym;
+}
+
+static void copystr(char **dest, char **src, int len) {
+        if (*dest == NULL) {
+                *dest = calloc(len, sizeof(char));
+        }
+        strncpy(*dest, *src, len);
+        (*dest)[len] = '\0';
 }
 
 // float, double and long double
