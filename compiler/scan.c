@@ -272,7 +272,7 @@ void scan(char *cp) {
                                                 n = (n << 4) | d;
                                         }
                                         if (*rcp == 'l' || *rcp == 'L') rcp++;
-                                        CTK = INTCONST;
+                                        CTK = ICON;
 
                                         /* constants table maintenance */
                                         CTK |= TSET(0, 0, 0, CONINDEX);
@@ -295,10 +295,10 @@ void scan(char *cp) {
                                                 CTK |= TSET(0, 0, 0, CONINDEX);
                                                 union con *con = malloc(1 * sizeof(union con));
 
-                                                if (kind == FLOATCONST)
+                                                if (kind == FCON)
                                                         // CTK->fvalue = strtof(start, NULL);
                                                         con->fcon = strtof(start, NULL);
-                                                else if (kind == DOUBLECONST)
+                                                else if (kind == DCON)
                                                         // CTK->dvalue = strtod(start, NULL);
                                                         con->fcon = strtod(start, NULL);
                                                 else
@@ -331,7 +331,7 @@ void scan(char *cp) {
                                                 rcp++;
                                         }
                                         if (*rcp == 'l' || *rcp == 'L') rcp++;
-                                        CTK = INTCONST;
+                                        CTK = ICON;
 
                                         /* constants table maintenance */
                                         CTK |= TSET(0, 0, 0, CONINDEX);
@@ -356,10 +356,10 @@ void scan(char *cp) {
                                                 CTK |= TSET(0, 0, 0, CONINDEX);
                                                 union con *con = malloc(1 * sizeof(union con));
 
-                                                if (kind == FLOATCONST)
+                                                if (kind == FCON)
                                                         // CTK->fvalue = strtof(start, NULL);
                                                         con->fcon = strtof(start, NULL);
-                                                else if (kind == DOUBLECONST)
+                                                else if (kind == DCON)
                                                         // CTK->dvalue = strtod(start, NULL);
                                                         con->fcon = strtod(start, NULL);
                                                 else
@@ -382,7 +382,7 @@ void scan(char *cp) {
                                         if (*rcp == 'l' || *rcp == 'L') {
                                                 rcp++;
                                         }
-                                        CTK = INTCONST;
+                                        CTK = ICON;
 
                                         /* constants table maintenance */
                                         CTK |= TSET(0, 0, 0, CONINDEX);
@@ -412,10 +412,10 @@ void scan(char *cp) {
                                         CTK |= TSET(0, 0, 0, CONINDEX);
                                         union con *con = malloc(1 * sizeof(union con));
 
-                                        if (kind == FLOATCONST)
+                                        if (kind == FCON)
                                                 // CTK->fvalue = strtof(start, NULL);
                                                 con->fcon = strtof(start, NULL);
-                                        else if (kind == DOUBLECONST)
+                                        else if (kind == DCON)
                                                 // CTK->dvalue = strtod(start, NULL);
                                                 con->fcon = strtod(start, NULL);
                                         else
@@ -448,7 +448,7 @@ void scan(char *cp) {
                                         rcp++;
                                 }
                                 rcp++;
-                                CTK = CHARCONST;
+                                CTK = CCON;
 
                                 /* constants table maintenance */
                                 CTK |= TSET(0, 0, 0, CONINDEX);
@@ -503,7 +503,7 @@ void scan(char *cp) {
                                         rcp++;
                                 }
                                 rcp++;
-                                CTK = STRCONST;
+                                CTK = SCON;
 
                                 /* constants table maintenance */
                                 CTK |= TSET(0, 0, 0, CONINDEX);
@@ -740,12 +740,12 @@ enum Kind floatconst(char **start) {
         }
         if (**start == 'f' || **start == 'F') {
                 ++(*start);
-                return FLOATCONST;
+                return FCON;
         } else if (**start == 'l' || **start == 'L') {
                 ++(*start);
-                return LONGDOUBLECONST;
+                return LDCON;
         } else {
-                return DOUBLECONST;
+                return DCON;
         }
 }
 

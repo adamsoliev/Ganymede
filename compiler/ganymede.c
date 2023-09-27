@@ -139,15 +139,14 @@ int main(int argc, char **argv) {
         /* check constants table */
         for (int i = 0; i < TKSINDEX; i++) {
                 uint64_t kind = TGETKIND(tokens[i]);
-                if (kind == INTCONST || kind == FLOATCONST || kind == DOUBLECONST ||
-                    kind == LONGDOUBLECONST || kind == STRCONST || kind == CHARCONST) {
+                if (kind == ICON || kind == FCON || kind == DCON || kind == LDCON || kind == SCON ||
+                    kind == CCON) {
                         uint64_t index = TGETISN(tokens[i]);
-                        if (kind == INTCONST)
+                        if (kind == ICON)
                                 printf("%ld\n", constants[index]->icon);
-                        else if (kind == FLOATCONST || kind == DOUBLECONST ||
-                                 kind == LONGDOUBLECONST)
+                        else if (kind == FCON || kind == DCON || kind == LDCON)
                                 printf("%Lf\n", constants[index]->fcon);
-                        else if (kind == STRCONST)
+                        else if (kind == SCON)
                                 printf("%s\n", constants[index]->scon);
                         else {
                                 printf("%c\n", constants[index]->ccon);

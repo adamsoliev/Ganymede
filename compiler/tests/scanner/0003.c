@@ -1,13 +1,6 @@
 #include "ganymede.h"
 
-enum {
-        BLANK = 01,
-        NEWLINE = 02,
-        LETTER = 04,
-        DIGIT = 010,
-        HEX = 020,
-        OTHER = 040
-};
+enum { BLANK = 01, NEWLINE = 02, LETTER = 04, DIGIT = 010, HEX = 020, OTHER = 040 };
 
 static unsigned char map[256] = {
         /* 000 nul */ 0,
@@ -179,8 +172,7 @@ struct Token *scan(char *cp) {
                                 if (*rcp == '*') {
                                         rcp++;
                                         while (rcp < limit) {
-                                                if (*rcp == '*' &&
-                                                    *(rcp + 1) == '/') {
+                                                if (*rcp == '*' && *(rcp + 1) == '/') {
                                                         rcp += 2;
                                                         break;
                                                 }
@@ -307,8 +299,7 @@ struct Token *scan(char *cp) {
                                 cur = cur->next = ck;
                                 goto exit_loop;
                         case 'i':
-                                if (rcp[0] == 'f' &&
-                                    !(map[rcp[1]] & (DIGIT | LETTER))) {
+                                if (rcp[0] == 'f' && !(map[rcp[1]] & (DIGIT | LETTER))) {
                                         HANDLE_TOKEN(IF, 1);
                                 }
                                 if (rcp[0] == 'n' && rcp[1] == 't' &&
@@ -352,14 +343,14 @@ struct Token *scan(char *cp) {
                         case 'X':
                         case 'Y':
                         case 'Z':
-                        id : {
+                        id: {
                                 char *start = rcp - 1;
                                 while (map[*rcp] & (DIGIT | LETTER)) rcp++;
                                 ck = new_token(IDENT, start, rcp - start);
                                 cp = rcp;
                                 goto next;
                         }
-                        next : {
+                        next: {
                                 cur = cur->next = ck;
                                 continue;
                         }
@@ -375,27 +366,23 @@ struct Token *scan(char *cp) {
                         case '9': {
                                 unsigned long n = 0;
                                 char *start = rcp - 1;
-                                if (*start == '0' &&
-                                    (*rcp == 'x' || *rcp == 'X')) {
+                                if (*start == '0' && (*rcp == 'x' || *rcp == 'X')) {
                                         // hex
                                         // HANDLEME: overflow
                                         int d;
                                         while (*++rcp) {
                                                 if (map[*rcp] & DIGIT)
                                                         d = *rcp - '0';
-                                                else if (*rcp >= 'a' &&
-                                                         *rcp <= 'f')
+                                                else if (*rcp >= 'a' && *rcp <= 'f')
                                                         d = *rcp - 'a' + 10;
-                                                else if (*rcp >= 'A' &&
-                                                         *rcp <= 'F')
+                                                else if (*rcp >= 'A' && *rcp <= 'F')
                                                         d = *rcp - 'A' + 10;
                                                 else
                                                         break;
                                                 n = (n << 4) | d;
                                         }
                                         if (*rcp == 'l' || *rcp == 'L') rcp++;
-                                        ck = new_token(
-                                                INTCONST, start, rcp - start);
+                                        ck = new_token(ICON, start, rcp - start);
                                         ck->value = n;
                                         cp = rcp;
                                         goto next;
@@ -405,8 +392,7 @@ struct Token *scan(char *cp) {
                                         // HANDLEME: overflow
                                         // HANDLEME: floating point
                                         for (; map[*rcp] & DIGIT; rcp++) {
-                                                if (*rcp == '8' || *rcp == '9')
-                                                        err = 1;
+                                                if (*rcp == '8' || *rcp == '9') err = 1;
                                                 n = (n << 3) + (*rcp - '0');
                                         }
                                         if (err)
@@ -418,45 +404,36 @@ struct Token *scan(char *cp) {
                                                       LINE);
 
                                         if ((*rcp == 'u' || *rcp == 'U') &&
-                                                    (rcp[1] == 'l' ||
-                                                     rcp[1] == 'L') ||
+                                                    (rcp[1] == 'l' || rcp[1] == 'L') ||
                                             (*rcp == 'l' || *rcp == 'L') &&
-                                                    (rcp[1] == 'u' ||
-                                                     rcp[1] == 'U')) {
+                                                    (rcp[1] == 'u' || rcp[1] == 'U')) {
                                                 rcp += 2;
                                         }
                                         if (*rcp == 'u' || *rcp == 'U') {
                                                 rcp++;
                                         }
                                         if (*rcp == 'l' || *rcp == 'L') rcp++;
-                                        ck = new_token(
-                                                INTCONST, start, rcp - start);
+                                        ck = new_token(ICON, start, rcp - start);
                                         ck->value = n;
                                         cp = rcp;
                                         goto next;
                                 } else {
                                         // decimal
-                                        for (n = *start - '0';
-                                             map[*rcp] & DIGIT;) {
+                                        for (n = *start - '0'; map[*rcp] & DIGIT;) {
                                                 int d = *rcp++ - '0';
                                                 n = n * 10 + d;
                                         }
-                                        if (*rcp == '.' || *rcp == 'e' ||
-                                            *rcp == 'E') {
+                                        if (*rcp == '.' || *rcp == 'e' || *rcp == 'E') {
                                                 floatconst(&rcp);
-                                                ck = new_token(FLOATCONST,
-                                                               start,
-                                                               rcp - start);
+                                                ck = new_token(FCON, start, rcp - start);
                                                 ck->value = n;
                                                 cp = rcp;
                                                 goto next;
                                         }
                                         if ((*rcp == 'u' || *rcp == 'U') &&
-                                                    (rcp[1] == 'l' ||
-                                                     rcp[1] == 'L') ||
+                                                    (rcp[1] == 'l' || rcp[1] == 'L') ||
                                             (*rcp == 'l' || *rcp == 'L') &&
-                                                    (rcp[1] == 'u' ||
-                                                     rcp[1] == 'U')) {
+                                                    (rcp[1] == 'u' || rcp[1] == 'U')) {
                                                 rcp += 2;
                                         }
                                         if (*rcp == 'u' || *rcp == 'U') {
@@ -465,8 +442,7 @@ struct Token *scan(char *cp) {
                                         if (*rcp == 'l' || *rcp == 'L') {
                                                 rcp++;
                                         }
-                                        ck = new_token(
-                                                INTCONST, start, rcp - start);
+                                        ck = new_token(ICON, start, rcp - start);
                                         ck->value = n;
                                         cp = rcp;
                                         goto next;
@@ -483,8 +459,7 @@ struct Token *scan(char *cp) {
                                 if ((map[*rcp] & DIGIT)) {
                                         char *start = --rcp;
                                         floatconst(&rcp);
-                                        ck = new_token(
-                                                FLOATCONST, start, rcp - start);
+                                        ck = new_token(FCON, start, rcp - start);
                                         cp = rcp;
                                         goto next;
                                 }
@@ -510,7 +485,7 @@ struct Token *scan(char *cp) {
                                         rcp++;
                                 }
                                 rcp++;
-                                ck = new_token(CHARCONST, start, rcp - start);
+                                ck = new_token(CCON, start, rcp - start);
                                 cp = rcp;
                                 goto next;
                         }
@@ -530,88 +505,74 @@ struct Token *scan(char *cp) {
                                         rcp++;
                                 }
                                 rcp++;
-                                ck = new_token(STRCONST, start, rcp - start);
+                                ck = new_token(SCON, start, rcp - start);
                                 cp = rcp;
                                 goto next;
                         }
                         case 'a':
-                                if (rcp[0] == 'u' && rcp[1] == 't' &&
-                                    rcp[2] == 'o' &&
+                                if (rcp[0] == 'u' && rcp[1] == 't' && rcp[2] == 'o' &&
                                     !(map[rcp[3]] & (DIGIT | LETTER))) {
                                         HANDLE_TOKEN(AUTO, 3);
                                 }
                                 goto id;
                         case 'b':
-                                if (rcp[0] == 'r' && rcp[1] == 'e' &&
-                                    rcp[2] == 'a' && rcp[3] == 'k' &&
-                                    !(map[rcp[4]] & (DIGIT | LETTER))) {
+                                if (rcp[0] == 'r' && rcp[1] == 'e' && rcp[2] == 'a' &&
+                                    rcp[3] == 'k' && !(map[rcp[4]] & (DIGIT | LETTER))) {
                                         HANDLE_TOKEN(BREAK, 4);
                                 }
                                 goto id;
                         case 'c':
-                                if (rcp[0] == 'a' && rcp[1] == 's' &&
-                                    rcp[2] == 'e' &&
+                                if (rcp[0] == 'a' && rcp[1] == 's' && rcp[2] == 'e' &&
                                     !(map[rcp[3]] & (DIGIT | LETTER))) {
                                         HANDLE_TOKEN(CASE, 3);
                                 }
-                                if (rcp[0] == 'h' && rcp[1] == 'a' &&
-                                    rcp[2] == 'r' &&
+                                if (rcp[0] == 'h' && rcp[1] == 'a' && rcp[2] == 'r' &&
                                     !(map[rcp[3]] & (DIGIT | LETTER))) {
                                         HANDLE_TOKEN(CHAR, 3);
                                 }
-                                if (rcp[0] == 'o' && rcp[1] == 'n' &&
-                                    rcp[2] == 's' && rcp[3] == 't' &&
-                                    !(map[rcp[4]] & (DIGIT | LETTER))) {
+                                if (rcp[0] == 'o' && rcp[1] == 'n' && rcp[2] == 's' &&
+                                    rcp[3] == 't' && !(map[rcp[4]] & (DIGIT | LETTER))) {
                                         HANDLE_TOKEN(CONST, 4);
                                 }
-                                if (rcp[0] == 'o' && rcp[1] == 'n' &&
-                                    rcp[2] == 't' && rcp[3] == 'i' &&
-                                    rcp[4] == 'n' && rcp[5] == 'u' &&
-                                    rcp[6] == 'e' &&
-                                    !(map[rcp[7]] & (DIGIT | LETTER))) {
+                                if (rcp[0] == 'o' && rcp[1] == 'n' && rcp[2] == 't' &&
+                                    rcp[3] == 'i' && rcp[4] == 'n' && rcp[5] == 'u' &&
+                                    rcp[6] == 'e' && !(map[rcp[7]] & (DIGIT | LETTER))) {
                                         HANDLE_TOKEN(CONTINUE, 7);
                                 }
                                 goto id;
                         case 'd':
-                                if (rcp[0] == 'e' && rcp[1] == 'f' &&
-                                    rcp[2] == 'a' && rcp[3] == 'u' &&
-                                    rcp[4] == 'l' && rcp[5] == 't' &&
+                                if (rcp[0] == 'e' && rcp[1] == 'f' && rcp[2] == 'a' &&
+                                    rcp[3] == 'u' && rcp[4] == 'l' && rcp[5] == 't' &&
                                     !(map[rcp[6]] & (DIGIT | LETTER))) {
                                         HANDLE_TOKEN(DEFAULT, 6);
                                 }
-                                if (rcp[0] == 'o' && rcp[1] == 'u' &&
-                                    rcp[2] == 'b' && rcp[3] == 'l' &&
-                                    rcp[4] == 'e' &&
+                                if (rcp[0] == 'o' && rcp[1] == 'u' && rcp[2] == 'b' &&
+                                    rcp[3] == 'l' && rcp[4] == 'e' &&
                                     !(map[rcp[5]] & (DIGIT | LETTER))) {
                                         HANDLE_TOKEN(DOUBLE, 5);
                                 }
-                                if (rcp[0] == 'o' &&
-                                    !(map[rcp[1]] & (DIGIT | LETTER))) {
+                                if (rcp[0] == 'o' && !(map[rcp[1]] & (DIGIT | LETTER))) {
                                         HANDLE_TOKEN(DO, 1);
                                 }
                                 goto id;
                         case 'e':
-                                if (rcp[0] == 'l' && rcp[1] == 's' &&
-                                    rcp[2] == 'e' &&
+                                if (rcp[0] == 'l' && rcp[1] == 's' && rcp[2] == 'e' &&
                                     !(map[rcp[3]] & (DIGIT | LETTER))) {
                                         HANDLE_TOKEN(ELSE, 3);
                                 }
-                                if (rcp[0] == 'n' && rcp[1] == 'u' &&
-                                    rcp[2] == 'm' &&
+                                if (rcp[0] == 'n' && rcp[1] == 'u' && rcp[2] == 'm' &&
                                     !(map[rcp[3]] & (DIGIT | LETTER))) {
                                         HANDLE_TOKEN(ENUM, 3);
                                 }
-                                if (rcp[0] == 'x' && rcp[1] == 't' &&
-                                    rcp[2] == 'e' && rcp[3] == 'r' &&
-                                    rcp[4] == 'n' &&
+                                if (rcp[0] == 'x' && rcp[1] == 't' && rcp[2] == 'e' &&
+                                    rcp[3] == 'r' && rcp[4] == 'n' &&
                                     !(map[rcp[5]] & (DIGIT | LETTER))) {
                                         HANDLE_TOKEN(EXTERN, 5);
                                 }
                                 goto id;
                         case 'f':
-                                if (rcp[0] == 'l' && rcp[1] == 'o' &&
-                                    rcp[2] == 'a' && rcp[3] == 't' &&
-                                    !(map[rcp[4]] & (DIGIT | LETTER))) {
+                                if (rcp[0] == 'l' && rcp[1] == 'o' && rcp[2] == 'a' &&
+                                    rcp[3] == 't' && !(map[rcp[4]] & (DIGIT | LETTER))) {
                                         HANDLE_TOKEN(FLOAT, 4);
                                 }
                                 if (rcp[0] == 'o' && rcp[1] == 'r' &&
@@ -620,125 +581,104 @@ struct Token *scan(char *cp) {
                                 }
                                 goto id;
                         case 'g':
-                                if (rcp[0] == 'o' && rcp[1] == 't' &&
-                                    rcp[2] == 'o' &&
+                                if (rcp[0] == 'o' && rcp[1] == 't' && rcp[2] == 'o' &&
                                     !(map[rcp[3]] & (DIGIT | LETTER))) {
                                         HANDLE_TOKEN(GOTO, 3);
                                 }
                                 goto id;
                         case 'l':
-                                if (rcp[0] == 'o' && rcp[1] == 'n' &&
-                                    rcp[2] == 'g' &&
+                                if (rcp[0] == 'o' && rcp[1] == 'n' && rcp[2] == 'g' &&
                                     !(map[rcp[3]] & (DIGIT | LETTER))) {
                                         HANDLE_TOKEN(LONG, 3);
                                 }
                                 goto id;
                         case 'r':
-                                if (rcp[0] == 'e' && rcp[1] == 'g' &&
-                                    rcp[2] == 'i' && rcp[3] == 's' &&
-                                    rcp[4] == 't' && rcp[5] == 'e' &&
-                                    rcp[6] == 'r' &&
-                                    !(map[rcp[7]] & (DIGIT | LETTER))) {
+                                if (rcp[0] == 'e' && rcp[1] == 'g' && rcp[2] == 'i' &&
+                                    rcp[3] == 's' && rcp[4] == 't' && rcp[5] == 'e' &&
+                                    rcp[6] == 'r' && !(map[rcp[7]] & (DIGIT | LETTER))) {
                                         HANDLE_TOKEN(REGISTER, 7);
                                 }
-                                if (rcp[0] == 'e' && rcp[1] == 't' &&
-                                    rcp[2] == 'u' && rcp[3] == 'r' &&
-                                    rcp[4] == 'n' &&
+                                if (rcp[0] == 'e' && rcp[1] == 't' && rcp[2] == 'u' &&
+                                    rcp[3] == 'r' && rcp[4] == 'n' &&
                                     !(map[rcp[5]] & (DIGIT | LETTER))) {
                                         HANDLE_TOKEN(RETURN, 5);
                                 }
                                 goto id;
                         case 's':
-                                if (rcp[0] == 'h' && rcp[1] == 'o' &&
-                                    rcp[2] == 'r' && rcp[3] == 't' &&
-                                    !(map[rcp[4]] & (DIGIT | LETTER))) {
+                                if (rcp[0] == 'h' && rcp[1] == 'o' && rcp[2] == 'r' &&
+                                    rcp[3] == 't' && !(map[rcp[4]] & (DIGIT | LETTER))) {
                                         HANDLE_TOKEN(SHORT, 4);
                                 }
-                                if (rcp[0] == 'i' && rcp[1] == 'g' &&
-                                    rcp[2] == 'n' && rcp[3] == 'e' &&
-                                    rcp[4] == 'd' &&
+                                if (rcp[0] == 'i' && rcp[1] == 'g' && rcp[2] == 'n' &&
+                                    rcp[3] == 'e' && rcp[4] == 'd' &&
                                     !(map[rcp[5]] & (DIGIT | LETTER))) {
                                         HANDLE_TOKEN(SIGNED, 5);
                                 }
-                                if (rcp[0] == 'i' && rcp[1] == 'z' &&
-                                    rcp[2] == 'e' && rcp[3] == 'o' &&
-                                    rcp[4] == 'f' &&
+                                if (rcp[0] == 'i' && rcp[1] == 'z' && rcp[2] == 'e' &&
+                                    rcp[3] == 'o' && rcp[4] == 'f' &&
                                     !(map[rcp[5]] & (DIGIT | LETTER))) {
                                         HANDLE_TOKEN(SIZEOF, 5);
                                 }
-                                if (rcp[0] == 't' && rcp[1] == 'a' &&
-                                    rcp[2] == 't' && rcp[3] == 'i' &&
-                                    rcp[4] == 'c' &&
+                                if (rcp[0] == 't' && rcp[1] == 'a' && rcp[2] == 't' &&
+                                    rcp[3] == 'i' && rcp[4] == 'c' &&
                                     !(map[rcp[5]] & (DIGIT | LETTER))) {
                                         HANDLE_TOKEN(STATIC, 5);
                                 }
-                                if (rcp[0] == 't' && rcp[1] == 'r' &&
-                                    rcp[2] == 'u' && rcp[3] == 'c' &&
-                                    rcp[4] == 't' &&
+                                if (rcp[0] == 't' && rcp[1] == 'r' && rcp[2] == 'u' &&
+                                    rcp[3] == 'c' && rcp[4] == 't' &&
                                     !(map[rcp[5]] & (DIGIT | LETTER))) {
                                         HANDLE_TOKEN(STRUCT, 5);
                                 }
-                                if (rcp[0] == 'w' && rcp[1] == 'i' &&
-                                    rcp[2] == 't' && rcp[3] == 'c' &&
-                                    rcp[4] == 'h' &&
+                                if (rcp[0] == 'w' && rcp[1] == 'i' && rcp[2] == 't' &&
+                                    rcp[3] == 'c' && rcp[4] == 'h' &&
                                     !(map[rcp[5]] & (DIGIT | LETTER))) {
                                         HANDLE_TOKEN(SWITCH, 5);
                                 }
                                 goto id;
                         case 't':
-                                if (rcp[0] == 'y' && rcp[1] == 'p' &&
-                                    rcp[2] == 'e' && rcp[3] == 'd' &&
-                                    rcp[4] == 'e' && rcp[5] == 'f' &&
+                                if (rcp[0] == 'y' && rcp[1] == 'p' && rcp[2] == 'e' &&
+                                    rcp[3] == 'd' && rcp[4] == 'e' && rcp[5] == 'f' &&
                                     !(map[rcp[6]] & (DIGIT | LETTER))) {
                                         HANDLE_TOKEN(TYPEDEF, 6);
                                 }
                                 goto id;
                         case 'u':
-                                if (rcp[0] == 'n' && rcp[1] == 'i' &&
-                                    rcp[2] == 'o' && rcp[3] == 'n' &&
-                                    !(map[rcp[4]] & (DIGIT | LETTER))) {
+                                if (rcp[0] == 'n' && rcp[1] == 'i' && rcp[2] == 'o' &&
+                                    rcp[3] == 'n' && !(map[rcp[4]] & (DIGIT | LETTER))) {
                                         HANDLE_TOKEN(UNION, 4);
                                 }
-                                if (rcp[0] == 'n' && rcp[1] == 's' &&
-                                    rcp[2] == 'i' && rcp[3] == 'g' &&
-                                    rcp[4] == 'n' && rcp[5] == 'e' &&
-                                    rcp[6] == 'd' &&
-                                    !(map[rcp[7]] & (DIGIT | LETTER))) {
+                                if (rcp[0] == 'n' && rcp[1] == 's' && rcp[2] == 'i' &&
+                                    rcp[3] == 'g' && rcp[4] == 'n' && rcp[5] == 'e' &&
+                                    rcp[6] == 'd' && !(map[rcp[7]] & (DIGIT | LETTER))) {
                                         HANDLE_TOKEN(UNSIGNED, 7);
                                 }
                                 goto id;
                         case 'v':
-                                if (rcp[0] == 'o' && rcp[1] == 'i' &&
-                                    rcp[2] == 'd' &&
+                                if (rcp[0] == 'o' && rcp[1] == 'i' && rcp[2] == 'd' &&
                                     !(map[rcp[3]] & (DIGIT | LETTER))) {
                                         HANDLE_TOKEN(VOID, 3);
                                 }
-                                if (rcp[0] == 'o' && rcp[1] == 'l' &&
-                                    rcp[2] == 'a' && rcp[3] == 't' &&
-                                    rcp[4] == 'i' && rcp[5] == 'l' &&
-                                    rcp[6] == 'e' &&
-                                    !(map[rcp[7]] & (DIGIT | LETTER))) {
+                                if (rcp[0] == 'o' && rcp[1] == 'l' && rcp[2] == 'a' &&
+                                    rcp[3] == 't' && rcp[4] == 'i' && rcp[5] == 'l' &&
+                                    rcp[6] == 'e' && !(map[rcp[7]] & (DIGIT | LETTER))) {
                                         HANDLE_TOKEN(VOLATILE, 7);
                                 }
                                 goto id;
                         case 'w':
-                                if (rcp[0] == 'h' && rcp[1] == 'i' &&
-                                    rcp[2] == 'l' && rcp[3] == 'e' &&
-                                    !(map[rcp[4]] & (DIGIT | LETTER))) {
+                                if (rcp[0] == 'h' && rcp[1] == 'i' && rcp[2] == 'l' &&
+                                    rcp[3] == 'e' && !(map[rcp[4]] & (DIGIT | LETTER))) {
                                         HANDLE_TOKEN(WHILE, 4);
                                 }
                                 goto id;
                         case '_': goto id;
                         case '#':
-                                if (rcp[0] == 'i' && rcp[1] == 'n' &&
-                                    rcp[2] == 'c' && rcp[3] == 'l' &&
-                                    rcp[4] == 'u' && rcp[5] == 'd' &&
+                                if (rcp[0] == 'i' && rcp[1] == 'n' && rcp[2] == 'c' &&
+                                    rcp[3] == 'l' && rcp[4] == 'u' && rcp[5] == 'd' &&
                                     rcp[6] == 'e' && rcp[7] == ' ') {
                                         HANDLE_TOKEN(INCLUDE, 7);
                                 }
-                                if (rcp[0] == 'd' && rcp[1] == 'e' &&
-                                    rcp[2] == 'f' && rcp[3] == 'i' &&
-                                    rcp[4] == 'n' && rcp[5] == 'e' &&
+                                if (rcp[0] == 'd' && rcp[1] == 'e' && rcp[2] == 'f' &&
+                                    rcp[3] == 'i' && rcp[4] == 'n' && rcp[5] == 'e' &&
                                     rcp[6] == ' ') {
                                         HANDLE_TOKEN(DEFINE, 6);
                                 }
@@ -747,10 +687,7 @@ struct Token *scan(char *cp) {
                                       "line %d\n",
                                       rcp - 1,
                                       LINE);
-                        default:
-                                error("Unhandled character: %c in line %d\n",
-                                      *(rcp - 1),
-                                      LINE);
+                        default: error("Unhandled character: %c in line %d\n", *(rcp - 1), LINE);
                 }
         }
 exit_loop:
@@ -805,29 +742,21 @@ void printTokens(struct Token *head, FILE *outfile) {
 
 void printTokenKind(enum TokenKind kind, FILE *output) {
         const char *tokenStrs[] = {
-                "LT",        "GT",           "LEQ",          "GEQ",
-                "LSHIFT",    "RSHIFT",       "DEREF",        "DECR",
-                "EQ",        "NEQ",          "ADD",          "SUB",
-                "MUL",       "DIV",          "MOD",          "ADDASSIGN",
-                "SUBASSIGN", "MULASSIGN",    "DIVASSIGN",    "MODASSIGN",
-                "OROR",      "ANDAND",       "INCR",         "EOI",
-                "IF",        "INT",          "OBR",          "CBR",
-                "OCBR",      "CCBR",         "OPAR",         "CPAR",
-                "SEMIC",     "COMMA",        "TILDA",        "AND",
-                "OR",        "XOR",          "NOT",          "ANDASSIGN",
-                "ORASSIGN",  "XORASSIGN",    "NOTASSIGN",    "STRGIZE",
-                "TKPASTE",   "ASSIGN",       "QMARK",        "IDENT",
-                "INTCONST",  "FLOATCONST",   "STRCONST",     "CHARCONST",
-                "ELLIPSIS",  "AUTO",         "CASE",         "CHAR",
-                "CONST",     "CONTINUE",     "DEFAULT",      "DO",
-                "DOUBLE",    "ELSE",         "ENUM",         "EXTERN",
-                "FLOAT",     "FOR",          "GOTO",         "LONG",
-                "REGISTER",  "RETURN",       "SHORT",        "SIGNED",
-                "SIZEOF",    "STATIC",       "STRUCT",       "SWITCH",
-                "TYPEDEF",   "UNION",        "UNSIGNED",     "VOID",
-                "VOLATILE",  "WHILE",        "DOT",          "BREAK",
-                "COLON",     "RSHASSIGN", "LSHASSIGN", "INCLUDE",
-                "DEFINE"};
+                "LT",        "GT",         "LEQ",       "GEQ",       "LSHIFT",    "RSHIFT",
+                "DEREF",     "DECR",       "EQ",        "NEQ",       "ADD",       "SUB",
+                "MUL",       "DIV",        "MOD",       "ADDASSIGN", "SUBASSIGN", "MULASSIGN",
+                "DIVASSIGN", "MODASSIGN",  "OROR",      "ANDAND",    "INCR",      "EOI",
+                "IF",        "INT",        "OBR",       "CBR",       "OCBR",      "CCBR",
+                "OPAR",      "CPAR",       "SEMIC",     "COMMA",     "TILDA",     "AND",
+                "OR",        "XOR",        "NOT",       "ANDASSIGN", "ORASSIGN",  "XORASSIGN",
+                "NOTASSIGN", "STRGIZE",    "TKPASTE",   "ASSIGN",    "QMARK",     "IDENT",
+                "ICON",      "FCON", "SCON",  "CCON", "ELLIPSIS",  "AUTO",
+                "CASE",      "CHAR",       "CONST",     "CONTINUE",  "DEFAULT",   "DO",
+                "DOUBLE",    "ELSE",       "ENUM",      "EXTERN",    "FLOAT",     "FOR",
+                "GOTO",      "LONG",       "REGISTER",  "RETURN",    "SHORT",     "SIGNED",
+                "SIZEOF",    "STATIC",     "STRUCT",    "SWITCH",    "TYPEDEF",   "UNION",
+                "UNSIGNED",  "VOID",       "VOLATILE",  "WHILE",     "DOT",       "BREAK",
+                "COLON",     "RSHASSIGN",  "LSHASSIGN", "INCLUDE",   "DEFINE"};
         size_t numTokenStrs = sizeof(tokenStrs) / sizeof(tokenStrs[0]);
 
         if (kind >= 0 && kind < numTokenStrs) {

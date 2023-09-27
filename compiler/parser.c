@@ -631,12 +631,12 @@ void postfixoperator() {
 void primaryexpr() {
         switch (TGETKIND(_CTK)) {
                 case IDENT:
-                case INTCONST:
-                case STRCONST:
-                case CHARCONST:
-                case FLOATCONST:
-                case DOUBLECONST:
-                case LONGDOUBLECONST: consume("", TGETKIND(_CTK)); break;
+                case ICON:
+                case SCON:
+                case CCON:
+                case FCON:
+                case DCON:
+                case LDCON: consume("", TGETKIND(_CTK)); break;
                 case OPAR:
                         consume("", OPAR);
                         expr();
@@ -652,9 +652,9 @@ void primaryexpr() {
 //          | enumeration-constant;
 void constant() {
         switch (TGETKIND(_CTK)) {
-                case INTCONST:
-                case CHARCONST:
-                case FLOATCONST: consume("", TGETKIND(_CTK)); break;
+                case ICON:
+                case CCON:
+                case FCON: consume("", TGETKIND(_CTK)); break;
                 default: error("unknown constant: %s\n", token_names[TGETKIND(_CTK)]);
         }
 }

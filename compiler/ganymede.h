@@ -51,7 +51,7 @@ enum Kind {
         /* label stmt */
         CASE, DEFAULT,
         /* consts */
-        IDENT, INTCONST, FLOATCONST, DOUBLECONST, LONGDOUBLECONST, STRCONST, CHARCONST,
+        IDENT, ICON, FCON, DCON, LDCON, SCON, CCON,
         /* preprocess */
         INCLUDE, STRGIZE,  // #
         TKPASTE,  // ##
