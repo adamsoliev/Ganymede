@@ -117,18 +117,20 @@ extern FILE *outfile;
 extern char *limit;
 extern uint64_t *tokens;
 extern uint64_t TKARRAYSIZE;
-extern uint64_t INDEX;
+extern uint64_t TKSINDEX;
 extern char *token_names[];
 extern ht *symtable;  // key: name, value: struct
 struct symbol {
         char *name;
 };
-// union {
-//         uint64_t icon;
-//         long double fcon;
-//         char *scon;
-//         char ccon;
-// } con;
+extern union con **constants;
+extern uint64_t CONSIZE;
+union con {
+        int64_t icon;
+        long double fcon;
+        char *scon;
+        char ccon;
+};
 void error(char *fmt, ...);
 void scan(char *stream);
 

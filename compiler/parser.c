@@ -635,7 +635,8 @@ void primaryexpr() {
                 case STRCONST:
                 case CHARCONST:
                 case FLOATCONST:
-                case DOUBLECONST: consume("", TGETKIND(_CTK)); break;
+                case DOUBLECONST:
+                case LONGDOUBLECONST: consume("", TGETKIND(_CTK)); break;
                 case OPAR:
                         consume("", OPAR);
                         expr();

@@ -128,11 +128,32 @@ int main(int argc, char **argv) {
                 }                                    \
         }
         scan(input);
-        // hti it = ht_iterator(symtable);
-        // while (ht_next(&it)) {
-        //         printf("%s \n", it.key);
-        // }
+
+        /* check symbol table */
+        hti it = ht_iterator(symtable);
+        while (ht_next(&it)) {
+                printf("%s \n", it.key);
+        }
         // RUNTEST("scan", printTokens(tokens, outfile));
+
+        /* check constants table */
+        for (int i = 0; i < TKSINDEX; i++) {
+                uint64_t kind = TGETKIND(tokens[i]);
+                if (kind == INTCONST || kind == FLOATCONST || kind == DOUBLECONST ||
+                    kind == LONGDOUBLECONST || kind == STRCONST || kind == CHARCONST) {
+                        uint64_t index = TGETISN(tokens[i]);
+                        if (kind == INTCONST)
+                                printf("%ld\n", constants[index]->icon);
+                        else if (kind == FLOATCONST || kind == DOUBLECONST ||
+                                 kind == LONGDOUBLECONST)
+                                printf("%Lf\n", constants[index]->fcon);
+                        else if (kind == STRCONST)
+                                printf("%s\n", constants[index]->scon);
+                        else {
+                                printf("%c\n", constants[index]->ccon);
+                        }
+                }
+        }
         parse();
 
         return 0;
