@@ -21,11 +21,11 @@ typedef struct ht ht;
   NOTE: if block-commented, relative order matters 
 */
 enum Kind {
-        /* storage-class specifiers */
+        /* storage-class specifiers - auto & register are syntactically recognized but semantically ignored */
         NONE, TYPEDEF = 1, EXTERN, STATIC, AUTO, REGISTER,
-        /* type-qualifier */
+        /* type-qualifier - restrict & volatile are syntactically recognized but semantically ignored */
         CONST, RESTRICT, VOLATILE,
-        /* func-specifier */
+        /* func-specifier - syntactically recognized but semantically ignored */
         INLINE,
         /* type-specifier */
         VOID, CHAR, SHORT, INT, LONG, FLOAT, DOUBLE, SIGNED, UNSIGNED, STRUCT, UNION, ENUM,
@@ -134,13 +134,46 @@ union con {
 void error(char *fmt, ...);
 void scan(char *stream);
 
-// parser
+// parser.c
 void parse(void);
 
 struct scope {
         struct scope *next;
         ht *vars;  // key: name, value: declspec
 };
+
+// clang-format off
+// basic types
+#define TYPE_BMASK        0x000000000000000f  // 1111
+#define TYPE_VOID         0x0000000000000001	// 0001
+#define TYPE_CHAR         0x0000000000000002	// 0010
+#define TYPE_INT          0x0000000000000003	// 0011
+#define TYPE_FLOAT        0x0000000000000004	// 0100
+#define TYPE_DOUBLE       0x0000000000000005	// 0101
+#define TYPE_STRUCT       0x0000000000000006	// 0110	
+#define TYPE_UNION        0x0000000000000007	// 0111		
+#define TYPE_ENUM         0x0000000000000008	// 1000		
+/* unused 0x0000000000000009 - 0x000000000000000f	*/
+
+#define TYPE_MMASK        0x00000000000000f0 // 1111,0000
+#define TYPE_SHORT        0x0000000000000010 // 0001,0000
+#define TYPE_LONG         0x0000000000000020 // 0010,0000 // long = long long
+#define TYPE_UNSIGNED     0x0000000000000040 // 0100,0000
+#define TYPE_SIGNED       0x0000000000000080 // 1000,0000
+
+#define TYPE_SMASK        0x0000000000000f00
+#define TYPE_TYPEDEF      0x0000000000000100
+#define TYPE_EXTERN       0x0000000000000200
+#define TYPE_STATIC       0x0000000000000400
+#define TYPE_CONST        0x0000000000000800
+// RESERVED               0x0000000000XXX000
+/* starting from the 4th byte, we will have operators as below */
+// END                    00
+// POINTER to T           01
+// ARRAY of T             10
+// FUNCTION returning T   11
+
+// clang-format on
 
 // hashmap.c
 typedef struct {
@@ -173,3 +206,10 @@ void ht_test(void);
 char *strdup(const char *s);
 
 #endif
+
+/*
+REPRESENTING TYPES
+bit-strings
+linkedlist
+
+*/
