@@ -8,6 +8,7 @@ uint64_t _CTK;
 uint64_t _INDEX = 0;
 /* if GLOBAL, first declarator is parsed upfront to diff funcdef */
 enum { GLOBAL = 1, LOCAL, PARAM } _cdecllevel;
+uint64_t ctype = 0;
 
 /* utility functions */
 static inline void consume(const char *msg, enum Kind kind) {
@@ -181,8 +182,24 @@ void initdeclaratorlist() {
 //                         | 'auto'
 //                         | 'register'
 void sclass() {
+        if ((ctype & TYPE_TYPEDEF) || (ctype & TYPE_EXTERN) || (ctype & TYPE_STATIC)) {
+                int line = TGETROW(_CTK);
+                error("Error: more than one storage-class specifier in line %d\n ", line);
+        }
+        /* 
+            TODO: 6.7.1.5
+        */
+
         enum Kind ctk = TGETKIND(_CTK);
-        if (ctk >= TYPEDEF && ctk <= REGISTER) consume("", ctk);
+        if (ctk >= TYPEDEF && ctk <= REGISTER) {
+                if (ctk == EXTERN)
+                        ctype |= TYPE_EXTERN;
+                else if (ctk == TYPEDEF)
+                        ctype |= TYPE_TYPEDEF;
+                else if (ctk == TYPEDEF)
+                        ctype |= TYPE_STATIC;
+                consume("", ctk);
+        }
 }
 
 // type-specifier = 'void'
