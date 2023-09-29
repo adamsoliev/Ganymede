@@ -80,6 +80,7 @@ void scan(char *cp) {
                                 if (*rcp == '*') {
                                         rcp++;
                                         while (rcp < limit) {
+                                                if (*rcp == '\n') LINE++;
                                                 if (*rcp == '*' && *(rcp + 1) == '/') {
                                                         rcp += 2;
                                                         break;
@@ -477,6 +478,8 @@ void scan(char *cp) {
                                                 con->ccon = '\"';
                                         else if (*(start + 2) == '?')
                                                 con->ccon = '\?';
+                                        else if (*(start + 2) == '0')
+                                                con->ccon = '\0';
                                         else
                                                 assert(0);
                                 } else {

@@ -183,16 +183,15 @@ void initdeclaratorlist() {
 //                         | 'auto'
 //                         | 'register'
 void sclass(uint64_t *type) {
-        if (((*type) & TYPE_TYPEDEF) || ((*type) & TYPE_EXTERN) || ((*type) & TYPE_STATIC)) {
-                int line = TGETROW(_CTK);
-                error("More than one storage-class specifier in line %d\n", line);
-        }
-        /* 
-            TODO: 6.7.1.5
-        */
-
         enum Kind ctk = TGETKIND(_CTK);
         if (ctk >= TYPEDEF && ctk <= REGISTER) {
+                if (((*type) & TYPE_TYPEDEF) || ((*type) & TYPE_EXTERN) ||
+                    ((*type) & TYPE_STATIC)) {
+                        int line = TGETROW(_CTK);
+                        error("More than one storage-class specifier in line %d\n", line);
+                }
+                /* TODO: 6.7.1.5 */
+
                 if (ctk == EXTERN)
                         (*type) |= TYPE_EXTERN;
                 else if (ctk == TYPEDEF)
@@ -217,13 +216,12 @@ void sclass(uint64_t *type) {
 //                | typedef-name
 void typespec(uint64_t *type) {
         enum Kind ctk = TGETKIND(_CTK);
-        // VOID, CHAR, SHORT, INT, LONG, FLOAT, DOUBLE, SIGNED, UNSIGNED, STRUCT, UNION, ENUM,
         if (ctk >= VOID && ctk <= ENUM) {
                 if (ctk == STRUCT || ctk == UNION) {
                         structorunionspec();
                 } else if (ctk == ENUM) {
                         enumspec();
-                } else if (ctk >= CHAR && ctk <= UNSIGNED) {
+                } else if (ctk >= VOID && ctk <= UNSIGNED) {
                         bool foundBase = (*type) & TYPE_BMASK;
                         bool foundModifier = (*type) & TYPE_MMASK;
                         bool s = (*type) & TYPE_SHORT;
