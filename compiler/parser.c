@@ -298,13 +298,16 @@ void typespec(uint64_t *type) {
 // type-qualifier = 'const'
 //                | 'restrict'
 //                | 'volatile'
-void typequal() {
+void typequal(uint64_t *type) {
         enum Kind ctk = TGETKIND(_CTK);
-        if (ctk >= CONST && ctk <= VOLATILE) consume("", ctk);
+        if (ctk >= CONST && ctk <= VOLATILE) {
+                if (ctk == CONST) (*type) |= TYPE_CONST;
+                consume("", ctk);
+        }
 }
 
 // function-specifier = 'inline'
-void funcspec() {
+void funcspec(uint64_t *type) {
         if (TGETKIND(_CTK) == INLINE) consume("", TGETKIND(_CTK));
 }
 
@@ -511,11 +514,11 @@ void specquallist() {
 
 // specifier-qualifier = type-specifier | type-qualifier
 void specqual() {
+        uint64_t type = 0; /* dummy */
         if (TGETKIND(_CTK) >= VOID && TGETKIND(_CTK) <= ENUM) {
-                uint64_t type = 0; /* dummy */
                 typespec(&type);
         } else if (TGETKIND(_CTK) >= CONST && TGETKIND(_CTK) <= VOLATILE) {
-                typequal();
+                typequal(&type);
         }
 }
 
@@ -530,7 +533,8 @@ void structdeclaratorlist() {
 
 // type-qualifier-list = type-qualifier {type-qualifier}
 void typequalifierlist() {
-        typequal();
+        uint64_t type = 0; /* dummy */
+        typequal(&type);
         while (TGETKIND(_CTK) >= CONST && TGETKIND(_CTK) <= VOLATILE) consume("", TGETKIND(_CTK));
 }
 
