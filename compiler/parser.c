@@ -8,7 +8,6 @@ uint64_t _CTK;
 uint64_t _INDEX = 0;
 /* if GLOBAL, first declarator is parsed upfront to diff funcdef */
 enum { GLOBAL = 1, LOCAL, PARAM } _cdecllevel;
-uint64_t ctype = 0;
 
 /* utility functions */
 static inline void consume(const char *msg, enum Kind kind) {
@@ -33,12 +32,12 @@ void directdeclarator();
 void pointer();
 void funcspec();
 void typequal();
-void typespec();
-void sclass();
+void typespec(uint64_t *);
+void sclass(uint64_t *);
 void declorstmt();
 void compstmt();
 void declarator();
-void declspec();
+uint64_t declspec();
 void declaration();
 void funcdef();
 void extdecl();
@@ -99,7 +98,7 @@ void funcdef() { compstmt(); }
 //             | ';'
 void declaration() {
         /* parse 1st declarator to diff function definition */
-        declspec();
+        uint64_t btype = declspec();
         declarator();
         /* TODO: resolve type info here since declarator collected it */
         if (_cdecllevel == GLOBAL && TGETKIND(_CTK) == OCBR) {
@@ -121,13 +120,15 @@ void declaration() {
 //                       | type-specifier
 //                       | type-qualifier
 //                       | function-specifier
-void declspec() {
+uint64_t declspec() {
+        uint64_t btype = 0;
         while (TGETKIND(_CTK) >= TYPEDEF && TGETKIND(_CTK) <= ENUM) {
-                sclass();
-                typespec();
-                typequal();
-                funcspec();
+                sclass(&btype);
+                typespec(&btype);
+                typequal(&btype);
+                funcspec(&btype);
         }
+        return btype;
 }
 
 // declarator = [pointer] direct-declarator {suffix-declarator}
@@ -181,10 +182,10 @@ void initdeclaratorlist() {
 //                         | 'static'
 //                         | 'auto'
 //                         | 'register'
-void sclass() {
-        if ((ctype & TYPE_TYPEDEF) || (ctype & TYPE_EXTERN) || (ctype & TYPE_STATIC)) {
+void sclass(uint64_t *type) {
+        if (((*type) & TYPE_TYPEDEF) || ((*type) & TYPE_EXTERN) || ((*type) & TYPE_STATIC)) {
                 int line = TGETROW(_CTK);
-                error("Error: more than one storage-class specifier in line %d\n ", line);
+                error("More than one storage-class specifier in line %d\n", line);
         }
         /* 
             TODO: 6.7.1.5
@@ -193,11 +194,11 @@ void sclass() {
         enum Kind ctk = TGETKIND(_CTK);
         if (ctk >= TYPEDEF && ctk <= REGISTER) {
                 if (ctk == EXTERN)
-                        ctype |= TYPE_EXTERN;
+                        (*type) |= TYPE_EXTERN;
                 else if (ctk == TYPEDEF)
-                        ctype |= TYPE_TYPEDEF;
+                        (*type) |= TYPE_TYPEDEF;
                 else if (ctk == TYPEDEF)
-                        ctype |= TYPE_STATIC;
+                        (*type) |= TYPE_STATIC;
                 consume("", ctk);
         }
 }
@@ -214,14 +215,80 @@ void sclass() {
 //                | struct-or-union-specifier
 //                | enum-specifier
 //                | typedef-name
-void typespec() {
+void typespec(uint64_t *type) {
         enum Kind ctk = TGETKIND(_CTK);
+        // VOID, CHAR, SHORT, INT, LONG, FLOAT, DOUBLE, SIGNED, UNSIGNED, STRUCT, UNION, ENUM,
         if (ctk >= VOID && ctk <= ENUM) {
                 if (ctk == STRUCT || ctk == UNION) {
                         structorunionspec();
                 } else if (ctk == ENUM) {
                         enumspec();
-                } else {
+                } else if (ctk >= CHAR && ctk <= UNSIGNED) {
+                        bool foundBase = (*type) & TYPE_BMASK;
+                        bool foundModifier = (*type) & TYPE_MMASK;
+                        bool s = (*type) & TYPE_SHORT;
+                        bool l = (*type) & TYPE_LONG;
+                        bool sg = (*type) & TYPE_SIGNED;
+                        bool usg = (*type) & TYPE_UNSIGNED;
+                        switch (ctk) {
+                                case VOID:
+                                        (*type) |= TYPE_VOID;
+                                        if (foundBase || foundModifier) {
+                                        tserror:
+                                                error("Too many type-specifiers in line %d\n",
+                                                      TGETROW(_CTK));
+                                                break;
+                                        }
+                                        break;
+                                case CHAR:
+                                        if (foundBase) goto tserror;
+                                        if (foundModifier && (s || l)) goto tserror;
+                                        (*type) |= TYPE_CHAR;
+                                        break;
+                                case INT:
+                                        if (foundBase) goto tserror;
+                                        if (foundModifier) {
+                                                if ((s && l) || (sg && usg)) goto tserror;
+                                        }
+                                        (*type) |= TYPE_INT;
+                                        break;
+                                case FLOAT:
+                                        if (foundBase || foundModifier) goto tserror;
+                                        (*type) |= TYPE_FLOAT;
+                                        break;
+                                case DOUBLE:
+                                        if (foundBase || (foundModifier && !l)) goto tserror;
+                                        (*type) |= TYPE_DOUBLE;
+                                        break;
+                                case SHORT:
+                                        if (foundBase && (((*type) & TYPE_BMASK) != TYPE_INT))
+                                                goto tserror;
+                                        if (foundModifier && l) goto tserror;
+                                        (*type) |= TYPE_SHORT;
+                                        break;
+                                case LONG:
+                                        if (foundBase &&
+                                            !(((*type) & TYPE_BMASK) & (TYPE_INT | TYPE_DOUBLE)))
+                                                goto tserror;
+                                        if (foundModifier && s) goto tserror;
+                                        (*type) |= TYPE_LONG;
+                                        break;
+                                case SIGNED:
+                                        if (foundBase &&
+                                            !(((*type) & TYPE_BMASK) & (TYPE_INT | TYPE_CHAR)))
+                                                goto tserror;
+                                        if (foundModifier && usg) goto tserror;
+                                        (*type) |= TYPE_SIGNED;
+                                        break;
+                                case UNSIGNED:
+                                        if (foundBase &&
+                                            !(((*type) & TYPE_BMASK) & (TYPE_INT | TYPE_CHAR)))
+                                                goto tserror;
+                                        if (foundModifier && sg) goto tserror;
+                                        (*type) |= TYPE_UNSIGNED;
+                                        break;
+                                default: assert(0);
+                        }
                         consume("", ctk);
                 }
         }
@@ -447,7 +514,8 @@ void specquallist() {
 // specifier-qualifier = type-specifier | type-qualifier
 void specqual() {
         if (TGETKIND(_CTK) >= VOID && TGETKIND(_CTK) <= ENUM) {
-                typespec();
+                uint64_t type = 0; /* dummy */
+                typespec(&type);
         } else if (TGETKIND(_CTK) >= CONST && TGETKIND(_CTK) <= VOLATILE) {
                 typequal();
         }

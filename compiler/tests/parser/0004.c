@@ -1,3 +1,19 @@
+// extern static int num = 23;
+// int void num = 23;
+// int char c = 'a';
+// short char cc = 'a';
+// long char cc = 'a';
+// float int num = 32;
+// short long int num = 32;
+// int float fnum = 23.4f;
+// char double fnum = 23.4f;
+// short float shfl;
+// long short int lshnum = 23;
+// long char c = '\n';
+// short long int shlnum = 32;
+// signed float fnum = 12.3f;
+// unsigned signed int num = 98;
+// signed unsigned int num = 98;
 
 int main() {
         int num = 23;
