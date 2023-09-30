@@ -221,8 +221,13 @@ void typespec(uint64_t *type) {
         enum Kind ctk = TGETKIND(_CTK);
         if (ctk >= VOID && ctk <= ENUM) {
                 if (ctk == STRUCT || ctk == UNION) {
+                        if (ctk == STRUCT)
+                                (*type) |= TYPE_STRUCT;
+                        else
+                                (*type) |= TYPE_UNION;
                         structorunionspec();
                 } else if (ctk == ENUM) {
+                        (*type) |= TYPE_ENUM;
                         enumspec();
                 } else if (ctk >= VOID && ctk <= UNSIGNED) {
                         bool foundBase = (*type) & TYPE_BMASK;
@@ -358,6 +363,7 @@ void directdeclarator(uint64_t *type, int level) {
                         // concrete function
                         consume("", OPAR);
 
+                        /* buid compound type */
                         (*type) |= (uint64_t)(TYPE_FUNC << (24 + level * 2));
                         level++;
 
