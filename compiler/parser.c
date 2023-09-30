@@ -101,10 +101,10 @@ void declaration() {
         /* parse 1st declarator to diff function definition */
         uint64_t type = declspec();
         declarator(&type, 0);
-        printf("Type: " BB_P64 "\n", BB64(type));
+        fprintf(outfile, "Type: " BB_P64 "\n", BB64(type));
         /* TODO: resolve type info here since declarator collected it */
         if (_cdecllevel == GLOBAL && TGETKIND(_CTK) == OCBR) {
-                /* TODO: funcdef if
+                /* TODO: ,funcdef if
                         0) level is global
                         1) 1st declarator specifies FUNCT
                         2) 1st declarator includes IDENT
@@ -113,7 +113,7 @@ void declaration() {
                 funcdef();
                 return;
         }
-        initdeclaratorlist();
+        initdeclaratorlist(&type);
         consume("missing ';' of declaration", SEMIC);
 }
 
@@ -130,6 +130,7 @@ uint64_t declspec() {
                 typequal(&btype);
                 funcspec(&btype);
         }
+        if (!(btype & TYPE_BMASK)) btype |= TYPE_INT;
         return btype;
 }
 
@@ -161,7 +162,7 @@ void declorstmt() {
 }
 
 // init-declarator-list = ['=' initializer] {',' declarator ['=' initializer]}
-void initdeclaratorlist() {
+void initdeclaratorlist(uint64_t *type) {
         /* first declarator is already parsed. now see if it has initializer */
         if (TGETKIND(_CTK) == ASSIGN) {
                 consume("", ASSIGN);
@@ -171,8 +172,9 @@ void initdeclaratorlist() {
         while (TGETKIND(_CTK) == COMMA && TGETKIND(_CTK) != EOI) {
                 consume("", COMMA);
                 /* TODO: you can't have params here, so ensure that path is never taken in this call path */
-                uint64_t type = 0;  // dummy
-                declarator(&type, 1);
+                /* type might have compound type bits set, which will be overwritten */
+                declarator(type, 0);
+                fprintf(outfile, "Type: " BB_P64 "\n", BB64(*type));
                 if (TGETKIND(_CTK) == ASSIGN) {
                         consume("", ASSIGN);
                         initializer();
@@ -199,7 +201,7 @@ void sclass(uint64_t *type) {
                         (*type) |= TYPE_EXTERN;
                 else if (ctk == TYPEDEF)
                         (*type) |= TYPE_TYPEDEF;
-                else if (ctk == TYPEDEF)
+                else if (ctk == STATIC)
                         (*type) |= TYPE_STATIC;
                 consume("", ctk);
         }
@@ -322,9 +324,12 @@ void funcspec(uint64_t *type) {
 // pointer = '*' [type-qualifier-list] [pointer]
 void pointer(uint64_t *type, int *level) {
         consume("", MUL);
+
         /* buid compound type */
         (*type) |= (uint64_t)(TYPE_PTR << (24 + (*level) * 2));
         (*level)++;
+
+        /* TODO: handle const pointer */
         if (TGETKIND(_CTK) >= CONST && TGETKIND(_CTK) <= VOLATILE) typequalifierlist();
         if (TGETKIND(_CTK) == MUL) {
                 pointer(type, level);

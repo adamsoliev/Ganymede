@@ -129,30 +129,30 @@ int main(int argc, char **argv) {
         }
         scan(input);
 
-        /* check symbol table */
-        hti it = ht_iterator(symtable);
-        while (ht_next(&it)) {
-                printf("%s \n", it.key);
-        }
-        // RUNTEST("scan", printTokens(tokens, outfile));
+        // /* check symbol table */
+        // hti it = ht_iterator(symtable);
+        // while (ht_next(&it)) {
+        //         printf("%s \n", it.key);
+        // }
+        // // RUNTEST("scan", printTokens(tokens, outfile));
 
-        /* check constants table */
-        for (int i = 0; i < TKSINDEX; i++) {
-                uint64_t kind = TGETKIND(tokens[i]);
-                if (kind == ICON || kind == FCON || kind == DCON || kind == LDCON || kind == SCON ||
-                    kind == CCON) {
-                        uint64_t index = TGETISN(tokens[i]);
-                        if (kind == ICON)
-                                printf("%ld\n", constants[index]->icon);
-                        else if (kind == FCON || kind == DCON || kind == LDCON)
-                                printf("%Lf\n", constants[index]->fcon);
-                        else if (kind == SCON)
-                                printf("%s\n", constants[index]->scon);
-                        else {
-                                printf("%c\n", constants[index]->ccon);
-                        }
-                }
-        }
+        // /* check constants table */
+        // for (int i = 0; i < TKSINDEX; i++) {
+        //         uint64_t kind = TGETKIND(tokens[i]);
+        //         if (kind == ICON || kind == FCON || kind == DCON || kind == LDCON || kind == SCON ||
+        //             kind == CCON) {
+        //                 uint64_t index = TGETISN(tokens[i]);
+        //                 if (kind == ICON)
+        //                         printf("%ld\n", constants[index]->icon);
+        //                 else if (kind == FCON || kind == DCON || kind == LDCON)
+        //                         printf("%Lf\n", constants[index]->fcon);
+        //                 else if (kind == SCON)
+        //                         printf("%s\n", constants[index]->scon);
+        //                 else {
+        //                         printf("%c\n", constants[index]->ccon);
+        //                 }
+        //         }
+        // }
         parse();
 
         return 0;
