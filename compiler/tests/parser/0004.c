@@ -264,20 +264,20 @@ union {
 
 int queens(), print();
 
-// int* a[10];                               // a is an array of pointer to int
-// int (*a)[10];                             // a is a pointer to an array of int
-// int* ff();                                // f is a function returning a pointer to int
-// int (*f)();                               // f is a pointer to a function returning int
-// const int* p;                             // p is a non-const pointer to const int
-// int const* p;                             // same as above
-// int* const p;                             // p is a const pointer to non-const int
-// void (*fptr)(void);                       /* fptr is a pointer to a function that takes in
-//                                              no params and returns void */
-// int (*fptr)(int, void (*)(void));         /* fptr is a function pointer that takes in int and
-// //                                              pointer to the above function */
+int* a[10];                               // a is an array of pointer to int
+int (*a)[10];                             // a is a pointer to an array of int
+int* ff();                                // f is a function returning a pointer to int
+int (*f)();                               // f is a pointer to a function returning int
+const int* p;                             // p is a non-const pointer to const int
+int const* p;                             // same as above
+int* const p;                             // p is a const pointer to non-const int
+void (*fptr)(void);                       /* fptr is a pointer to a function that takes in
+                                             no params and returns void */
+int (*fptr)(int, void (*)(void));         /* fptr is a function pointer that takes in int and
+                                             pointer to the above function */
 // int(*(*ptr_to_ptr)(int, void (*)(void))); /* ptr_to_ptr is a pointer to a pointer
-// //                                              that points to the above function */
-// // void (*signal(int, void (*fp)(int)))(int);
+//                                              that points to the above function */
+// void (*signal(int, void (*fp)(int)))(int);
 
 // /*
 //     1. -----------------
