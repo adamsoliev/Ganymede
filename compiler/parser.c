@@ -6,6 +6,7 @@
 /* global variables */
 uint64_t _CTK;
 uint64_t _INDEX = 0;
+int _COMPTYPELEVEL = 1;
 /* if GLOBAL, first declarator is parsed upfront to diff funcdef */
 enum { GLOBAL = 1, LOCAL, PARAM } _cdecllevel;
 
@@ -98,8 +99,9 @@ void funcdef() { compstmt(); }
 //             | ';'
 void declaration() {
         /* parse 1st declarator to diff function definition */
-        uint64_t btype = declspec();
-        declarator();
+        uint64_t type = declspec();
+        declarator(&type, 0);
+        printf("Type: " BB_P64 "\n", BB64(type));
         /* TODO: resolve type info here since declarator collected it */
         if (_cdecllevel == GLOBAL && TGETKIND(_CTK) == OCBR) {
                 /* TODO: funcdef if
@@ -132,9 +134,9 @@ uint64_t declspec() {
 }
 
 // declarator = [pointer] direct-declarator {suffix-declarator}
-void declarator() {
-        if (TGETKIND(_CTK) == MUL) pointer();
-        directdeclarator();
+void declarator(uint64_t *type, int level) {
+        if (TGETKIND(_CTK) == MUL) pointer(type, &level);
+        directdeclarator(type, level);
 }
 
 // declaration-list = declaration {declaration}
@@ -169,7 +171,8 @@ void initdeclaratorlist() {
         while (TGETKIND(_CTK) == COMMA && TGETKIND(_CTK) != EOI) {
                 consume("", COMMA);
                 /* TODO: you can't have params here, so ensure that path is never taken in this call path */
-                declarator();
+                uint64_t type = 0;  // dummy
+                declarator(&type, 1);
                 if (TGETKIND(_CTK) == ASSIGN) {
                         consume("", ASSIGN);
                         initializer();
@@ -312,10 +315,15 @@ void funcspec(uint64_t *type) {
 }
 
 // pointer = '*' [type-qualifier-list] [pointer]
-void pointer() {
+void pointer(uint64_t *type, int *level) {
         consume("", MUL);
+        /* buid compound type */
+        (*type) |= (uint64_t)(TYPE_PTR << (24 + (*level) * 2));
+        (*level)++;
         if (TGETKIND(_CTK) >= CONST && TGETKIND(_CTK) <= VOLATILE) typequalifierlist();
-        if (TGETKIND(_CTK) == MUL) pointer();
+        if (TGETKIND(_CTK) == MUL) {
+                pointer(type, level);
+        }
 }
 
 /*
@@ -332,13 +340,13 @@ void pointer() {
 //                   | '[' assignment-expression ']'
 //                   | '(' parameter-type-list ')'
 //                   | '(' ')'
-void directdeclarator() {
+void directdeclarator(uint64_t *type, int level) {
         if (TGETKIND(_CTK) == IDENT)
                 consume("", IDENT);
         else if (TGETKIND(_CTK) == OPAR) {
                 // abstract
                 consume("", OPAR);
-                declarator();
+                declarator(type, level + 1);
                 consume("missing ')' of direct declarator", CPAR);
         } else if (TGETKIND(_CTK) == OBR)
                 ;
@@ -349,6 +357,10 @@ void directdeclarator() {
                 if (TGETKIND(_CTK) == OPAR) {
                         // concrete function
                         consume("", OPAR);
+
+                        (*type) |= (uint64_t)(TYPE_FUNC << (24 + level * 2));
+                        level++;
+
                         // params
                         if (TGETKIND(_CTK) >= VOID && TGETKIND(_CTK) <= ENUM) {
                                 if (TGETKIND(_CTK) == VOID)
@@ -360,6 +372,11 @@ void directdeclarator() {
                 } else {
                         // array
                         consume("", OBR);
+
+                        /* buid compound type */
+                        (*type) |= (uint64_t)(TYPE_ARRAY << (24 + level * 2));
+                        level++;
+
                         if (TGETKIND(_CTK) == MUL) {
                                 consume("", MUL);
                         } else if (TGETKIND(_CTK) == STATIC) {
@@ -501,7 +518,10 @@ void enumtor() {
 void typename() {
         specquallist();
         enum Kind ctk = TGETKIND(_CTK);
-        if (ctk == MUL || ctk == OPAR || ctk == OBR) declarator();
+        if (ctk == MUL || ctk == OPAR || ctk == OBR) {
+                uint64_t type = 0;  // dummy
+                declarator(&type, 1);
+        }
 }
 
 // specifier-qualifier-list = specifier-qualifier {specifier-qualifier}
@@ -514,7 +534,7 @@ void specquallist() {
 
 // specifier-qualifier = type-specifier | type-qualifier
 void specqual() {
-        uint64_t type = 0; /* dummy */
+        uint64_t type = 0;  // dummy
         if (TGETKIND(_CTK) >= VOID && TGETKIND(_CTK) <= ENUM) {
                 typespec(&type);
         } else if (TGETKIND(_CTK) >= CONST && TGETKIND(_CTK) <= VOLATILE) {
@@ -533,7 +553,7 @@ void structdeclaratorlist() {
 
 // type-qualifier-list = type-qualifier {type-qualifier}
 void typequalifierlist() {
-        uint64_t type = 0; /* dummy */
+        uint64_t type = 0;  // dummy
         typequal(&type);
         while (TGETKIND(_CTK) >= CONST && TGETKIND(_CTK) <= VOLATILE) consume("", TGETKIND(_CTK));
 }
@@ -559,9 +579,9 @@ void paramlist() {
 
 // parameter-declaration = declaration-specifiers [declarator | abstract-declarator]
 void paramdeclaration() {
-        declspec();
+        uint64_t type = declspec();
         /* NOTE: directdeclarator() parses abstract-declarator */
-        declarator();
+        declarator(&type, 1);
 }
 
 // struct-declarator = ':' constant-expression
@@ -572,7 +592,8 @@ void structdeclarator() {
                 constexpr();
                 return;
         }
-        declarator();
+        uint64_t type = 0;
+        declarator(&type, 1);
         if (TGETKIND(_CTK) == COLON) {
                 consume("", COLON);
                 constexpr();

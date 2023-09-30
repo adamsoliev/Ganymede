@@ -168,11 +168,10 @@ struct scope {
 #define TYPE_CONST        0x0000000000000800 // 1000,0000,0000
 // RESERVED               0x0000000000XXX000
 /* starting from the 4th byte, we will have operators as below */
-// END                    00
-// POINTER to T           01
-// ARRAY of T             10
-// FUNCTION returning T   11
-
+// END                    0x00
+#define TYPE_PTR          0x1  // 0001     to T
+#define TYPE_ARRAY        0x2  // 0010     of T
+#define TYPE_FUNC         0x3  // 0011     returning T
 // clang-format on
 
 // hashmap.c
