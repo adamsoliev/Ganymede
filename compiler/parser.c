@@ -173,6 +173,7 @@ void initdeclaratorlist(uint64_t *type) {
                 consume("", COMMA);
                 /* TODO: you can't have params here, so ensure that path is never taken in this call path */
                 /* type might have compound type bits set, which will be overwritten */
+                (*type) &= (0xffffff);
                 declarator(type, 0);
                 fprintf(outfile, "Type: " BB_P64 "\n", BB64(*type));
                 if (TGETKIND(_CTK) == ASSIGN) {

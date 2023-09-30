@@ -198,7 +198,7 @@ void* p;
 float f[128];
 int up[15], down[15], rows[8], x[8];
 char*** ptrPtrPtr;
-// int x[3][4], *y[3];
+int x[3][4], *y[3];
 
 int in[] = {10, -32, 1, 567, 3, 18, 1, -51, 789, 0};
 int out[] = {
