@@ -489,14 +489,14 @@ double convert(int is_fahr, double temp) {
         return is_fahr ? cels(temp) : fahr(temp);
 }
 
-// const int* ptr_to_constant;
-// int* const constant_ptr;
-// typedef int* int_ptr;
-// float fa[11], *afp[17];
-// extern int* x;
-// extern int y[];
-// extern int n;
-// extern int m;
+const int* ptr_to_constant;
+int* const constant_ptr;
+typedef int* int_ptr;
+float fa[11], *afp[17];
+extern int* x;
+extern int y[];
+extern int n;
+extern int m;
 // void fcompat(void) {
 //         int a[n][6][m];
 //         int(*p)[4][n + 1];
@@ -508,50 +508,50 @@ double convert(int is_fahr, double temp) {
 //         // compatible, but defined behavior only if
 //         // n == 6 and m == n+1
 // }
-// extern int n;
-// int A[n];                        // invalid: file scope VM
-// extern int (*p2)[n];             // invalid: file scope VLA
-// int B[100];                      // valid: file scope but not VM
-// void fvla(int m, int C[m][m]);   // valid: VLA with prototype scope
-// void fvla(int m, int C[m][m]) {  // valid: adjusted to auto pointer to VLA
-//         typedef int VLA[m][m];   // valid: block scope typedef VLA
-//         struct tag {
-//                 int (*y)[n];  // invalid: y not ordinary identifier
-//                 int z[n];     // invalid: z not ordinary identifier
-//         };
-//         int D[m];                // valid: auto VLA
-//         static int E[m];         // invalid: static block scope VLA
-//         extern int F[m];         // invalid: F has linkage and is VLA
-//         int(*s)[m];              // valid: auto pointer to VLA
-//         extern int(*r)[m];       // invalid: r has linkage and points to VLA
-//         static int(*q)[m] = &B;  // valid: q is a static block pointer to VLA
-// }
-// int f(void), *fip(), (*pfi)();
-// int (*apfi[3])(int* x, int* y);
+extern int n;
+int A[n];                        // invalid: file scope VM
+extern int (*p2)[n];             // invalid: file scope VLA
+int B[100];                      // valid: file scope but not VM
+void fvla(int m, int C[m][m]);   // valid: VLA with prototype scope
+void fvla(int m, int C[m][m]) {  // valid: adjusted to auto pointer to VLA
+        typedef int VLA[m][m];   // valid: block scope typedef VLA
+        struct tag {
+                int (*y)[n];  // invalid: y not ordinary identifier
+                int z[n];     // invalid: z not ordinary identifier
+        };
+        int D[m];                // valid: auto VLA
+        static int E[m];         // invalid: static block scope VLA
+        extern int F[m];         // invalid: F has linkage and is VLA
+        int(*s)[m];              // valid: auto pointer to VLA
+        extern int(*r)[m];       // invalid: r has linkage and points to VLA
+        static int(*q)[m] = &B;  // valid: q is a static block pointer to VLA
+}
+int f(void), *fip(), (*pfi)();
+int (*apfi[3])(int* x, int* y);
 
-// int (*fpfi(int (*)(long), int))(int, ...);
-// void addscalar(int n, int m, double a[n][n * m + 300], double x);
-// int main() {
-//         double b[4][308];
-//         addscalar(4, 2, b, 2.17);
-//         return 0;
-// }
-// void addscalar(int n, int m, double a[n][n * m + 300], double x) {
-//         for (int i = 0; i < n; i++)
-//                 for (int j = 0, k = n * m + 300; j < k; j++)
-//                         // a is a pointer to a VLA with n*m+300 elements
-//                         a[i][j] += x;
-// }
-// double maximum(int n, int m, double a[n][m]);
-// double maximum(int n, int m, double a[*][*]);
-// double maximum(int n, int m, double a[][*]);
-// double maximum(int n, int m, double a[][m]);
-// void f(double (*restrict a)[5]);
-// void f(double a[restrict][5]);
-// void f(double a[restrict 3][5]);
-// void f(double a[restrict static 3][5]);
+int (*fpfi(int (*)(long), int))(int, ...);
+void addscalar(int n, int m, double a[n][n * m + 300], double x);
+int main() {
+        double b[4][308];
+        addscalar(4, 2, b, 2.17);
+        return 0;
+}
+void addscalar(int n, int m, double a[n][n * m + 300], double x) {
+        for (int i = 0; i < n; i++)
+                for (int j = 0, k = n * m + 300; j < k; j++)
+                        // a is a pointer to a VLA with n*m+300 elements
+                        a[i][j] += x;
+}
+double maximum(int n, int m, double a[n][m]);
+double maximum(int n, int m, double a[*][*]);
+double maximum(int n, int m, double a[][*]);
+double maximum(int n, int m, double a[][m]);
+void f(double (*restrict a)[5]);
+void f(double a[restrict][5]);
+void f(double a[restrict 3][5]);
+void f(double a[restrict static 3][5]);
 
-// int x[] = {1, 3, 5};
+int x[] = {1, 3, 5};
 
 // int main(void) {
 //         if (*cp != burgundy) a = 23;
