@@ -283,7 +283,7 @@ BY 2 TO THE RIGHT SINCE THEY WRONGLY STARTED FROM THE 3RD */
 
 int* (*fptr2)(int, void (*)(void)); /* fptr2 = fptr1 */
 
-// void (*signal(int, void (*fp)(int)))(int);
+void (*signal(int, void (*fp)(int)))(int);
 
 // /*
 //     1. -----------------
@@ -322,95 +322,92 @@ int* (*fptr2)(int, void (*)(void)); /* fptr2 = fptr1 */
 //     -----------------
 // */
 
-// struct s {
-//         double i;
-// } ff(void);
-// union {
-//         struct {
-//                 int f1;
-//                 struct s f2;
-//         } u1;
-//         struct {
-//                 struct s f3;
-//                 int f4;
-//         } u2;
-// } g;
-// struct s ffff(void) { return g.u1.f2; }
-// /* ... */
+struct s {
+        double i;
+} f(void);
+union {
+        struct {
+                int f1;
+                struct s f2;
+        } u1;
+        struct {
+                struct s f3;
+                int f4;
+        } u2;
+} g;
+struct s ffff(void) { return g.u1.f2; }
 
-// extern int max(int a, int b) { return a > b ? a : b; }
+extern int max(int a, int b) { return a > b ? a : b; }
 
-// void g(int (*funcp)(void)) {
-//         /* ... */
-//         (*funcp)(); /* or funcp(); ... */
-//         funcp();
-// }
+void g(int (*funcp)(void)) {
+        /* ... */
+        (*funcp)(); /* or funcp(); ... */
+        funcp();
+}
 
-// void g(int func(void)) {
-//         /* ... */
-//         func(); /* or (*func)(); ...*/
-// }
+void g(int func(void)) {
+        /* ... */
+        func(); /* or (*func)(); ...*/
+}
 
-// int f(int (*)(), double (*)[3]);
-// int f(int (*)(char*), double (*)[]);
-// int f(int (*)(char*), double (*)[3]);
+int fffff(int (*)(), double (*)[3]);
+int fffff(int (*)(char*), double (*)[]);
+int fffff(int (*)(char*), double (*)[3]);
 
-// i = i + 1;
-// a[i] = i;
-// int x[3][5];
-// struct s {
-//         int i;
-//         const int ci;
-// };
-// struct s s;
-// const struct s cs;
-// volatile struct s vs;
+int x[3][5];
+struct s {
+        int i;
+        const int ci;
+};
+struct s s;
+const struct s cs;
+volatile struct s vs;
 
-// union {
-//         struct {
-//                 int alltypes;
-//         } n;
-//         struct {
-//                 int type;
-//                 int intnode;
-//         } ni;
-//         struct {
-//                 int type;
-//                 double doublenode;
-//         } nf;
-// } u;
+union {
+        struct {
+                int alltypes;
+        } n;
+        struct {
+                int type;
+                int intnode;
+        } ni;
+        struct {
+                int type;
+                double doublenode;
+        } nf;
+} u;
 
-// int* p = (int[]){2, 4};
+int* p = (int[]){2, 4};
 
-// void f(void) {
-//         int* p;
-//         /*...*/
-//         p = (int[2]){*p};
-//         /*...*/
-// }
+void ffffff(void) {
+        int* p;
+        /*...*/
+        p = (int[2]){*p};
+        /*...*/
+}
 
-// const float* readOnlyFloatArray = (const float[]){1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6};
-// const char* readOnlyCharArray = (const char[]){"/tmp/fileXXXXXX"};
+const float* readOnlyFloatArray = (const float[]){1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6};
+const char* readOnlyCharArray = (const char[]){"/tmp/fileXXXXXX"};
 
-// struct s {
-//         int i;
-// };
-// int f(void) {
-//         struct s *p = 0, *q;
-//         int j = 0;
-// again:
-//         q = p, p = &((struct s){j++});
-//         if (j < 2) goto again;
-//         return p == q && q->i == 1;
-// }
+struct s {
+        int i;
+};
+int f(void) {
+        struct s *p = 0, *q;
+        int j = 0;
+again:
+        q = p, p = &((struct s){j++});
+        if (j < 2) goto again;
+        return p == q && q->i == 1;
+}
 
-// extern void* alloc(unsigned int);
-// double* dp = alloc(sizeof *dp);
-// int ssize = sizeof array / sizeof array[0];
-// int fsize3(int n) {
-//         char b[n + 3];
-//         return sizeof b;
-// }
+extern void* alloc(unsigned int);
+double* dp = alloc(sizeof *dp);
+int ssize = sizeof array / sizeof array[0];
+int fsize3(int n) {
+        char b[n + 3];
+        return sizeof b;
+}
 
 // const void* c_vp;
 // void* vp;
