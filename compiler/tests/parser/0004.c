@@ -264,19 +264,25 @@ union {
 
 int queens(), print();
 
-int* a[10];                               // a is an array of pointer to int
-int (*a)[10];                             // a is a pointer to an array of int
-int* ff();                                // f is a function returning a pointer to int
-int (*f)();                               // f is a pointer to a function returning int
-const int* p;                             // p is a non-const pointer to const int
-int const* p;                             // same as above
-int* const p;                             // p is a const pointer to non-const int
-void (*fptr)(void);                       /* fptr is a pointer to a function that takes in
+int* a[10];                       // a is an array of pointer to int
+int (*a)[10];                     // a is a pointer to an array of int
+int* f();                         // f is a function returning a pointer to int
+int (*ff)();                      // ff is a pointer to a function returning int
+int (**fff)(int, int);            // fff is a pointer to a pointer to a function returning int
+const int* p;                     // p is a non-const pointer to const int
+int const* p;                     // same as above
+int* const p;                     // p is a const pointer to non-const int
+void (*fptr)(void);               /* fptr is a pointer to a function that takes in
                                              no params and returns void */
-int (*fptr)(int, void (*)(void));         /* fptr is a function pointer that takes in int and
+int (*fptr)(int, void (*)(void)); /* fptr is a function pointer that takes in int and
                                              pointer to the above function */
-// int(*(*ptr_to_ptr)(int, void (*)(void))); /* ptr_to_ptr is a pointer to a pointer
-//                                              that points to the above function */
+// int(*(*fptr1)(int, void (*)(void))); /* fptr1 is pointer to function (int and
+//                                             pointer to 'void(*)(void)') returns pointer to int */
+/* FOR THIS TEST TO WORK, WE GOT TO HAVE A FUNCTION THAT MOVES THE COMPOUND TYPE BITS 
+BY 2 TO THE RIGHT SINCE THEY WRONGLY STARTED FROM THE 3RD */
+
+int* (*fptr2)(int, void (*)(void)); /* fptr2 = fptr1 */
+
 // void (*signal(int, void (*fp)(int)))(int);
 
 // /*
