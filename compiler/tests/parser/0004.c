@@ -409,85 +409,85 @@ int fsize3(int n) {
         return sizeof b;
 }
 
-// const void* c_vp;
-// void* vp;
-// const int* c_ip;
-// volatile int* v_ip;
-// int* ip;
-// const char* c_cp;
+const void* c_vp;
+void* vp;
+const int* c_ip;
+volatile int* v_ip;
+int* ip;
+const char* c_cp;
 
-// static int i = 2 || 1 / 0;
-// struct s {
-//         int n;
-//         double d[];
-// };
-// struct s* p = malloc(sizeof(struct s) + sizeof(double[m]));
-// struct {
-//         int n;
-//         double d[m];
-// }* p;
-// struct s t1 = {0};  // valid
-// struct s* s1;
-// struct s* s2;
-// s1 = malloc(sizeof(struct s) + 64);
-// s2 = malloc(sizeof(struct s) + 46);
-// struct {
-//         int n;
-//         double d[8];
-// }* s1;
-// struct {
-//         int n;
-//         double d[5];
-// }* s2;
-// double* dp;
-// dp = &(s1->d[0]);  // valid
-// *dp = 42;          // valid
-// dp = &(s2->d[0]);  // valid
-// enum hue { chartreuse, burgundy, claret = 20, winedark };
-// enum hue col, *cp;
-// col = claret;
-// cp = &col;
-// struct tnode {
-//         int count;
-//         struct tnode *left, *right;
-// };
-// struct tnode s, *sp;
-// extern const volatile int real_time_clock;
-// const struct s {
-//         int mem;
-// } cs = {1};
-// struct s ncs;  // the object ncs is modifiable
-// int* pi;
-// const int* pci;
-// ncs = cs;       // valid
-// pi = &ncs.mem;  // valid
-// pci = &cs.mem;  // valid
-// int* restrict a;
-// int* restrict b;
-// extern int c[];
-// void f(int n, int* restrict p, int* restrict q) {
-//         while (n-- > 0) *p++ = *q++;
-// }
-// void g(void) {
-//         extern int d[100];
-//         f(50, d + 50, d);  // valid
-// }
-// void h(int n, int* restrict p, int* restrict q, int* restrict r) {
-//         int i;
-//         for (i = 0; i < n; i++) p[i] = q[i] + r[i];
-// }
-// typedef struct {
-//         int n;
-//         float* restrict v;
-// } vector;
-// inline double fahr(double t) { return (9.0 * t) / 5.0 + 32.0; }
-// inline double cels(double t) { return (5.0 * (t - 32.0)) / 9.0; }
-// extern double fahr(double);
-// // creates an external definition
-// double convert(int is_fahr, double temp) {
-//         /* A translator may perform inline substitutions */
-//         return is_fahr ? cels(temp) : fahr(temp);
-// }
+static int i = 2 || 1 / 0;
+struct s {
+        int n;
+        double d[];
+};
+struct s* p = malloc(sizeof(struct s) + sizeof(double[m]));
+struct {
+        int n;
+        double d[m];
+}* p;
+struct s t1 = {0};  // valid
+struct s* s1;
+struct s* s2;
+s1 = malloc(sizeof(struct s) + 64);
+s2 = malloc(sizeof(struct s) + 46);
+struct {
+        int n;
+        double d[8];
+}* s1;
+struct {
+        int n;
+        double d[5];
+}* s2;
+double* dp;
+dp = &(s1->d[0]);  // valid
+*dp = 42;          // valid
+dp = &(s2->d[0]);  // valid
+enum hue { chartreuse, burgundy, claret = 20, winedark };
+enum hue col, *cp;
+col = claret;
+cp = &col;
+struct tnode {
+        int count;
+        struct tnode *left, *right;
+};
+struct tnode s, *sp;
+extern const volatile int real_time_clock;
+const struct s {
+        int mem;
+} cs = {1};
+struct s ncs;  // the object ncs is modifiable
+int* pi;
+const int* pci;
+ncs = cs;       // valid
+pi = &ncs.mem;  // valid
+pci = &cs.mem;  // valid
+int* restrict a;
+int* restrict b;
+extern int c[];
+void f(int n, int* restrict p, int* restrict q) {
+        while (n-- > 0) *p++ = *q++;
+}
+void g(void) {
+        extern int d[100];
+        f(50, d + 50, d);  // valid
+}
+void h(int n, int* restrict p, int* restrict q, int* restrict r) {
+        int i;
+        for (i = 0; i < n; i++) p[i] = q[i] + r[i];
+}
+typedef struct {
+        int n;
+        float* restrict v;
+} vector;
+inline double fahr(double t) { return (9.0 * t) / 5.0 + 32.0; }
+inline double cels(double t) { return (5.0 * (t - 32.0)) / 9.0; }
+extern double fahr(double);
+// creates an external definition
+double convert(int is_fahr, double temp) {
+        /* A translator may perform inline substitutions */
+        return is_fahr ? cels(temp) : fahr(temp);
+}
 
 // const int* ptr_to_constant;
 // int* const constant_ptr;
