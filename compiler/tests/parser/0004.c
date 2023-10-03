@@ -553,136 +553,133 @@ void f(double a[restrict static 3][5]);
 
 int x[] = {1, 3, 5};
 
-// int main(void) {
-//         if (*cp != burgundy) a = 23;
-//         char c;
-//         int i;
-//         long l;
-//         l = (c = i);
-//         t1.n = 4;  // valid
+int main(void) {
+        if (*cp != burgundy) a = 23;
+        char c;
+        int i;
+        long l;
+        l = (c = i);
+        t1.n = 4;  // valid
 
-//         f(a, (t = 3, t + 2), c);
-//         if ((c = f()) == -1) {
-//                 char c = '\n';
-//         }
-//         /* ... */
-//         int n = 4, m = 3;
-//         int a[n][m];
-//         int(*p)[m] = a;  // p == &a[0]
-//         p += 1;          // p == &a[1]
-//         (*p)[2] = 99;    // a[1][2] == 99
-//         n = p - a;       // n == 1
+        f(a, (t = 3, t + 2), c);
+        if ((c = f()) == -1) {
+                char c = '\n';
+        }
+        /* ... */
+        int n = 4, m = 3;
+        int a[n][m];
+        int(*p)[m] = a;  // p == &a[0]
+        p += 1;          // p == &a[1]
+        (*p)[2] = 99;    // a[1][2] == 99
+        n = p - a;       // n == 1
 
-//         if ((const char[]){"abc"} == "abc") {
-//                 a = 32;
-//         }
-//         (*pf[f1()])(f2(), f3() + f4());
-//         g.u2.f3 = f();
+        if ((const char[]){"abc"} == "abc") {
+                a = 32;
+        }
+        (*pf[f1()])(f2(), f3() + f4());
+        g.u2.f3 = f();
 
-//         u.nf.type = 1;
-//         u.nf.doublenode = 3.14;
-//         /* ... */
-//         if (u.n.alltypes == 1) {
-//                 if (sin(u.nf.doublenode) == 0.0) {
-//                         return 0;
-//                 }
-//         }
+        u.nf.type = 1;
+        u.nf.doublenode = 3.14;
+        /* ... */
+        if (u.n.alltypes == 1) {
+                if (sin(u.nf.doublenode) == 0.0) {
+                        return 0;
+                }
+        }
 
-//         unsigned long int a = 23;
-//         for (a = 0; a < 23; a++) {
-//                 if (a == 10)
-//                         continue;
-//                 else
-//                         a = a * 32;
-//                 if (a == 16) break;
-//         }
-//         for (;;) {
-//                 break;
-//         }
-//         for (;;)
-//                 ;
-//         for (int i = 0; i < 10; i++) {
-//                 if (i == 10) return 0;
-//         }
-//         while (a < 23) {
-//                 a = 23 + 32;
-//         }
-//         do {
-//                 a = 23 + 54;
-//         } while (a > 10);
-//         switch (a) {
-//                 case 1: break;
-//                 case 2: break;
-//                 default: a = 23;
-//         }
-//         char* s;
-//         while (*s++ != '\0')
-//                 ;
-//         while (loop1) {
-//                 /* ... */
-//                 while (loop2) {
-//                         /* ... */
-//                         if (want_out) goto end_loop1;
-//                         /* ... */
-//                 }
-//         /* ... */
-//         end_loop1:;
-//         }
+        unsigned long int a = 23;
+        for (a = 0; a < 23; a++) {
+                if (a == 10)
+                        continue;
+                else
+                        a = a * 32;
+                if (a == 16) break;
+        }
+        for (;;) {
+                break;
+        }
+        for (;;)
+                ;
+        for (int i = 0; i < 10; i++) {
+                if (i == 10) return 0;
+        }
+        while (a < 23) {
+                a = 23 + 32;
+        }
+        do {
+                a = 23 + 54;
+        } while (a > 10);
+        switch (a) {
+                case 1: break;
+                case 2: break;
+                default: a = 23;
+        }
+        char* s;
+        while (*s++ != '\0')
+                ;
+        while (loop1) {
+                /* ... */
+                while (loop2) {
+                        /* ... */
+                        if (want_out) goto end_loop1;
+                        /* ... */
+                }
+        /* ... */
+        end_loop1:;
+        }
 
-//         /* ... */
-//         goto first_time;
-//         for (;;) {
-//                 // determine next operation
-//                 /* ... */
-//                 if (need_to_reinitialize) {
-//                 // reinitialize-only code
-//                 /* ... */
-//                 first_time:
-//                         // general initialization code
-//                         /* ... */
-//                         continue;
-//                 }
-//                 // handle other operations
-//                 /* ... */
-//         }
+        /* ... */
+        goto first_time;
+        for (;;) {
+                // determine next operation
+                /* ... */
+                if (need_to_reinitialize) {
+                // reinitialize-only code
+                /* ... */
+                first_time:
+                        // general initialization code
+                        /* ... */
+                        continue;
+                }
+                // handle other operations
+                /* ... */
+        }
 
-//         while (a < 23) {
-//                 /* ... */
-//                 continue;
-//         /* ... */
-//         contin:;
-//         }
+        while (a < 23) {
+                /* ... */
+                continue;
+        /* ... */
+        contin:;
+        }
 
-// L1:
-//         return 23;
+L1:
+        return 23;
 
-//         if (a == 100) goto L1;
-//         return 23 + 32 - 23 + 32;
-// }
+        if (a == 100) goto L1;
+        return 23 + 32 - 23 + 32;
 
-// int main() {
-//         /* CONSTANTS AND SYMBOL TABLE TESTS */
-//         int numa = 23;
-//         char* namea = "Hello World";
-//         char aa = '\a';
-//         char ba = '\b';
-//         char ca = '\f';
-//         char da = '\n';
-//         char ea = '\r';
-//         char fa = '\t';
-//         char ga = '\v';
-//         char ha = 'a';
-//         char ia = '\\';
-//         char ja = '\'';
-//         char ka = '\"';
-//         char la = '\?';
-//         float nfa = 2.3f;
-//         numa = 92;
-//         double PI = 3.14159265358979323846264338327950288419716939937510;
-//         long double PI2 = 3.14159265358979323846264338327950288419716939937510L;
-//         numa = 12;
-//         numa = 84;
-//         int num2a = 32;
-//         return 0;
-//         /* END */
-// }
+        /* CONSTANTS AND SYMBOL TABLE TESTS */
+        int numa = 23;
+        char* namea = "Hello World";
+        char aa = '\a';
+        char ba = '\b';
+        char ca = '\f';
+        char da = '\n';
+        char ea = '\r';
+        char fa = '\t';
+        char ga = '\v';
+        char ha = 'a';
+        char ia = '\\';
+        char ja = '\'';
+        char ka = '\"';
+        char la = '\?';
+        float nfa = 2.3f;
+        numa = 92;
+        double PI = 3.14159265358979323846264338327950288419716939937510;
+        long double PI2 = 3.14159265358979323846264338327950288419716939937510L;
+        numa = 12;
+        numa = 84;
+        int num2a = 32;
+        /* END */
+}
