@@ -12,7 +12,7 @@ $(EXECUTABLE): $(OBJS)
 build/%.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(OBJS): ganymede.h | build
+$(OBJS): build
 
 build:
 	mkdir -p build
