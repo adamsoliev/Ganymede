@@ -60,6 +60,8 @@ struct Expr {
         struct Expr *rhs;
 };
 
+/* GLOBALS */
+int LEN; /* used in the scanning step to keep track of string length for identifiers and scon */
 #define TYPE_INT 0x0000000000000003  // 0000,0000,0011
 
 // UTILS
@@ -79,7 +81,7 @@ struct Token *newtoken(enum TokenType type, const char *lexeme) {
                 case IF:
                 case RETURN: break;
                 case ICON: token->value.icon = strtoll(lexeme, NULL, 10); break;
-                case IDENT: token->value.scon = strdup(lexeme); break;
+                case IDENT: token->value.scon = strndup(lexeme, LEN); break;
                 case OPAR:
                 case CPAR:
                 case OCBR:
@@ -138,6 +140,7 @@ void scan(const char *program, struct Token **tokenlist) {
                                 addtoken(&head, &tail, token);
                         } else if (isidentifier(program[current])) { /* IDENTIFIER */
                                 while (isidentifier(program[current])) current++;
+                                LEN = current - start;
                                 struct Token *token = newtoken(IDENT, program + start);
                                 addtoken(&head, &tail, token);
                         } else if (ispunctuation(program[current])) { /* PUNCTUATION */
