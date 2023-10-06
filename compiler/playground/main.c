@@ -347,15 +347,35 @@ struct Edecl *parse(struct Token *head) {
 }
 
 /* -------------- CODEGEN -------------- */
-void codegen(void) {
-        //
+void codegen(struct Edecl *decl) {
+        printf("\n  .globl %s\n", decl->name);
+        printf("\n%s:\n", decl->name);
+
+        // prologue
+        printf("  # prologue\n");
+        printf("  addi    sp,sp,-16\n");
+        printf("  sd      s0,8(sp)\n");
+        printf("  addi    s0,sp,16\n");
+
+        // body
+        // fprintf(outfile, "  # body\n");
+        printf("  li      a5,3\n");
+
+        // epilogue
+        printf("  # epilogue\n");
+        printf("  mv      a0,a5\n");
+        printf("  ld      s0,8(sp)\n");
+        printf("  addi    sp,sp,16\n");
+        printf("  jr      ra\n");
 }
 
-int main(void) {
-        char *program = "int main() { int a = 23; if (a > 10) { return 3; } return 0; }";
+int main(int argc, char **argv) {
+        if (argc < 2) assert(0);
+
         struct Token *tokenlist = NULL;
-        scan(program, &tokenlist);
+        scan(argv[1], &tokenlist);
         struct Edecl *decllist = parse(tokenlist);
-        printTokens(tokenlist);
+        codegen(decllist);
+
         return 0;
 }
