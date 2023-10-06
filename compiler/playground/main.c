@@ -397,7 +397,6 @@ void codegen(struct Edecl *decl) {
                         assert(body->cond->kind == E_GT);
                         struct Expr *lhs = body->cond->lhs;
                         struct Expr *rhs = body->cond->rhs;
-                        // printf("  li      a3,%lu\n", lhs->value);
                         int value = get(lhs->ident);
                         printf("  li      a3,%d\n", value);
                         printf("  li      a4,%lu\n", rhs->value);
