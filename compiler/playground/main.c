@@ -104,6 +104,7 @@ bool ispunctuation(char c) {
 
 // FORWARD DECLARATIONS
 struct Edecl *declaration(struct Token **token);
+struct Expr *expr(struct Token **token);
 
 struct Token *newtoken(enum TokenKind kind, const char *lexeme) {
         struct Token *token = (struct Token *)malloc(sizeof(struct Token));
@@ -235,29 +236,23 @@ struct Edecl *parse(struct Token *head) {
         struct Edecl *decl = malloc(sizeof(struct Edecl)); /* FUNCTION */
         decl->kind = FUNC;
         while (current != NULL) {
-                assert(current->kind == INT);
                 decl->type |= TYPE_INT;
                 consume(&current, INT);
 
-                assert(current->kind == IDENT);
                 decl->name = strdup(current->value.scon);
                 consume(&current, IDENT);
 
-                assert(current->kind == OPAR);
                 consume(&current, OPAR);
-                assert(current->kind == CPAR);
                 consume(&current, CPAR);
 
                 struct Edecl *ldeclhead = malloc(sizeof(struct Edecl));
                 struct Edecl *ldecltail = ldeclhead;
 
-                assert(current->kind == OCBR);
                 consume(&current, OCBR);
 
                 while (current->kind != CCBR) {
                         /* LOCAL LEVEL */
                         if (current->kind == INT) {
-
                                 ldecltail = ldecltail->next = declaration(&current);
 
                         } else if (current->kind == IF) {
@@ -265,61 +260,36 @@ struct Edecl *parse(struct Token *head) {
                                 lstmt->kind = S_IF;
                                 consume(&current, IF);
 
-                                assert(current->kind == OPAR);
                                 consume(&current, OPAR);
 
                                 /* EXPR */
                                 struct Expr *cond = malloc(sizeof(struct Expr));
 
                                 /* - LHS */
-                                struct Expr *lhs = malloc(sizeof(struct Expr));
-                                assert(current->kind == IDENT);
-                                lhs->ident = strdup(current->value.scon);
-                                lhs->kind = E_IDENT;
-                                consume(&current, IDENT);
+                                cond->lhs = expr(&current);
 
                                 /* - PARENT TYPE */
-                                assert(current->kind == GT);
                                 cond->kind = E_GT;
                                 consume(&current, GT);
 
                                 /* - RHS */
-                                struct Expr *rhs = malloc(sizeof(struct Expr));
-                                assert(current->kind == ICON);
-                                rhs->value = current->value.icon;
-                                rhs->kind = E_ICON;
-                                consume(&current, ICON);
-
-                                cond->lhs = lhs;
-                                cond->rhs = rhs;
+                                cond->rhs = expr(&current);
 
                                 lstmt->cond = cond;
 
-                                assert(current->kind == CPAR);
                                 consume(&current, CPAR);
 
                                 /* STMT */
                                 struct Edecl *then = malloc(sizeof(struct Edecl));
 
-                                assert(current->kind == OCBR);
                                 consume(&current, OCBR);
 
-                                assert(current->kind == RETURN);
                                 then->kind = S_RETURN;
                                 consume(&current, RETURN);
 
-                                struct Expr *value = malloc(sizeof(struct Expr));
-                                assert(current->kind == ICON);
-                                value->kind = E_ICON;
-                                value->value = current->value.icon;
-                                consume(&current, ICON);
+                                then->value = expr(&current);
 
-                                then->value = value;
-
-                                assert(current->kind == SEMIC);
                                 consume(&current, SEMIC);
-
-                                assert(current->kind == CCBR);
                                 consume(&current, CCBR);
 
                                 lstmt->then = then;
@@ -328,19 +298,11 @@ struct Edecl *parse(struct Token *head) {
                         } else {
                                 struct Edecl *lstmt = malloc(sizeof(struct Edecl));
 
-                                assert(current->kind == RETURN);
                                 lstmt->kind = S_RETURN;
                                 consume(&current, RETURN);
 
-                                struct Expr *value = malloc(sizeof(struct Expr));
-                                assert(current->kind == ICON);
-                                value->kind = E_ICON;
-                                value->value = current->value.icon;
-                                consume(&current, ICON);
+                                lstmt->value = expr(&current);
 
-                                lstmt->value = value;
-
-                                assert(current->kind == SEMIC);
                                 consume(&current, SEMIC);
 
                                 ldecltail = ldecltail->next = lstmt;
@@ -359,18 +321,14 @@ struct Edecl *declaration(struct Token **token) {
 
         struct Token *current = *token;
 
-        assert(current->kind == INT);
         ldecl->type |= TYPE_INT;
         consume(&current, INT);
 
-        assert(current->kind == IDENT);
         ldecl->name = strdup(current->value.scon);
         consume(&current, IDENT);
 
-        assert(current->kind == ASGN);
         consume(&current, ASGN);
 
-        assert(current->kind == ICON);
         struct Expr *value = malloc(sizeof(struct Expr));
         value->value = current->value.icon;
         ldecl->value = value;
@@ -378,7 +336,6 @@ struct Edecl *declaration(struct Token **token) {
 
         insert(ldecl->name, ldecl->value->value);
 
-        assert(current->kind == SEMIC);
         consume(&current, SEMIC);
 
         *token = current;
@@ -389,8 +346,22 @@ void stmt(void) {
         //
 }
 
-void expr(void) {
-        //
+struct Expr *expr(struct Token **token) {
+        struct Token *current = *token;
+        struct Expr *expr = malloc(sizeof(struct Expr));
+
+        if (current->kind == IDENT) {
+                expr->ident = strdup(current->value.scon);
+                expr->kind = E_IDENT;
+                consume(&current, IDENT);
+        } else if (current->kind == ICON) {
+                expr->value = current->value.icon;
+                expr->kind = E_ICON;
+                consume(&current, ICON);
+        }
+
+        *token = current;
+        return expr;
 }
 
 /* ----------------------------------------------------------------- */
