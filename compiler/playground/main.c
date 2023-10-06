@@ -52,8 +52,9 @@ struct Edecl {
         struct Edecl *next;
 };
 
+enum ExprType { E_ICON, E_IDENT, E_GT };
 struct Expr {
-        enum ExprType { E_ICON, E_IDENT, E_GT } kind;
+        enum ExprType kind;
         uint64_t value;
         char *ident;
         struct Expr *lhs;
@@ -127,6 +128,12 @@ struct Token *newtoken(enum TokenKind kind, const char *lexeme) {
                 default: assert(0);
         }
         return token;
+}
+
+struct Expr *newexpr(enum ExprType kind) {
+        struct Expr *expr = malloc(sizeof(struct Expr));
+        expr->kind = E_GT;
+        return expr;
 }
 
 void addtoken(struct Token **head, struct Token **tail, struct Token *newtoken) {
@@ -262,16 +269,7 @@ struct Edecl *parse(struct Token *head) {
                                 consume(&current, OPAR);
 
                                 /* EXPR */
-                                struct Expr *cond = malloc(sizeof(struct Expr));
-
-                                /* - LHS */
-                                cond->lhs = expr(&current);
-                                /* - PARENT TYPE */
-                                cond->kind = E_GT;
-                                consume(&current, GT);
-                                /* - RHS */
-                                cond->rhs = expr(&current);
-
+                                struct Expr *cond = expr(&current);
                                 lstmt->cond = cond;
 
                                 consume(&current, CPAR);
@@ -345,10 +343,18 @@ void stmt(void) {
 
 struct Expr *expr(struct Token **token) {
         struct Token *current = *token;
-        struct Expr *expr = primary(&current);
+        struct Expr *lhs = primary(&current);
 
+        if (current->kind == GT) {
+                consume(&current, GT);
+                struct Expr *parent = newexpr(E_GT);
+                parent->lhs = lhs;
+                parent->rhs = primary(&current);
+                *token = current;
+                return parent;
+        }
         *token = current;
-        return expr;
+        return lhs;
 }
 
 struct Expr *primary(struct Token **token) {
