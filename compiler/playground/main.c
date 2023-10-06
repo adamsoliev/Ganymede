@@ -64,6 +64,36 @@ struct Expr {
 int LEN; /* used in the scanning step to keep track of string length for identifiers and scon */
 #define TYPE_INT 0x0000000000000003  // 0000,0000,0011
 
+/* --------- HASH TABLE --------- */
+struct KeyValuePair {
+        const char *key;
+        int64_t value;
+};
+
+#define TABLE_SIZE 4096
+struct KeyValuePair ht[TABLE_SIZE];
+
+int hash(const char *key) {
+        unsigned hash = 1;
+        int c;
+        while ((c = *key++)) {
+                hash = hash * 263 + c;
+        }
+        return (int)(hash % TABLE_SIZE);
+}
+
+void insert(const char *key, int64_t value) {
+        int index = hash(key);
+        ht[index].key = key;
+        ht[index].value = value;
+}
+
+uint64_t get(const char *key) {
+        int index = hash(key);
+        return ht[index].value;
+}
+/* --------- END --------- */
+
 // UTILS
 bool iswhitespace(char c) { return c == ' ' || c == '\t' || c == '\n'; }
 bool isidentifier(char c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'); }
@@ -248,6 +278,8 @@ struct Edecl *parse(struct Token *head) {
                                 ldecl->value = value;
                                 consume(&current, ICON);
 
+                                insert(ldecl->name, ldecl->value->value);
+
                                 assert(current->kind == SEMIC);
                                 consume(&current, SEMIC);
 
@@ -358,8 +390,26 @@ void codegen(struct Edecl *decl) {
         printf("  addi    s0,sp,16\n");
 
         // body
-        // fprintf(outfile, "  # body\n");
-        printf("  li      a5,3\n");
+        struct Edecl *body = decl->body;
+        while (body != NULL) {
+                if (body->kind == S_IF) {
+                        // handle cond
+                        assert(body->cond->kind == E_GT);
+                        struct Expr *lhs = body->cond->lhs;
+                        struct Expr *rhs = body->cond->rhs;
+                        // printf("  li      a3,%lu\n", lhs->value);
+                        int value = get(lhs->ident);
+                        printf("  li      a3,%d\n", value);
+                        printf("  li      a4,%lu\n", rhs->value);
+                        printf("  ble     a3,a4,.L1\n");
+                        // handle then
+                        assert(body->then->kind == S_RETURN);
+                        struct Expr *valueExpr = body->then->value;
+                        printf("  li      a5,%lu\n", valueExpr->value);
+                        printf(".L1:\n");
+                }
+                body = body->next;
+        }
 
         // epilogue
         printf("  # epilogue\n");
