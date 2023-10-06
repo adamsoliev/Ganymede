@@ -155,63 +155,54 @@ void scan(const char *program, struct Token **tokenlist) {
 
                 while (current < length && !iswhitespace(program[current])) {
                         start = current;
+                        enum TokenKind kind = -1;
                         if (strncmp(program + current, "int", 3) == 0) { /* KEYWORDS */
                                 current += 3;
-                                struct Token *token = newtoken(INT, program + start);
-                                addtoken(&head, &tail, token);
+                                kind = INT;
                         } else if (strncmp(program + current, "if", 2) == 0) {
                                 current += 2;
-                                struct Token *token = newtoken(IF, program + start);
-                                addtoken(&head, &tail, token);
+                                kind = IF;
                         } else if (strncmp(program + current, "return", 6) == 0) {
                                 current += 6;
-                                struct Token *token = newtoken(RETURN, program + start);
-                                addtoken(&head, &tail, token);
+                                kind = RETURN;
                         } else if (isidentifier(program[current])) { /* IDENTIFIER */
                                 while (isidentifier(program[current])) current++;
                                 LEN = current - start;
-                                struct Token *token = newtoken(IDENT, program + start);
-                                addtoken(&head, &tail, token);
+                                kind = IDENT;
                         } else if (ispunctuation(program[current])) { /* PUNCTUATION */
                                 if (program[current] == '(') {
                                         current++;
-                                        struct Token *token = newtoken(OPAR, program + start);
-                                        addtoken(&head, &tail, token);
+                                        kind = OPAR;
                                 } else if (program[current] == ')') {
                                         current++;
-                                        struct Token *token = newtoken(CPAR, program + start);
-                                        addtoken(&head, &tail, token);
+                                        kind = CPAR;
                                 } else if (program[current] == '{') {
                                         current++;
-                                        struct Token *token = newtoken(OCBR, program + start);
-                                        addtoken(&head, &tail, token);
+                                        kind = OCBR;
                                 } else if (program[current] == '}') {
                                         current++;
-                                        struct Token *token = newtoken(CCBR, program + start);
-                                        addtoken(&head, &tail, token);
+                                        kind = CCBR;
                                 } else if (program[current] == '>') {
                                         current++;
-                                        struct Token *token = newtoken(GT, program + start);
-                                        addtoken(&head, &tail, token);
+                                        kind = GT;
                                 } else if (program[current] == ';') {
                                         current++;
-                                        struct Token *token = newtoken(SEMIC, program + start);
-                                        addtoken(&head, &tail, token);
+                                        kind = SEMIC;
                                 } else if (program[current] == '=') {
                                         current++;
-                                        struct Token *token = newtoken(ASGN, program + start);
-                                        addtoken(&head, &tail, token);
+                                        kind = ASGN;
                                 } else {
                                         assert(0);
                                 }
                         } else if (isicon(program[current])) { /* INT LITERAL */
                                 while (isicon(program[current])) current++;
-                                struct Token *token = newtoken(ICON, program + start);
-                                addtoken(&head, &tail, token);
+                                kind = ICON;
                         } else {
                                 printf("Unrecognized char: %c\n", program[current]);
                                 assert(0);
                         }
+                        struct Token *token = newtoken(kind, program + start);
+                        addtoken(&head, &tail, token);
                 }
         }
         *tokenlist = head;
