@@ -102,6 +102,9 @@ bool ispunctuation(char c) {
         return c == '(' || c == ')' || c == '{' || c == '}' || c == '>' || c == '=' || c == ';';
 }
 
+// FORWARD DECLARATIONS
+struct Edecl *declaration(struct Token **token);
+
 struct Token *newtoken(enum TokenKind kind, const char *lexeme) {
         struct Token *token = (struct Token *)malloc(sizeof(struct Token));
         assert(token != NULL);
@@ -141,7 +144,9 @@ void consume(struct Token **token, enum TokenKind kind) {
         *token = (*token)->next;
 }
 
-/* -------------- SCANNER -------------- */
+/* ----------------------------------------------------------------- */
+/* ---------------------------- SCANNER ---------------------------- */
+/* ----------------------------------------------------------------- */
 void scan(const char *program, struct Token **tokenlist) {
         int length = strlen(program);
         int start = 0;
@@ -222,7 +227,9 @@ void printTokens(struct Token *head) {
         }
 }
 
-/* -------------- PARSER -------------- */
+/* ---------------------------------------------------------------- */
+/* ---------------------------- PARSER ---------------------------- */
+/* ---------------------------------------------------------------- */
 struct Edecl *parse(struct Token *head) {
         struct Token *current = head;
         struct Edecl *decl = malloc(sizeof(struct Edecl)); /* FUNCTION */
@@ -250,31 +257,9 @@ struct Edecl *parse(struct Token *head) {
                 while (current->kind != CCBR) {
                         /* LOCAL LEVEL */
                         if (current->kind == INT) {
-                                struct Edecl *ldecl = malloc(sizeof(struct Edecl));
 
-                                assert(current->kind == INT);
-                                ldecl->type |= TYPE_INT;
-                                consume(&current, INT);
+                                ldecltail = ldecltail->next = declaration(&current);
 
-                                assert(current->kind == IDENT);
-                                ldecl->name = strdup(current->value.scon);
-                                consume(&current, IDENT);
-
-                                assert(current->kind == ASGN);
-                                consume(&current, ASGN);
-
-                                assert(current->kind == ICON);
-                                struct Expr *value = malloc(sizeof(struct Expr));
-                                value->value = current->value.icon;
-                                ldecl->value = value;
-                                consume(&current, ICON);
-
-                                insert(ldecl->name, ldecl->value->value);
-
-                                assert(current->kind == SEMIC);
-                                consume(&current, SEMIC);
-
-                                ldecltail = ldecltail->next = ldecl;
                         } else if (current->kind == IF) {
                                 struct Edecl *lstmt = malloc(sizeof(struct Edecl));
                                 lstmt->kind = S_IF;
@@ -369,7 +354,48 @@ struct Edecl *parse(struct Token *head) {
         return decl;
 }
 
-/* -------------- CODEGEN -------------- */
+struct Edecl *declaration(struct Token **token) {
+        struct Edecl *ldecl = malloc(sizeof(struct Edecl));
+
+        struct Token *current = *token;
+
+        assert(current->kind == INT);
+        ldecl->type |= TYPE_INT;
+        consume(&current, INT);
+
+        assert(current->kind == IDENT);
+        ldecl->name = strdup(current->value.scon);
+        consume(&current, IDENT);
+
+        assert(current->kind == ASGN);
+        consume(&current, ASGN);
+
+        assert(current->kind == ICON);
+        struct Expr *value = malloc(sizeof(struct Expr));
+        value->value = current->value.icon;
+        ldecl->value = value;
+        consume(&current, ICON);
+
+        insert(ldecl->name, ldecl->value->value);
+
+        assert(current->kind == SEMIC);
+        consume(&current, SEMIC);
+
+        *token = current;
+        return ldecl;
+}
+
+void stmt(void) {
+        //
+}
+
+void expr(void) {
+        //
+}
+
+/* ----------------------------------------------------------------- */
+/* ---------------------------- CODEGEN ---------------------------- */
+/* ----------------------------------------------------------------- */
 void codegen(struct Edecl *decl) {
         printf("\n  .globl %s\n", decl->name);
         printf("\n%s:\n", decl->name);
