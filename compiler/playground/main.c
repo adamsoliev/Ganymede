@@ -107,6 +107,7 @@ bool ispunctuation(char c) {
 struct Edecl *declaration(struct Token **token);
 struct Expr *expr(struct Token **token);
 struct Expr *primary(struct Token **token);
+struct Edecl *stmt(struct Token **token);
 
 struct Token *newtoken(enum TokenKind kind, const char *lexeme) {
         struct Token *token = (struct Token *)malloc(sizeof(struct Token));
@@ -273,33 +274,17 @@ struct Edecl *parse(struct Token *head) {
                                 lstmt->cond = cond;
 
                                 consume(&current, CPAR);
-
-                                /* STMT */
-                                struct Edecl *then = malloc(sizeof(struct Edecl));
-
                                 consume(&current, OCBR);
 
-                                then->kind = S_RETURN;
-                                consume(&current, RETURN);
-
-                                then->value = expr(&current);
-
-                                consume(&current, SEMIC);
-                                consume(&current, CCBR);
-
+                                /* STMT */
+                                struct Edecl *then = stmt(&current);
                                 lstmt->then = then;
+
+                                consume(&current, CCBR);
 
                                 ldecltail = ldecltail->next = lstmt;
                         } else {
-                                struct Edecl *lstmt = malloc(sizeof(struct Edecl));
-
-                                lstmt->kind = S_RETURN;
-                                consume(&current, RETURN);
-
-                                lstmt->value = expr(&current);
-
-                                consume(&current, SEMIC);
-
+                                struct Edecl *lstmt = stmt(&current);
                                 ldecltail = ldecltail->next = lstmt;
                         }
                 }
@@ -337,8 +322,19 @@ struct Edecl *declaration(struct Token **token) {
         return ldecl;
 }
 
-void stmt(void) {
-        //
+struct Edecl *stmt(struct Token **token) {
+        struct Token *current = *token;
+
+        struct Edecl *lstmt = malloc(sizeof(struct Edecl));
+        lstmt->kind = S_RETURN;
+        consume(&current, RETURN);
+
+        lstmt->value = expr(&current);
+
+        consume(&current, SEMIC);
+
+        *token = current;
+        return lstmt;
 }
 
 struct Expr *expr(struct Token **token) {
