@@ -105,6 +105,7 @@ bool ispunctuation(char c) {
 // FORWARD DECLARATIONS
 struct Edecl *declaration(struct Token **token);
 struct Expr *expr(struct Token **token);
+struct Expr *primary(struct Token **token);
 
 struct Token *newtoken(enum TokenKind kind, const char *lexeme) {
         struct Token *token = (struct Token *)malloc(sizeof(struct Token));
@@ -254,12 +255,10 @@ struct Edecl *parse(struct Token *head) {
                         /* LOCAL LEVEL */
                         if (current->kind == INT) {
                                 ldecltail = ldecltail->next = declaration(&current);
-
                         } else if (current->kind == IF) {
                                 struct Edecl *lstmt = malloc(sizeof(struct Edecl));
                                 lstmt->kind = S_IF;
                                 consume(&current, IF);
-
                                 consume(&current, OPAR);
 
                                 /* EXPR */
@@ -267,11 +266,9 @@ struct Edecl *parse(struct Token *head) {
 
                                 /* - LHS */
                                 cond->lhs = expr(&current);
-
                                 /* - PARENT TYPE */
                                 cond->kind = E_GT;
                                 consume(&current, GT);
-
                                 /* - RHS */
                                 cond->rhs = expr(&current);
 
@@ -348,6 +345,14 @@ void stmt(void) {
 
 struct Expr *expr(struct Token **token) {
         struct Token *current = *token;
+        struct Expr *expr = primary(&current);
+
+        *token = current;
+        return expr;
+}
+
+struct Expr *primary(struct Token **token) {
+        struct Token *current = *token;
         struct Expr *expr = malloc(sizeof(struct Expr));
 
         if (current->kind == IDENT) {
@@ -358,8 +363,8 @@ struct Expr *expr(struct Token **token) {
                 expr->value = current->value.icon;
                 expr->kind = E_ICON;
                 consume(&current, ICON);
-        }
-
+        } else
+                assert(0);
         *token = current;
         return expr;
 }
