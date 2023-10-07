@@ -23,7 +23,8 @@ enum TokenKind { /* KEYWORDS */
                 NEQ,    // !=
                 LOR,    // ||
                 LAND,   // &&
-                BOR,    // |
+                BOR,    // |        Bit-wise OR
+                BAND,   // &        Bit-wise AND
                 SEMIC,
                 ASGN,
                 IDENT,
@@ -60,7 +61,20 @@ struct Edecl {
         struct Edecl *next;
 };
 
-enum ExprType { E_ICON, E_IDENT, E_LT, E_GT, E_LE, E_GE, E_EQ, E_NEQ, E_LOR, E_LAND, E_BOR };
+enum ExprType {
+        E_ICON,
+        E_IDENT,
+        E_LT,
+        E_GT,
+        E_LE,
+        E_GE,
+        E_EQ,
+        E_NEQ,
+        E_LOR,
+        E_LAND,
+        E_BOR,
+        E_BAND
+};
 struct Expr {
         enum ExprType kind;
         uint64_t value;
@@ -142,6 +156,7 @@ struct Token *newtoken(enum TokenKind kind, const char *lexeme) {
                 case LOR:
                 case LAND:
                 case BOR:
+                case BAND:
                 case ASGN:
                 case SEMIC: break;
                 default: assert(0);
@@ -259,7 +274,7 @@ void scan(const char *program, struct Token **tokenlist) {
                                                 current++;
                                                 kind = LAND;
                                         } else
-                                                assert(0);
+                                                kind = BAND;
                                 } else {
                                         assert(0);
                                 }
@@ -405,8 +420,9 @@ struct Expr *expr(struct Token **token) {
                 case NEQ: ekind = E_NEQ; goto found;
                 case LOR: ekind = E_LOR; goto found;
                 case LAND: ekind = E_LAND; goto found;
-                case BOR:
-                        ekind = E_BOR;
+                case BOR: ekind = E_BOR; goto found;
+                case BAND:
+                        ekind = E_BAND;
                         goto found;
                 found: {
                         consume(&current, current->kind);
@@ -499,7 +515,7 @@ void cg_stmt(struct Edecl *lstmt) {
                         printf("  li      a4,%lu\n", rhs->value);
                         printf("  beq     a3,a4,.L1end\n");
                 } else if (lstmt->cond->kind == E_LOR || lstmt->cond->kind == E_LAND ||
-                           lstmt->cond->kind == E_BOR) {
+                           lstmt->cond->kind == E_BOR || lstmt->cond->kind == E_BAND) {
                         printf("  li      a3,%d\n", value);
                         printf("  li      a4,%lu\n", rhs->value);
                         if (lstmt->cond->kind == E_LOR || lstmt->cond->kind == E_BOR)
