@@ -23,6 +23,7 @@ enum TokenKind { /* KEYWORDS */
                 NEQ,    // !=
                 LOR,    // ||
                 LAND,   // &&
+                BOR,    // |
                 SEMIC,
                 ASGN,
                 IDENT,
@@ -59,7 +60,7 @@ struct Edecl {
         struct Edecl *next;
 };
 
-enum ExprType { E_ICON, E_IDENT, E_LT, E_GT, E_LE, E_GE, E_EQ, E_NEQ, E_LOR, E_LAND };
+enum ExprType { E_ICON, E_IDENT, E_LT, E_GT, E_LE, E_GE, E_EQ, E_NEQ, E_LOR, E_LAND, E_BOR };
 struct Expr {
         enum ExprType kind;
         uint64_t value;
@@ -140,6 +141,7 @@ struct Token *newtoken(enum TokenKind kind, const char *lexeme) {
                 case NEQ:
                 case LOR:
                 case LAND:
+                case BOR:
                 case ASGN:
                 case SEMIC: break;
                 default: assert(0);
@@ -250,7 +252,7 @@ void scan(const char *program, struct Token **tokenlist) {
                                                 current++;
                                                 kind = LOR;
                                         } else
-                                                assert(0);
+                                                kind = BOR;
                                 } else if (program[current] == '&') {
                                         current++;
                                         if (program[current] == '&') {
@@ -402,8 +404,9 @@ struct Expr *expr(struct Token **token) {
                 case EQ: ekind = E_EQ; goto found;
                 case NEQ: ekind = E_NEQ; goto found;
                 case LOR: ekind = E_LOR; goto found;
-                case LAND:
-                        ekind = E_LAND;
+                case LAND: ekind = E_LAND; goto found;
+                case BOR:
+                        ekind = E_BOR;
                         goto found;
                 found: {
                         consume(&current, current->kind);
@@ -495,10 +498,11 @@ void cg_stmt(struct Edecl *lstmt) {
                         printf("  li      a3,%d\n", value);
                         printf("  li      a4,%lu\n", rhs->value);
                         printf("  beq     a3,a4,.L1end\n");
-                } else if (lstmt->cond->kind == E_LOR || lstmt->cond->kind == E_LAND) {
+                } else if (lstmt->cond->kind == E_LOR || lstmt->cond->kind == E_LAND ||
+                           lstmt->cond->kind == E_BOR) {
                         printf("  li      a3,%d\n", value);
                         printf("  li      a4,%lu\n", rhs->value);
-                        if (lstmt->cond->kind == E_LOR)
+                        if (lstmt->cond->kind == E_LOR || lstmt->cond->kind == E_BOR)
                                 printf("  or      a4,a3,a4\n");
                         else
                                 printf("  and     a4,a3,a4\n");
