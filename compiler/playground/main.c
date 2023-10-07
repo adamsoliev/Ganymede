@@ -21,10 +21,11 @@ enum TokenKind { /* KEYWORDS */
                 GE,     // >=
                 EQ,     // ==
                 NEQ,    // !=
-                LOR,    // ||
-                LAND,   // &&
-                BOR,    // |        Bit-wise OR
-                BAND,   // &        Bit-wise AND
+                LOR,    // ||       
+                LAND,   // &&       
+                BOR,    // |        
+                BAND,   // &        
+                XOR,    // ^
                 SEMIC,
                 ASGN,
                 IDENT,
@@ -73,7 +74,8 @@ enum ExprType {
         E_LOR,
         E_LAND,
         E_BOR,
-        E_BAND
+        E_BAND,
+        E_XOR
 };
 struct Expr {
         enum ExprType kind;
@@ -123,7 +125,7 @@ bool isidentifier(char c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= '
 bool isicon(char c) { return c >= '0' && c <= '9'; }
 bool ispunctuation(char c) {
         return c == '(' || c == ')' || c == '{' || c == '}' || c == '>' || c == '<' || c == '=' ||
-               c == ';' || c == '!' || c == '|' || c == '&';
+               c == ';' || c == '!' || c == '|' || c == '&' || c == '^';
 }
 
 // FORWARD DECLARATIONS
@@ -138,28 +140,18 @@ struct Token *newtoken(enum TokenKind kind, const char *lexeme) {
         assert(token != NULL);
         token->kind = kind;
         switch (kind) {
-                case INT:
-                case IF:
+                        // clang-format off
+                case INT: case IF: 
                 case RETURN: break;
                 case ICON: token->value.icon = strtoll(lexeme, NULL, 10); break;
                 case IDENT: token->value.scon = strndup(lexeme, LEN); break;
-                case OPAR:
-                case CPAR:
-                case OCBR:
-                case CCBR:
-                case LT:
-                case GT:
-                case LE:
-                case GE:
-                case EQ:
-                case NEQ:
-                case LOR:
-                case LAND:
-                case BOR:
-                case BAND:
+                case OPAR:  case CPAR:  case OCBR:  case CCBR:  case LT:
+                case GT:    case LE:    case GE:    case EQ:    case NEQ: 
+                case LOR:   case LAND:  case BOR:   case BAND:  case XOR:
                 case ASGN:
                 case SEMIC: break;
                 default: assert(0);
+                        // clang-format on
         }
         return token;
 }
@@ -275,6 +267,9 @@ void scan(const char *program, struct Token **tokenlist) {
                                                 kind = LAND;
                                         } else
                                                 kind = BAND;
+                                } else if (program[current] == '^') {
+                                        current++;
+                                        kind = XOR;
                                 } else {
                                         assert(0);
                                 }
@@ -421,8 +416,9 @@ struct Expr *expr(struct Token **token) {
                 case LOR: ekind = E_LOR; goto found;
                 case LAND: ekind = E_LAND; goto found;
                 case BOR: ekind = E_BOR; goto found;
-                case BAND:
-                        ekind = E_BAND;
+                case BAND: ekind = E_BAND; goto found;
+                case XOR:
+                        ekind = E_XOR;
                         goto found;
                 found: {
                         consume(&current, current->kind);
@@ -515,11 +511,14 @@ void cg_stmt(struct Edecl *lstmt) {
                         printf("  li      a4,%lu\n", rhs->value);
                         printf("  beq     a3,a4,.L1end\n");
                 } else if (lstmt->cond->kind == E_LOR || lstmt->cond->kind == E_LAND ||
-                           lstmt->cond->kind == E_BOR || lstmt->cond->kind == E_BAND) {
+                           lstmt->cond->kind == E_BOR || lstmt->cond->kind == E_BAND ||
+                           lstmt->cond->kind == E_XOR) {
                         printf("  li      a3,%d\n", value);
                         printf("  li      a4,%lu\n", rhs->value);
                         if (lstmt->cond->kind == E_LOR || lstmt->cond->kind == E_BOR)
                                 printf("  or      a4,a3,a4\n");
+                        else if (lstmt->cond->kind == E_XOR)
+                                printf("  xor     a4,a3,a4\n");
                         else
                                 printf("  and     a4,a3,a4\n");
                         printf("  beqz    a4,.L1end\n");
