@@ -15,6 +15,7 @@ enum TokenKind { /* KEYWORDS */
         /* 4 */        CPAR,
         /* 5 */        OCBR,
         /* 6 */        CCBR,
+        /* 7 */        LT,
         /* 7 */        GT,
         /* 8 */        SEMIC,
         /* 9 */        ASGN,
@@ -52,7 +53,7 @@ struct Edecl {
         struct Edecl *next;
 };
 
-enum ExprType { E_ICON, E_IDENT, E_GT };
+enum ExprType { E_ICON, E_IDENT, E_LT, E_GT };
 struct Expr {
         enum ExprType kind;
         uint64_t value;
@@ -100,7 +101,8 @@ bool iswhitespace(char c) { return c == ' ' || c == '\t' || c == '\n'; }
 bool isidentifier(char c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'); }
 bool isicon(char c) { return c >= '0' && c <= '9'; }
 bool ispunctuation(char c) {
-        return c == '(' || c == ')' || c == '{' || c == '}' || c == '>' || c == '=' || c == ';';
+        return c == '(' || c == ')' || c == '{' || c == '}' || c == '>' || c == '<' || c == '=' ||
+               c == ';';
 }
 
 // FORWARD DECLARATIONS
@@ -108,6 +110,7 @@ struct Edecl *declaration(struct Token **token);
 struct Expr *expr(struct Token **token);
 struct Expr *primary(struct Token **token);
 struct Edecl *stmt(struct Token **token);
+void cg_stmt(struct Edecl *lstmt);
 
 struct Token *newtoken(enum TokenKind kind, const char *lexeme) {
         struct Token *token = (struct Token *)malloc(sizeof(struct Token));
@@ -123,6 +126,7 @@ struct Token *newtoken(enum TokenKind kind, const char *lexeme) {
                 case CPAR:
                 case OCBR:
                 case CCBR:
+                case LT:
                 case GT:
                 case ASGN:
                 case SEMIC: break;
@@ -133,7 +137,7 @@ struct Token *newtoken(enum TokenKind kind, const char *lexeme) {
 
 struct Expr *newexpr(enum ExprType kind) {
         struct Expr *expr = malloc(sizeof(struct Expr));
-        expr->kind = E_GT;
+        expr->kind = kind;
         return expr;
 }
 
@@ -197,6 +201,9 @@ void scan(const char *program, struct Token **tokenlist) {
                                 } else if (program[current] == '}') {
                                         current++;
                                         kind = CCBR;
+                                } else if (program[current] == '<') {
+                                        current++;
+                                        kind = LT;
                                 } else if (program[current] == '>') {
                                         current++;
                                         kind = GT;
@@ -348,6 +355,13 @@ struct Expr *expr(struct Token **token) {
                 parent->rhs = primary(&current);
                 *token = current;
                 return parent;
+        } else if (current->kind == LT) {
+                consume(&current, LT);
+                struct Expr *parent = newexpr(E_LT);
+                parent->lhs = lhs;
+                parent->rhs = primary(&current);
+                *token = current;
+                return parent;
         }
         *token = current;
         return lhs;
@@ -379,7 +393,6 @@ void codegen(struct Edecl *decl) {
         printf("\n%s:\n", decl->name);
 
         // prologue
-        printf("  # prologue\n");
         printf("  addi    sp,sp,-16\n");
         printf("  sd      s0,8(sp)\n");
         printf("  addi    s0,sp,16\n");
@@ -387,30 +400,41 @@ void codegen(struct Edecl *decl) {
         // body
         struct Edecl *body = decl->body;
         while (body != NULL) {
-                if (body->kind == S_IF) {
-                        // handle cond
-                        assert(body->cond->kind == E_GT);
-                        struct Expr *lhs = body->cond->lhs;
-                        struct Expr *rhs = body->cond->rhs;
-                        int value = get(lhs->ident);
-                        printf("  li      a3,%d\n", value);
-                        printf("  li      a4,%lu\n", rhs->value);
-                        printf("  ble     a3,a4,.L1\n");
-                        // handle then
-                        assert(body->then->kind == S_RETURN);
-                        struct Expr *valueExpr = body->then->value;
-                        printf("  li      a5,%lu\n", valueExpr->value);
-                        printf(".L1:\n");
-                }
+                cg_stmt(body);
                 body = body->next;
         }
 
         // epilogue
-        printf("  # epilogue\n");
+        printf(".Lend:\n");
         printf("  mv      a0,a5\n");
         printf("  ld      s0,8(sp)\n");
         printf("  addi    sp,sp,16\n");
         printf("  jr      ra\n");
+}
+
+void cg_stmt(struct Edecl *lstmt) {
+        if (lstmt->kind == S_IF) {
+                struct Expr *lhs = lstmt->cond->lhs;
+                struct Expr *rhs = lstmt->cond->rhs;
+                int value = get(lhs->ident);
+                printf("  li      a3,%d\n", value);
+                printf("  li      a4,%lu\n", rhs->value);
+
+                // Eval
+                if (lstmt->cond->kind == E_GT)
+                        printf("  ble     a3,a4,.L1end\n");
+                else if (lstmt->cond->kind == E_LT)
+                        printf("  bgt     a3,a4,.L1end\n");
+                else
+                        assert(0);
+
+                cg_stmt(lstmt->then);
+                printf(".L1end:\n");
+        } else if (lstmt->kind == S_RETURN) {
+                printf("  li      a5,%lu\n", lstmt->value->value);
+                printf("  j      .Lend\n");
+        } else
+                ; /* declaration */
 }
 
 int main(int argc, char **argv) {
