@@ -1,7 +1,7 @@
 #!/bin/bash
 
 assert() {
-    expected="$(( ($1 % 256 + 256) % 256 ))"
+    expected="$1"
     input="$2"
 
     ./build/ganymede "$input" > ./build/tmp.s || exit
@@ -66,5 +66,9 @@ assert 3 "int main() { int a = 9; if (a ^ 10) { return 3; } return 0; }";
 assert 3 "int main() { int a = 0; if (a ^ 10) { return 3; } return 0; }";
 assert 3 "int main() { int a = 9; if (a ^ 0) { return 3; } return 0; }";
 assert 0 "int main() { int a = 0; if (a ^ 0) { return 3; } return 0; }";
+
+assert 3 "int main() { int a = 23; if (a << 4) { return 3; } return 0; }";
+assert 3 "int main() { int a = 23; if (a << 4) { return 3; } return 0; }";
+assert 0 "int main() { int a = 0; if (a << 4) { return 3; } return 0; }";
 
 echo -e "\nOK"
