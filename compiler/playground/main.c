@@ -22,6 +22,7 @@ enum TokenKind { /* KEYWORDS */
                 EQ,     // ==
                 NEQ,    // !=
                 LOR,    // ||
+                LAND,   // &&
                 SEMIC,
                 ASGN,
                 IDENT,
@@ -58,7 +59,7 @@ struct Edecl {
         struct Edecl *next;
 };
 
-enum ExprType { E_ICON, E_IDENT, E_LT, E_GT, E_LE, E_GE, E_EQ, E_NEQ, E_LOR };
+enum ExprType { E_ICON, E_IDENT, E_LT, E_GT, E_LE, E_GE, E_EQ, E_NEQ, E_LOR, E_LAND };
 struct Expr {
         enum ExprType kind;
         uint64_t value;
@@ -107,7 +108,7 @@ bool isidentifier(char c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= '
 bool isicon(char c) { return c >= '0' && c <= '9'; }
 bool ispunctuation(char c) {
         return c == '(' || c == ')' || c == '{' || c == '}' || c == '>' || c == '<' || c == '=' ||
-               c == ';' || c == '!' || c == '|';
+               c == ';' || c == '!' || c == '|' || c == '&';
 }
 
 // FORWARD DECLARATIONS
@@ -138,6 +139,7 @@ struct Token *newtoken(enum TokenKind kind, const char *lexeme) {
                 case EQ:
                 case NEQ:
                 case LOR:
+                case LAND:
                 case ASGN:
                 case SEMIC: break;
                 default: assert(0);
@@ -247,6 +249,13 @@ void scan(const char *program, struct Token **tokenlist) {
                                         if (program[current] == '|') {
                                                 current++;
                                                 kind = LOR;
+                                        } else
+                                                assert(0);
+                                } else if (program[current] == '&') {
+                                        current++;
+                                        if (program[current] == '&') {
+                                                current++;
+                                                kind = LAND;
                                         } else
                                                 assert(0);
                                 } else {
@@ -392,8 +401,9 @@ struct Expr *expr(struct Token **token) {
                 case GE: ekind = E_GE; goto found;
                 case EQ: ekind = E_EQ; goto found;
                 case NEQ: ekind = E_NEQ; goto found;
-                case LOR:
-                        ekind = E_LOR;
+                case LOR: ekind = E_LOR; goto found;
+                case LAND:
+                        ekind = E_LAND;
                         goto found;
                 found: {
                         consume(&current, current->kind);
@@ -485,10 +495,13 @@ void cg_stmt(struct Edecl *lstmt) {
                         printf("  li      a3,%d\n", value);
                         printf("  li      a4,%lu\n", rhs->value);
                         printf("  beq     a3,a4,.L1end\n");
-                } else if (lstmt->cond->kind == E_LOR) {
+                } else if (lstmt->cond->kind == E_LOR || lstmt->cond->kind == E_LAND) {
                         printf("  li      a3,%d\n", value);
                         printf("  li      a4,%lu\n", rhs->value);
-                        printf("  or      a4,a3,a4\n");
+                        if (lstmt->cond->kind == E_LOR)
+                                printf("  or      a4,a3,a4\n");
+                        else
+                                printf("  and     a4,a3,a4\n");
                         printf("  beqz    a4,.L1end\n");
                 } else
                         assert(0);
