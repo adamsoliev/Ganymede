@@ -55,7 +55,7 @@ struct Edecl {
         struct Edecl *next;
 };
 
-enum ExprType { E_ICON, E_IDENT, E_LT, E_GT, E_LE };
+enum ExprType { E_ICON, E_IDENT, E_LT, E_GT, E_LE, E_GE };
 struct Expr {
         enum ExprType kind;
         uint64_t value;
@@ -131,6 +131,7 @@ struct Token *newtoken(enum TokenKind kind, const char *lexeme) {
                 case LT:
                 case GT:
                 case LE:
+                case GE:
                 case ASGN:
                 case SEMIC: break;
                 default: assert(0);
@@ -213,7 +214,11 @@ void scan(const char *program, struct Token **tokenlist) {
                                                 kind = LT;
                                 } else if (program[current] == '>') {
                                         current++;
-                                        kind = GT;
+                                        if (program[current] == '=') {
+                                                current++;
+                                                kind = GE;
+                                        } else
+                                                kind = GT;
                                 } else if (program[current] == ';') {
                                         current++;
                                         kind = SEMIC;
@@ -359,8 +364,9 @@ struct Expr *expr(struct Token **token) {
                 enum ExprType ekind = -1;
                 case GT: ekind = E_GT; goto found;
                 case LT: ekind = E_LT; goto found;
-                case LE:
-                        ekind = E_LE;
+                case LE: ekind = E_LE; goto found;
+                case GE:
+                        ekind = E_GE;
                         goto found;
                 found: {
                         consume(&current, current->kind);
@@ -439,6 +445,10 @@ void cg_stmt(struct Edecl *lstmt) {
                 } else if (lstmt->cond->kind == E_LE) {
                         printf("  li      a3,%d\n", value);
                         printf("  li      a4,%lu\n", rhs->value);
+                        printf("  bgt     a3,a4,.L1end\n");
+                } else if (lstmt->cond->kind == E_GE) {
+                        printf("  li      a3,%lu\n", rhs->value);
+                        printf("  li      a4,%d\n", value);
                         printf("  bgt     a3,a4,.L1end\n");
                 } else
                         assert(0);
