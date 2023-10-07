@@ -355,27 +355,23 @@ struct Expr *expr(struct Token **token) {
         struct Token *current = *token;
         struct Expr *lhs = primary(&current);
 
-        if (current->kind == GT) {
-                consume(&current, GT);
-                struct Expr *parent = newexpr(E_GT);
-                parent->lhs = lhs;
-                parent->rhs = primary(&current);
-                *token = current;
-                return parent;
-        } else if (current->kind == LT) {
-                consume(&current, LT);
-                struct Expr *parent = newexpr(E_LT);
-                parent->lhs = lhs;
-                parent->rhs = primary(&current);
-                *token = current;
-                return parent;
-        } else if (current->kind == LE) {
-                consume(&current, LE);
-                struct Expr *parent = newexpr(E_LE);
-                parent->lhs = lhs;
-                parent->rhs = primary(&current);
-                *token = current;
-                return parent;
+        switch (current->kind) {
+                enum ExprType ekind = -1;
+                case GT: ekind = E_GT; goto found;
+                case LT: ekind = E_LT; goto found;
+                case LE:
+                        ekind = E_LE;
+                        goto found;
+                found: {
+                        consume(&current, current->kind);
+                        assert(ekind != -1);
+                        struct Expr *parent = newexpr(ekind);
+                        parent->lhs = lhs;
+                        parent->rhs = primary(&current);
+                        *token = current;
+                        return parent;
+                };
+                default: break;
         }
         *token = current;
         return lhs;
@@ -444,7 +440,7 @@ void cg_stmt(struct Edecl *lstmt) {
                         printf("  li      a3,%d\n", value);
                         printf("  li      a4,%lu\n", rhs->value);
                         printf("  bgt     a3,a4,.L1end\n");
-                } else 
+                } else
                         assert(0);
 
                 cg_stmt(lstmt->then);
