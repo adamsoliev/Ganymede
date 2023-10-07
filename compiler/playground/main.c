@@ -417,15 +417,16 @@ void cg_stmt(struct Edecl *lstmt) {
                 struct Expr *lhs = lstmt->cond->lhs;
                 struct Expr *rhs = lstmt->cond->rhs;
                 int value = get(lhs->ident);
-                printf("  li      a3,%d\n", value);
-                printf("  li      a4,%lu\n", rhs->value);
 
-                // Eval
-                if (lstmt->cond->kind == E_GT)
+                if (lstmt->cond->kind == E_GT) {
+                        printf("  li      a3,%d\n", value);
+                        printf("  li      a4,%lu\n", rhs->value);
                         printf("  ble     a3,a4,.L1end\n");
-                else if (lstmt->cond->kind == E_LT)
-                        printf("  bgt     a3,a4,.L1end\n");
-                else
+                } else if (lstmt->cond->kind == E_LT) {
+                        printf("  li      a3,%lu\n", rhs->value);
+                        printf("  li      a4,%d\n", value);
+                        printf("  ble     a3,a4,.L1end\n");
+                } else
                         assert(0);
 
                 cg_stmt(lstmt->then);

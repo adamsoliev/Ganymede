@@ -22,6 +22,8 @@ assert() {
 }
 
 assert 3 "int main() { int a = 23; if (a > 10) { return 3; } return 0; }";
+assert 0 "int main() { int a = 10; if (a > 10) { return 3; } return 0; }";
 assert 0 "int main() { int a = 23; if (a < 10) { return 3; } return 0; }";
+assert 0 "int main() { int a = 10; if (a < 10) { return 3; } return 0; }";
 
 echo -e "\nOK"
