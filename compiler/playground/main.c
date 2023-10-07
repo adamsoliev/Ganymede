@@ -8,19 +8,21 @@
 // DATA STRUCTURES
 // clang-format off
 enum TokenKind { /* KEYWORDS */
-        /* 0 */        INT,
-        /* 1 */        IF,
-        /* 2 */        RETURN,
-        /* 3 */        OPAR,
-        /* 4 */        CPAR,
-        /* 5 */        OCBR,
-        /* 6 */        CCBR,
-        /* 7 */        LT,
-        /* 7 */        GT,
-        /* 8 */        SEMIC,
-        /* 9 */        ASGN,
-       /* 10 */        IDENT,
-       /* 11 */        ICON,
+                INT,
+                IF,
+                RETURN,
+                OPAR,
+                CPAR,
+                OCBR,
+                CCBR,
+                LT,     // <
+                GT,     // >
+                LE,     // <=
+                GE,     // >=
+                SEMIC,
+                ASGN,
+                IDENT,
+                ICON,
 };
 // clang-format on
 
@@ -53,7 +55,7 @@ struct Edecl {
         struct Edecl *next;
 };
 
-enum ExprType { E_ICON, E_IDENT, E_LT, E_GT };
+enum ExprType { E_ICON, E_IDENT, E_LT, E_GT, E_LE };
 struct Expr {
         enum ExprType kind;
         uint64_t value;
@@ -128,6 +130,7 @@ struct Token *newtoken(enum TokenKind kind, const char *lexeme) {
                 case CCBR:
                 case LT:
                 case GT:
+                case LE:
                 case ASGN:
                 case SEMIC: break;
                 default: assert(0);
@@ -203,7 +206,11 @@ void scan(const char *program, struct Token **tokenlist) {
                                         kind = CCBR;
                                 } else if (program[current] == '<') {
                                         current++;
-                                        kind = LT;
+                                        if (program[current] == '=') {
+                                                current++;
+                                                kind = LE;
+                                        } else
+                                                kind = LT;
                                 } else if (program[current] == '>') {
                                         current++;
                                         kind = GT;
@@ -362,6 +369,13 @@ struct Expr *expr(struct Token **token) {
                 parent->rhs = primary(&current);
                 *token = current;
                 return parent;
+        } else if (current->kind == LE) {
+                consume(&current, LE);
+                struct Expr *parent = newexpr(E_LE);
+                parent->lhs = lhs;
+                parent->rhs = primary(&current);
+                *token = current;
+                return parent;
         }
         *token = current;
         return lhs;
@@ -426,7 +440,11 @@ void cg_stmt(struct Edecl *lstmt) {
                         printf("  li      a3,%lu\n", rhs->value);
                         printf("  li      a4,%d\n", value);
                         printf("  ble     a3,a4,.L1end\n");
-                } else
+                } else if (lstmt->cond->kind == E_LE) {
+                        printf("  li      a3,%d\n", value);
+                        printf("  li      a4,%lu\n", rhs->value);
+                        printf("  bgt     a3,a4,.L1end\n");
+                } else 
                         assert(0);
 
                 cg_stmt(lstmt->then);
