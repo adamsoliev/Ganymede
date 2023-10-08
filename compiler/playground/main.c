@@ -501,6 +501,7 @@ void cg_stmt(struct Edecl *lstmt) {
 }
 
 char *cg_expr(struct Expr *cond) {
+        assert(cond != NULL);
         char *rg = nextr();
         if (cond->kind == E_ICON) {
                 printf("  li      %s,%lu\n", rg, cond->value);
@@ -523,21 +524,15 @@ char *cg_expr(struct Expr *cond) {
                 } else if (cond->kind == E_LE) {
                         printf("  slt      %s,%s,%s\n", rg, rhs, lhs);
                         printf("  xori      %s,%s,1\n", rg, rg); /* invert least significant bit */
-                        // } else if (cond->kind == E_GE) {
-                        //         if (value >= rhs->value)
-                        //                 printf("  li      %s,1\n", rg);
-                        //         else
-                        //                 printf("  li      %s,0\n", rg);
-                        // } else if (cond->kind == E_EQ) {
-                        //         if (value == rhs->value)
-                        //                 printf("  li      %s,1\n", rg);
-                        //         else
-                        //                 printf("  li      %s,0\n", rg);
-                        // } else if (cond->kind == E_NEQ) {
-                        //         if (value != rhs->value)
-                        //                 printf("  li      %s,1\n", rg);
-                        //         else
-                        //                 printf("  li      %s,0\n", rg);
+                } else if (cond->kind == E_GE) {
+                        printf("  slt      %s,%s,%s\n", rg, lhs, rhs);
+                        printf("  xori      %s,%s,1\n", rg, rg);
+                } else if (cond->kind == E_EQ) {
+                        printf("  xor      %s,%s,%s\n", rg, lhs, rhs);
+                        printf("  sltiu     %s,%s,1\n", rg, rg);
+                } else if (cond->kind == E_NEQ) {
+                        printf("  xor      %s,%s,%s\n", rg, lhs, rhs);
+                        printf("  sltu     %s,x0,%s\n", rg, rg);
                         // } else if (cond->kind == E_LOR || cond->kind == E_LAND || cond->kind == E_BOR ||
                         //            cond->kind == E_BAND || cond->kind == E_XOR) {
                         //         char *rg1 = nextr();
