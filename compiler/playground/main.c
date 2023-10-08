@@ -513,9 +513,6 @@ char *cg_expr(struct Expr *cond) {
         } else {
                 char *lhs = cg_expr(cond->lhs);
                 char *rhs = cg_expr(cond->rhs);
-                // struct Expr *lhs = cond->lhs;
-                // struct Expr *rhs = cond->rhs;
-                // int value = get(lhs->ident);
 
                 if (cond->kind == E_GT) {
                         printf("  slt      %s,%s,%s\n", rg, rhs, lhs);
@@ -533,24 +530,19 @@ char *cg_expr(struct Expr *cond) {
                 } else if (cond->kind == E_NEQ) {
                         printf("  xor      %s,%s,%s\n", rg, lhs, rhs);
                         printf("  sltu     %s,x0,%s\n", rg, rg);
-                        // } else if (cond->kind == E_LOR || cond->kind == E_LAND || cond->kind == E_BOR ||
-                        //            cond->kind == E_BAND || cond->kind == E_XOR) {
-                        //         char *rg1 = nextr();
-                        //         printf("  li      %s,%d\n", rg, value);
-                        //         printf("  li      %s,%lu\n", rg1, rhs->value);
-                        //         if (cond->kind == E_LOR || cond->kind == E_BOR)
-                        //                 printf("  or      %s,%s,%s\n", rg, rg, rg1);
-                        //         else if (cond->kind == E_XOR)
-                        //                 printf("  xor     %s,%s,%s\n", rg, rg, rg1);
-                        //         else
-                        //                 printf("  and     %s,%s,%s\n", rg, rg, rg1);
-                        //         prevr(rg1);
-                        // } else if (cond->kind == E_LSH || cond->kind == E_RSH) {
-                        //         char *rg1 = nextr();
-                        //         printf("  li      %s,%d\n", rg, value);
-                        //         printf("  li      %s,%lu\n", rg1, rhs->value);
-                        //         printf("  srl      %s,%s,%s\n", rg, rg, rg1);
-                        //         prevr(rg1);
+                } else if (cond->kind == E_LOR || cond->kind == E_LAND || cond->kind == E_BOR ||
+                           cond->kind == E_BAND || cond->kind == E_XOR) {
+                        if (cond->kind == E_LOR || cond->kind == E_BOR)
+                                printf("  or      %s,%s,%s\n", rg, lhs, rhs);
+                        else if (cond->kind == E_XOR)
+                                printf("  xor      %s,%s,%s\n", rg, lhs, rhs);
+                        else
+                                printf("  and      %s,%s,%s\n", rg, lhs, rhs);
+                } else if (cond->kind == E_LSH || cond->kind == E_RSH) {
+                        if (cond->kind == E_LSH)
+                                printf("  sll      %s,%s,%s\n", rg, lhs, rhs);
+                        else
+                                printf("  srl      %s,%s,%s\n", rg, lhs, rhs);
                 } else
                         assert(0);
 
