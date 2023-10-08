@@ -15,6 +15,10 @@ enum TokenKind { /* KEYWORDS */
                 CPAR,
                 OCBR,
                 CCBR,
+                ADD,
+                SUB,
+                MUL,
+                DIV,
                 LT,     // <
                 GT,     // >
                 LE,     // <=
@@ -66,6 +70,7 @@ struct Edecl {
 
 enum ExprType {
         // clang-format off
+        E_ADD, E_SUB, E_MUL, E_DIV,
         E_ICON, E_IDENT, E_LT, E_GT, E_LE, E_GE, E_EQ, E_NEQ,
         E_LOR, E_LAND, E_BOR, E_BAND, E_XOR, E_LSH, E_RSH
         // clang-format on
@@ -118,7 +123,8 @@ bool isidentifier(char c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= '
 bool isicon(char c) { return c >= '0' && c <= '9'; }
 bool ispunctuation(char c) {
         return c == '(' || c == ')' || c == '{' || c == '}' || c == '>' || c == '<' || c == '=' ||
-               c == ';' || c == '!' || c == '|' || c == '&' || c == '^';
+               c == ';' || c == '!' || c == '|' || c == '&' || c == '^' || c == '+' || c == '-' ||
+               c == '*' || c == '/';
 }
 
 // FORWARD DECLARATIONS
@@ -144,7 +150,8 @@ struct Token *newtoken(enum TokenKind kind, const char *lexeme) {
                 case OPAR:  case CPAR:  case OCBR:  case CCBR:  case LT:
                 case GT:    case LE:    case GE:    case EQ:    case NEQ: 
                 case LOR:   case LAND:  case BOR:   case BAND:  case XOR:
-                case LSH:   case RSH:
+                case LSH:   case RSH:   case ADD:   case SUB:   case MUL:
+                case DIV:
                 case ASGN:
                 case SEMIC: break;
                 default: assert(0);
@@ -207,7 +214,19 @@ void scan(const char *program, struct Token **tokenlist) {
                                 LEN = current - start;
                                 kind = IDENT;
                         } else if (ispunctuation(program[current])) { /* PUNCTUATION */
-                                if (program[current] == '(') {
+                                if (program[current] == '+') {
+                                        current++;
+                                        kind = ADD;
+                                } else if (program[current] == '-') {
+                                        current++;
+                                        kind = SUB;
+                                } else if (program[current] == '*') {
+                                        current++;
+                                        kind = MUL;
+                                } else if (program[current] == '/') {
+                                        current++;
+                                        kind = DIV;
+                                } else if (program[current] == '(') {
                                         current++;
                                         kind = OPAR;
                                 } else if (program[current] == ')') {
@@ -410,6 +429,10 @@ struct Expr *expr(struct Token **token) {
 
         switch (current->kind) {
                 enum ExprType ekind = -1;
+                case ADD: ekind = E_ADD; goto found;
+                case SUB: ekind = E_SUB; goto found;
+                case MUL: ekind = E_MUL; goto found;
+                case DIV: ekind = E_DIV; goto found;
                 case GT: ekind = E_GT; goto found;
                 case LT: ekind = E_LT; goto found;
                 case LE: ekind = E_LE; goto found;
@@ -514,7 +537,15 @@ char *cg_expr(struct Expr *cond) {
                 char *lhs = cg_expr(cond->lhs);
                 char *rhs = cg_expr(cond->rhs);
 
-                if (cond->kind == E_GT) {
+                if (cond->kind == E_ADD) {
+                        printf("  add      %s,%s,%s\n", rg, lhs, rhs);
+                } else if (cond->kind == E_SUB) {
+                        printf("  sub      %s,%s,%s\n", rg, lhs, rhs);
+                } else if (cond->kind == E_MUL) {
+                        printf("  mul      %s,%s,%s\n", rg, lhs, rhs);
+                } else if (cond->kind == E_DIV) {
+                        printf("  div      %s,%s,%s\n", rg, lhs, rhs);
+                } else if (cond->kind == E_GT) {
                         printf("  slt      %s,%s,%s\n", rg, rhs, lhs);
                 } else if (cond->kind == E_LT) {
                         printf("  slt      %s,%s,%s\n", rg, lhs, rhs);
