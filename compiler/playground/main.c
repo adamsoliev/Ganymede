@@ -27,6 +27,7 @@ enum TokenKind { /* KEYWORDS */
                 BAND,   // &        
                 XOR,    // ^
                 LSH,    // <<
+                RSH,    // >>
                 SEMIC,
                 ASGN,
                 IDENT,
@@ -64,20 +65,10 @@ struct Edecl {
 };
 
 enum ExprType {
-        E_ICON,
-        E_IDENT,
-        E_LT,
-        E_GT,
-        E_LE,
-        E_GE,
-        E_EQ,
-        E_NEQ,
-        E_LOR,
-        E_LAND,
-        E_BOR,
-        E_BAND,
-        E_XOR,
-        E_LSH
+        // clang-format off
+        E_ICON, E_IDENT, E_LT, E_GT, E_LE, E_GE, E_EQ, E_NEQ,
+        E_LOR, E_LAND, E_BOR, E_BAND, E_XOR, E_LSH, E_RSH
+        // clang-format on
 };
 struct Expr {
         enum ExprType kind;
@@ -150,7 +141,7 @@ struct Token *newtoken(enum TokenKind kind, const char *lexeme) {
                 case OPAR:  case CPAR:  case OCBR:  case CCBR:  case LT:
                 case GT:    case LE:    case GE:    case EQ:    case NEQ: 
                 case LOR:   case LAND:  case BOR:   case BAND:  case XOR:
-                case LSH:
+                case LSH:   case RSH:
                 case ASGN:
                 case SEMIC: break;
                 default: assert(0);
@@ -240,6 +231,9 @@ void scan(const char *program, struct Token **tokenlist) {
                                         if (program[current] == '=') {
                                                 current++;
                                                 kind = GE;
+                                        } else if (program[current] == '>') {
+                                                current++;
+                                                kind = RSH;
                                         } else
                                                 kind = GT;
                                 } else if (program[current] == ';') {
@@ -424,8 +418,9 @@ struct Expr *expr(struct Token **token) {
                 case BOR: ekind = E_BOR; goto found;
                 case BAND: ekind = E_BAND; goto found;
                 case XOR: ekind = E_XOR; goto found;
-                case LSH:
-                        ekind = E_LSH;
+                case LSH: ekind = E_LSH; goto found;
+                case RSH:
+                        ekind = E_RSH;
                         goto found;
                 found: {
                         consume(&current, current->kind);
@@ -529,10 +524,10 @@ void cg_stmt(struct Edecl *lstmt) {
                         else
                                 printf("  and     a4,a3,a4\n");
                         printf("  beqz    a4,.L1end\n");
-                } else if (lstmt->cond->kind == E_LSH) {
+                } else if (lstmt->cond->kind == E_LSH || lstmt->cond->kind == E_RSH) {
                         printf("  li      a3,%d\n", value);
                         printf("  li      a4,%lu\n", rhs->value);
-                        printf("  sll     a3,a3,a4\n");
+                        printf("  srl     a3,a3,a4\n");
                         printf("  beqz    a3,.L1end\n");
                 } else
                         assert(0);
