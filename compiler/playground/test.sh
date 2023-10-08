@@ -1,7 +1,7 @@
 #!/bin/bash
 
 assert() {
-    expected="$1"
+    expected="$(( ($1 % 256 + 256) % 256 ))" # in C, main's return value range (0 - 255)
     input="$2"
 
     ./build/ganymede "$input" > ./build/tmp.s || exit
@@ -71,8 +71,8 @@ assert 10 "int main() { int a = 0; if (a ^ 10) { return a ^ 10; } return 0; }";
 
 assert 3 "int main() { int a = 23; if (a << 4) { return 3; } return 0; }";
 assert 0 "int main() { int a = 0; if (a << 4) { return 3; } return 0; }";
-# assert 368 "int main() { int a = 23; if (a << 4) { return a << 4; } return 0; }";
-# assert 384 "int main() { int a = 24; if (a << 4) { return a << 4; } return 0; }";
+assert 368 "int main() { int a = 23; if (a << 4) { return a << 4; } return 0; }";
+assert 384 "int main() { int a = 24; if (a << 4) { return a << 4; } return 0; }";
 assert 48 "int main() { int a = 3; if (a << 4) { return a << 4; } return 0; }";
 assert 0 "int main() { int a = 0; if (a << 4) { return a << 4; } return 0; }";
 
