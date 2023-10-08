@@ -510,60 +510,57 @@ char *cg_expr(struct Expr *cond) {
                 printf("  li      %s,%d\n", rg, value);
                 return rg;
         } else {
-                struct Expr *lhs = cond->lhs;
-                struct Expr *rhs = cond->rhs;
-                int value = get(lhs->ident);
+                char *lhs = cg_expr(cond->lhs);
+                char *rhs = cg_expr(cond->rhs);
+                // struct Expr *lhs = cond->lhs;
+                // struct Expr *rhs = cond->rhs;
+                // int value = get(lhs->ident);
 
                 if (cond->kind == E_GT) {
-                        if (value > rhs->value)
-                                printf("  li      %s,1\n", rg);
-                        else
-                                printf("  li      %s,0\n", rg);
+                        printf("  slt      %s,%s,%s\n", rg, rhs, lhs);
                 } else if (cond->kind == E_LT) {
-                        if (value < rhs->value)
-                                printf("  li      %s,1\n", rg);
-                        else
-                                printf("  li      %s,0\n", rg);
+                        printf("  slt      %s,%s,%s\n", rg, lhs, rhs);
                 } else if (cond->kind == E_LE) {
-                        if (value <= rhs->value)
-                                printf("  li      %s,1\n", rg);
-                        else
-                                printf("  li      %s,0\n", rg);
-                } else if (cond->kind == E_GE) {
-                        if (value >= rhs->value)
-                                printf("  li      %s,1\n", rg);
-                        else
-                                printf("  li      %s,0\n", rg);
-                } else if (cond->kind == E_EQ) {
-                        if (value == rhs->value)
-                                printf("  li      %s,1\n", rg);
-                        else
-                                printf("  li      %s,0\n", rg);
-                } else if (cond->kind == E_NEQ) {
-                        if (value != rhs->value)
-                                printf("  li      %s,1\n", rg);
-                        else
-                                printf("  li      %s,0\n", rg);
-                } else if (cond->kind == E_LOR || cond->kind == E_LAND || cond->kind == E_BOR ||
-                           cond->kind == E_BAND || cond->kind == E_XOR) {
-                        char *rg1 = nextr();
-                        printf("  li      %s,%d\n", rg, value);
-                        printf("  li      %s,%lu\n", rg1, rhs->value);
-                        if (cond->kind == E_LOR || cond->kind == E_BOR)
-                                printf("  or      %s,%s,%s\n", rg, rg, rg1);
-                        else if (cond->kind == E_XOR)
-                                printf("  xor     %s,%s,%s\n", rg, rg, rg1);
-                        else
-                                printf("  and     %s,%s,%s\n", rg, rg, rg1);
-                        prevr(rg1);
-                } else if (cond->kind == E_LSH || cond->kind == E_RSH) {
-                        char *rg1 = nextr();
-                        printf("  li      %s,%d\n", rg, value);
-                        printf("  li      %s,%lu\n", rg1, rhs->value);
-                        printf("  srl      %s,%s,%s\n", rg, rg, rg1);
-                        prevr(rg1);
+                        printf("  slt      %s,%s,%s\n", rg, rhs, lhs);
+                        printf("  xori      %s,%s,1\n", rg, rg); /* invert least significant bit */
+                        // } else if (cond->kind == E_GE) {
+                        //         if (value >= rhs->value)
+                        //                 printf("  li      %s,1\n", rg);
+                        //         else
+                        //                 printf("  li      %s,0\n", rg);
+                        // } else if (cond->kind == E_EQ) {
+                        //         if (value == rhs->value)
+                        //                 printf("  li      %s,1\n", rg);
+                        //         else
+                        //                 printf("  li      %s,0\n", rg);
+                        // } else if (cond->kind == E_NEQ) {
+                        //         if (value != rhs->value)
+                        //                 printf("  li      %s,1\n", rg);
+                        //         else
+                        //                 printf("  li      %s,0\n", rg);
+                        // } else if (cond->kind == E_LOR || cond->kind == E_LAND || cond->kind == E_BOR ||
+                        //            cond->kind == E_BAND || cond->kind == E_XOR) {
+                        //         char *rg1 = nextr();
+                        //         printf("  li      %s,%d\n", rg, value);
+                        //         printf("  li      %s,%lu\n", rg1, rhs->value);
+                        //         if (cond->kind == E_LOR || cond->kind == E_BOR)
+                        //                 printf("  or      %s,%s,%s\n", rg, rg, rg1);
+                        //         else if (cond->kind == E_XOR)
+                        //                 printf("  xor     %s,%s,%s\n", rg, rg, rg1);
+                        //         else
+                        //                 printf("  and     %s,%s,%s\n", rg, rg, rg1);
+                        //         prevr(rg1);
+                        // } else if (cond->kind == E_LSH || cond->kind == E_RSH) {
+                        //         char *rg1 = nextr();
+                        //         printf("  li      %s,%d\n", rg, value);
+                        //         printf("  li      %s,%lu\n", rg1, rhs->value);
+                        //         printf("  srl      %s,%s,%s\n", rg, rg, rg1);
+                        //         prevr(rg1);
                 } else
                         assert(0);
+
+                prevr(lhs);
+                prevr(rhs);
         }
         return rg;
 }
