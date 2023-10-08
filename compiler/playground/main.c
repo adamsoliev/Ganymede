@@ -127,6 +127,7 @@ struct Expr *expr(struct Token **token);
 struct Expr *primary(struct Token **token);
 struct Edecl *stmt(struct Token **token);
 void cg_stmt(struct Edecl *lstmt);
+void cg_expr(struct Expr *cond);
 
 struct Token *newtoken(enum TokenKind kind, const char *lexeme) {
         struct Token *token = (struct Token *)malloc(sizeof(struct Token));
@@ -484,61 +485,77 @@ void codegen(struct Edecl *decl) {
 
 void cg_stmt(struct Edecl *lstmt) {
         if (lstmt->kind == S_IF) {
-                struct Expr *lhs = lstmt->cond->lhs;
-                struct Expr *rhs = lstmt->cond->rhs;
-                int value = get(lhs->ident);
-
-                if (lstmt->cond->kind == E_GT) {
-                        printf("  li      a3,%d\n", value);
-                        printf("  li      a4,%lu\n", rhs->value);
-                        printf("  ble     a3,a4,.L1end\n");
-                } else if (lstmt->cond->kind == E_LT) {
-                        printf("  li      a3,%lu\n", rhs->value);
-                        printf("  li      a4,%d\n", value);
-                        printf("  ble     a3,a4,.L1end\n");
-                } else if (lstmt->cond->kind == E_LE) {
-                        printf("  li      a3,%d\n", value);
-                        printf("  li      a4,%lu\n", rhs->value);
-                        printf("  bgt     a3,a4,.L1end\n");
-                } else if (lstmt->cond->kind == E_GE) {
-                        printf("  li      a3,%lu\n", rhs->value);
-                        printf("  li      a4,%d\n", value);
-                        printf("  bgt     a3,a4,.L1end\n");
-                } else if (lstmt->cond->kind == E_EQ) {
-                        printf("  li      a3,%d\n", value);
-                        printf("  li      a4,%lu\n", rhs->value);
-                        printf("  bne     a3,a4,.L1end\n");
-                } else if (lstmt->cond->kind == E_NEQ) {
-                        printf("  li      a3,%d\n", value);
-                        printf("  li      a4,%lu\n", rhs->value);
-                        printf("  beq     a3,a4,.L1end\n");
-                } else if (lstmt->cond->kind == E_LOR || lstmt->cond->kind == E_LAND ||
-                           lstmt->cond->kind == E_BOR || lstmt->cond->kind == E_BAND ||
-                           lstmt->cond->kind == E_XOR) {
-                        printf("  li      a3,%d\n", value);
-                        printf("  li      a4,%lu\n", rhs->value);
-                        if (lstmt->cond->kind == E_LOR || lstmt->cond->kind == E_BOR)
-                                printf("  or      a4,a3,a4\n");
-                        else if (lstmt->cond->kind == E_XOR)
-                                printf("  xor     a4,a3,a4\n");
-                        else
-                                printf("  and     a4,a3,a4\n");
-                        printf("  beqz    a4,.L1end\n");
-                } else if (lstmt->cond->kind == E_LSH || lstmt->cond->kind == E_RSH) {
-                        printf("  li      a3,%d\n", value);
-                        printf("  li      a4,%lu\n", rhs->value);
-                        printf("  srl     a3,a3,a4\n");
-                        printf("  beqz    a3,.L1end\n");
-                } else
-                        assert(0);
-
+                cg_expr(lstmt->cond);
+                printf("  beqz    a4,.L1end\n");
                 cg_stmt(lstmt->then);
                 printf(".L1end:\n");
         } else if (lstmt->kind == S_RETURN) {
-                printf("  li      a5,%lu\n", lstmt->value->value);
+                cg_expr(lstmt->value);
                 printf("  j      .Lend\n");
         } else
                 ; /* declaration */
+}
+
+void cg_expr(struct Expr *cond) {
+        if (cond->kind == E_ICON) {
+                printf("  li      a5,%lu\n", cond->value);
+                return;
+        } else if (cond->kind == E_IDENT) {
+                int value = get(cond->ident);
+                printf("  li      a5,%d\n", value);
+                return;
+        }
+
+        struct Expr *lhs = cond->lhs;
+        struct Expr *rhs = cond->rhs;
+        int value = get(lhs->ident);
+
+        if (cond->kind == E_GT) {
+                if (value > rhs->value)
+                        printf("  li      a4,1\n");
+                else
+                        printf("  li      a4,0\n");
+        } else if (cond->kind == E_LT) {
+                if (value < rhs->value)
+                        printf("  li      a4,1\n");
+                else
+                        printf("  li      a4,0\n");
+        } else if (cond->kind == E_LE) {
+                if (value <= rhs->value)
+                        printf("  li      a4,1\n");
+                else
+                        printf("  li      a4,0\n");
+        } else if (cond->kind == E_GE) {
+                if (value >= rhs->value)
+                        printf("  li      a4,1\n");
+                else
+                        printf("  li      a4,0\n");
+        } else if (cond->kind == E_EQ) {
+                if (value == rhs->value)
+                        printf("  li      a4,1\n");
+                else
+                        printf("  li      a4,0\n");
+        } else if (cond->kind == E_NEQ) {
+                if (value != rhs->value)
+                        printf("  li      a4,1\n");
+                else
+                        printf("  li      a4,0\n");
+        } else if (cond->kind == E_LOR || cond->kind == E_LAND || cond->kind == E_BOR ||
+                   cond->kind == E_BAND || cond->kind == E_XOR) {
+                printf("  li      a3,%d\n", value);
+                printf("  li      a4,%lu\n", rhs->value);
+                if (cond->kind == E_LOR || cond->kind == E_BOR)
+                        printf("  or      a4,a3,a4\n");
+                else if (cond->kind == E_XOR)
+                        printf("  xor     a4,a3,a4\n");
+                else
+                        printf("  and     a4,a3,a4\n");
+        } else if (cond->kind == E_LSH || cond->kind == E_RSH) {
+                printf("  li      a3,%d\n", value);
+                printf("  li      a4,%lu\n", rhs->value);
+                printf("  srl     a4,a3,a4\n");
+        } else
+                assert(0);
 }
 
 int main(int argc, char **argv) {
