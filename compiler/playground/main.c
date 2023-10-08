@@ -160,9 +160,11 @@ struct Token *newtoken(enum TokenKind kind, const char *lexeme) {
         return token;
 }
 
-struct Expr *newexpr(enum ExprType kind) {
+struct Expr *newexpr(enum ExprType kind, struct Expr *lhs, struct Expr *rhs) {
         struct Expr *expr = malloc(sizeof(struct Expr));
         expr->kind = kind;
+        expr->lhs = lhs;
+        expr->rhs = rhs;
         return expr;
 }
 
@@ -427,37 +429,38 @@ struct Expr *expr(struct Token **token) {
         struct Token *current = *token;
         struct Expr *lhs = primary(&current);
 
-        switch (current->kind) {
-                enum ExprType ekind = -1;
-                case ADD: ekind = E_ADD; goto found;
-                case SUB: ekind = E_SUB; goto found;
-                case MUL: ekind = E_MUL; goto found;
-                case DIV: ekind = E_DIV; goto found;
-                case GT: ekind = E_GT; goto found;
-                case LT: ekind = E_LT; goto found;
-                case LE: ekind = E_LE; goto found;
-                case GE: ekind = E_GE; goto found;
-                case EQ: ekind = E_EQ; goto found;
-                case NEQ: ekind = E_NEQ; goto found;
-                case LOR: ekind = E_LOR; goto found;
-                case LAND: ekind = E_LAND; goto found;
-                case BOR: ekind = E_BOR; goto found;
-                case BAND: ekind = E_BAND; goto found;
-                case XOR: ekind = E_XOR; goto found;
-                case LSH: ekind = E_LSH; goto found;
-                case RSH:
-                        ekind = E_RSH;
-                        goto found;
-                found: {
-                        consume(&current, current->kind);
-                        assert(ekind != -1);
-                        struct Expr *parent = newexpr(ekind);
-                        parent->lhs = lhs;
-                        parent->rhs = primary(&current);
-                        *token = current;
-                        return parent;
-                };
-                default: break;
+        while (current->kind >= ADD && current->kind <= RSH) {
+                switch (current->kind) {
+                        enum ExprType ekind = -1;
+                        case ADD: ekind = E_ADD; goto found;
+                        case SUB: ekind = E_SUB; goto found;
+                        case MUL: ekind = E_MUL; goto found;
+                        case DIV: ekind = E_DIV; goto found;
+                        case GT: ekind = E_GT; goto found;
+                        case LT: ekind = E_LT; goto found;
+                        case LE: ekind = E_LE; goto found;
+                        case GE: ekind = E_GE; goto found;
+                        case EQ: ekind = E_EQ; goto found;
+                        case NEQ: ekind = E_NEQ; goto found;
+                        case LOR: ekind = E_LOR; goto found;
+                        case LAND: ekind = E_LAND; goto found;
+                        case BOR: ekind = E_BOR; goto found;
+                        case BAND: ekind = E_BAND; goto found;
+                        case XOR: ekind = E_XOR; goto found;
+                        case LSH: ekind = E_LSH; goto found;
+                        case RSH:
+                                ekind = E_RSH;
+                                goto found;
+                        found: {
+                                consume(&current, current->kind);
+                                assert(ekind != -1);
+                                lhs = newexpr(ekind, lhs, primary(&current));
+                                *token = current;
+                                break;
+                                // return parent;
+                        };
+                        default: break;
+                }
         }
         *token = current;
         return lhs;

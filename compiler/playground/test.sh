@@ -21,6 +21,10 @@ assert() {
     fi
 }
 
+assert 56 "int main() { int a = 23; if (a + a + 10) { return a + a + 10; } return 0; }";
+assert 36 "int main() { int a = 23; if (a + a - 10) { return a + a - 10; } return 0; }";
+# assert 10 "int main() { int a = 3; if (40 - a * 10) { return a + a - 10; } return 0; }";
+
 assert 33 "int main() { int a = 23; if (a + 10) { return a + 10; } return 0; }";
 assert 13 "int main() { int a = 23; if (a - 10) { return a - 10; } return 0; }";
 assert 130 "int main() { int a = 13; if (a * 10) { return a * 10; } return 0; }";
