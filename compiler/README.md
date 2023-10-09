@@ -16,9 +16,6 @@ $ cd Ganymede/compiler
 $ make
 ```
 
-## Data Structures
-![Data Structures](./assets/data_structures_9_8_23.png)
-
 ## Scanner
 It is a hand-coded scanner that generates tokens for every keyword and type of symbol in C99.
 See [ganymede.h](./ganymede.h) and [scanner tests](./tests/scanner/) for more details.

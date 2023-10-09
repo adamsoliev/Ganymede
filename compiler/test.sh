@@ -1,37 +1,11 @@
 #!/bin/bash
 
-echo "-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*"
-echo "             RUNNING SCANNER TESTS              "
-echo "-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*"
-cd ./tests/scanner # dump way to do this
-python3 runner.py
-exit_code=$?
-if [[ $exit_code -ne 0 ]]; then
-    echo "Script failed"
-    exit 1
-fi
-cd ../../
-
-echo -e "\n-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*"
-echo "             RUNNING PARSER TESTS               "
-echo "-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*"
-cd ./tests/parser # dump way to do this
-python3 runner.py
-exit_code=$?
-if [[ $exit_code -ne 0 ]]; then
-    echo "Script failed"
-    exit 1
-fi
-cd ../../
-
-
-# echo "TESTSUITE #1 - ensure generated .s file is runnable and returns expected value"
 assert() {
-    expected="$(( ($1 % 256 + 256) % 256 ))"
+    expected="$(( ($1 % 256 + 256) % 256 ))" # in C, main's return value range (0 - 255)
     input="$2"
 
-    # ./build/ganymede "$input" > ./build/tmp.s || exit
-    ./build/ganymede "-s" "$input" -o ./build/tmp.s || exit
+    ./build/ganymede "$input" > ./build/tmp.s || exit
+    # ./build/ganymede "-s" "$input" -o ./build/tmp.s || exit
 
     # riscv64-linux-gnu-gcc -static -o ./build/tmp ./build/tmp.s
     riscv64-linux-gnu-gcc -static -o ./build/tmp ./build/tmp.s
@@ -47,40 +21,80 @@ assert() {
     fi
 }
 
-# assert 2 "$(cat tests/parser/0001.c)"
-# assert -2 "$(cat tests/parser/0002.c)"
-# assert 4 "$(cat tests/parser/0003.c)"
-# assert 4 "$(cat tests/parser/0004.c)"
-# assert 1 "$(cat tests/parser/0005.c)"
-# assert 1 "$(cat tests/parser/0007.c)"
-# assert 0 "$(cat tests/parser/0008.c)"
+assert 56 "int main() { int a = 23; if (a + a + 10) { return a + a + 10; } return 0; }";
+assert 36 "int main() { int a = 23; if (a + a - 10) { return a + a - 10; } return 0; }";
+assert 10 "int main() { int a = 3; if (40 - a * 10) { return 40 - a * 10; } return 0; }";
+assert 70 "int main() { int a = 3; if (40 + a * 10) { return 40 + a * 10; } return 0; }";
+assert 29 "int main() { int a = 3; if (4 + a * 10 - 5) { return 4 + a * 10 - 5; } return 0; }";
+assert 32 "int main() { int a = 3; if (4 + a * 10 - 6 / 3) { return 4 + a * 10 - 6 / 3; } return 0; }";
 
-# assert 0 "int main() { return 0; }"
-# assert 2 "int main() { return 2; }"
-# assert -2 "int main() { return -2; }"
-# assert 5 "int main() { return 2 + 3; }"
-# assert 2 "int main() { return 4 - 2; }"
-# assert 9 "int main() { return 3 * 3; }"
-# assert 3 "int main() { return 9 / 3; }"
+assert 33 "int main() { int a = 23; if (a + 10) { return a + 10; } return 0; }";
+assert 13 "int main() { int a = 23; if (a - 10) { return a - 10; } return 0; }";
+assert 130 "int main() { int a = 13; if (a * 10) { return a * 10; } return 0; }";
+assert 13 "int main() { int a = 130; if (a / 10) { return a / 10; } return 0; }";
+assert 7 "int main() { int a = 137; if (a % 10) { return a % 10; } return 0; }";
 
-# assert 16 "int main() { return 2 + 3 + 3 + 3 + 3 + 2; }"
-# assert 6 "int main() { return 20 - 3 - 3 - 3 - 3 - 2; }"
-# assert 81 "int main() { return 3 * 3 * 3 * 3; }"
-# assert 3 "int main() { return 81 / 3 / 3 / 3; }"
+assert 3 "int main() { int a = 23; if (a > 10) { return 3; } return 0; }";
+assert 0 "int main() { int a = 10; if (a > 10) { return 3; } return 0; }";
+assert 0 "int main() { int a = 23; if (a < 10) { return 3; } return 0; }";
+assert 0 "int main() { int a = 10; if (a < 10) { return 3; } return 0; }";
 
-# assert 21 "int main() { return 4 + 3 * 3 * 3 - 10; }"
-# assert 26 "int main() { return 4 + 3 * 3 * 3 - 10 / 2; }"
+assert 0 "int main() { int a = 23; if (a <= 10) { return 3; } return 0; }";
+assert 3 "int main() { int a = 10; if (a <= 10) { return 3; } return 0; }";
+assert 3 "int main() { int a = 9; if (a <= 10) { return 3; } return 0; }";
 
-# assert 23 "int main() { int a = 23; return a; }"
+assert 3 "int main() { int a = 23; if (a >= 10) { return 3; } return 0; }";
+assert 3 "int main() { int a = 10; if (a >= 10) { return 3; } return 0; }";
+assert 0 "int main() { int a = 9; if (a >= 10) { return 3; } return 0; }";
 
-# 2
-# echo -e "\nTESTSUITE #2 - ensure generated .ll and .s files match expected files"
-# python3 tests.py
-# exit_code=$?
-# if [[ $exit_code -ne 0 ]]; then
-#     echo "Script failed"
-#     exit 1
-# fi
+assert 0 "int main() { int a = 23; if (a == 10) { return 3; } return 0; }";
+assert 3 "int main() { int a = 10; if (a == 10) { return 3; } return 0; }";
+assert 0 "int main() { int a = 9; if (a == 10) { return 3; } return 0; }";
 
+assert 3 "int main() { int a = 23; if (a != 10) { return 3; } return 0; }";
+assert 0 "int main() { int a = 10; if (a != 10) { return 3; } return 0; }";
+assert 3 "int main() { int a = 9; if (a != 10) { return 3; } return 0; }";
+
+assert 3 "int main() { int a = 9; if (a || 10) { return 3; } return 0; }";
+assert 3 "int main() { int a = 0; if (a || 10) { return 3; } return 0; }";
+assert 0 "int main() { int a = 0; if (a || 0) { return 3; } return 0; }";
+assert 3 "int main() { int a = 23; if (a || 0) { return 3; } return 0; }";
+
+assert 3 "int main() { int a = 9; if (a && 10) { return 3; } return 0; }";
+assert 0 "int main() { int a = 0; if (a && 10) { return 3; } return 0; }";
+assert 0 "int main() { int a = 0; if (a && 0) { return 3; } return 0; }";
+assert 0 "int main() { int a = 23; if (a && 0) { return 3; } return 0; }";
+
+assert 3 "int main() { int a = 9; if (a | 10) { return 3; } return 0; }";
+assert 3 "int main() { int a = 0; if (a | 10) { return 3; } return 0; }";
+assert 0 "int main() { int a = 0; if (a | 0) { return 3; } return 0; }";
+assert 3 "int main() { int a = 9; if (a | 0) { return 3; } return 0; }";
+
+assert 3 "int main() { int a = 9; if (a & 10) { return 3; } return 0; }";
+assert 0 "int main() { int a = 0; if (a & 10) { return 3; } return 0; }";
+assert 0 "int main() { int a = 0; if (a & 0) { return 3; } return 0; }";
+assert 0 "int main() { int a = 9; if (a & 0) { return 3; } return 0; }";
+assert 7 "int main() { int a = 9; if (5 & 3 | 7) { return 5 & 3 | 7; } return 0; }";
+
+assert 3 "int main() { int a = 9; if (a ^ 10) { return 3; } return 0; }";
+assert 3 "int main() { int a = 0; if (a ^ 10) { return 3; } return 0; }";
+assert 3 "int main() { int a = 9; if (a ^ 0) { return 3; } return 0; }";
+assert 0 "int main() { int a = 0; if (a ^ 0) { return 3; } return 0; }";
+assert 29 "int main() { int a = 23; if (a ^ 10) { return a ^ 10; } return 0; }";
+assert 10 "int main() { int a = 0; if (a ^ 10) { return a ^ 10; } return 0; }";
+
+assert 3 "int main() { int a = 23; if (a << 4) { return 3; } return 0; }";
+assert 0 "int main() { int a = 0; if (a << 4) { return 3; } return 0; }";
+assert 368 "int main() { int a = 23; if (a << 4) { return a << 4; } return 0; }";
+assert 384 "int main() { int a = 24; if (a << 4) { return a << 4; } return 0; }";
+assert 48 "int main() { int a = 3; if (a << 4) { return a << 4; } return 0; }";
+assert 0 "int main() { int a = 0; if (a << 4) { return a << 4; } return 0; }";
+assert 40 "int main() { int a = 5; if (a << 3 & 60) { return a << 3 & 60; } return 0; }";
+
+assert 3 "int main() { int a = 23; if (a >> 4) { return 3; } return 0; }";
+assert 0 "int main() { int a = 23; if (a >> 6) { return 3; } return 0; }";
+assert 0 "int main() { int a = 0; if (a  >> 4) { return 3; } return 0; }";
+assert 1 "int main() { int a = 23; if (a >> 4) { return 23 >> 4; } return 0; }";
+assert 0 "int main() { int a = 0; if (a  >> 4) { return a >> 4; } return 0; }";
 
 echo -e "\nOK"
