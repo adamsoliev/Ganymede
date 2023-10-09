@@ -130,7 +130,7 @@ bool ispunctuation(char c) {
 
 // FORWARD DECLARATIONS
 struct Edecl *declaration(struct Token **token);
-struct Expr *expr(struct Token **token);
+struct Expr *expr(int k, struct Token **token);
 struct Expr *primary(struct Token **token);
 struct Edecl *stmt(struct Token **token);
 void cg_stmt(struct Edecl *lstmt);
@@ -362,7 +362,7 @@ struct Edecl *parse(struct Token *head) {
                                 consume(&current, OPAR);
 
                                 /* EXPR */
-                                struct Expr *cond = expr(&current);
+                                struct Expr *cond = expr(4, &current);
                                 lstmt->cond = cond;
 
                                 consume(&current, CPAR);
@@ -421,7 +421,7 @@ struct Edecl *stmt(struct Token **token) {
         lstmt->kind = S_RETURN;
         consume(&current, RETURN);
 
-        lstmt->value = expr(&current);
+        lstmt->value = expr(4, &current);
 
         consume(&current, SEMIC);
 
@@ -429,41 +429,69 @@ struct Edecl *stmt(struct Token **token) {
         return lstmt;
 }
 
-struct Expr *expr(struct Token **token) {
+/*
+-----------------------------------------------------------------------------
+prec    assoc   purpose     op
+-----------------------------------------------------------------------------
+1       left                ,
+2       right   asgn        =, *=, /=, +=, -=, %=, <<=, >>=, &=, ^=, |=
+3       right   cond        ? :
+4       left    logor       ||
+5       left    logand      &&
+6       left    inclor      |
+7       left    exclor      ^
+8       left    and         &
+9       left    equal       ==, !=
+10      left    rel         <, >, <=, >=
+11      left    shift       <<, >>
+12      left    add         +, -
+13      left    mul         *, /, %
+        left    cast        
+14      left    unary       ++, --, &, *, -, ~, !
+15      left    postfix     ++, --, ->, .
+                primary
+-----------------------------------------------------------------------------
+*/
+// clang-format off
+char prec[] = {4,     5,      6,     7,     8,      9,     9,     10,    10, 
+               10,    10,     11,    11,    12,     12,    13,    13,    13,    -1};
+int oper[] = { E_LOR, E_LAND, E_BOR, E_XOR, E_BAND, E_EQ,  E_NEQ, E_LT,  E_GT, 
+               E_LE,  E_GE,   E_LSH, E_RSH, E_ADD,  E_SUB, E_MUL, E_DIV, E_MOD};
+
+int indexify(struct Token *token) {
+    if (token->kind == LOR) return 0;
+    else if (token->kind == LAND) return 1;
+    else if (token->kind == BOR) return 2;
+    else if (token->kind == XOR) return 3;
+    else if (token->kind == BAND) return 4;
+    else if (token->kind == EQ) return 5;
+    else if (token->kind == NEQ) return 6;
+    else if (token->kind == LT) return 7;
+    else if (token->kind == GT) return 8;
+    else if (token->kind == LE) return 9;
+    else if (token->kind == GE) return 10;
+    else if (token->kind == LSH) return 11;
+    else if (token->kind == RSH) return 12;
+    else if (token->kind == ADD) return 13;
+    else if (token->kind == SUB) return 14;
+    else if (token->kind == MUL) return 15;
+    else if (token->kind == DIV) return 16;
+    else if (token->kind == MOD) return 17;
+    else return 18;
+}
+// clang-format on
+
+// binary expression
+struct Expr *expr(int k, struct Token **token) {
         struct Token *current = *token;
         struct Expr *lhs = primary(&current);
+        for (int k1 = prec[indexify(current)]; k1 >= k; k1--) {
+                while (prec[indexify(current)] == k1) {
+                        int op = indexify(current);
+                        current = current->next;
 
-        while (current->kind >= ADD && current->kind <= RSH) {
-                switch (current->kind) {
-                        enum ExprType ekind = -1;
-                        case ADD: ekind = E_ADD; goto found;
-                        case SUB: ekind = E_SUB; goto found;
-                        case MUL: ekind = E_MUL; goto found;
-                        case DIV: ekind = E_DIV; goto found;
-                        case MOD: ekind = E_MOD; goto found;
-                        case GT: ekind = E_GT; goto found;
-                        case LT: ekind = E_LT; goto found;
-                        case LE: ekind = E_LE; goto found;
-                        case GE: ekind = E_GE; goto found;
-                        case EQ: ekind = E_EQ; goto found;
-                        case NEQ: ekind = E_NEQ; goto found;
-                        case LOR: ekind = E_LOR; goto found;
-                        case LAND: ekind = E_LAND; goto found;
-                        case BOR: ekind = E_BOR; goto found;
-                        case BAND: ekind = E_BAND; goto found;
-                        case XOR: ekind = E_XOR; goto found;
-                        case LSH: ekind = E_LSH; goto found;
-                        case RSH:
-                                ekind = E_RSH;
-                                goto found;
-                        found: {
-                                consume(&current, current->kind);
-                                assert(ekind != -1);
-                                lhs = newexpr(ekind, lhs, primary(&current));
-                                *token = current;
-                                break;
-                        };
-                        default: break;
+                        struct Expr *rhs = expr(k1 + 1, &current);
+                        lhs = newexpr(oper[op], lhs, rhs);
                 }
         }
         *token = current;
@@ -488,9 +516,9 @@ struct Expr *primary(struct Token **token) {
         return expr;
 }
 
-/* ----------------------------------------------------------------- */
-/* ---------------------------- CODEGEN ---------------------------- */
-/* ----------------------------------------------------------------- */
+/* ----------------------------------------------------------------------------------------------------------- */
+/* ------------------------------------------------- CODEGEN ------------------------------------------------- */
+/* ----------------------------------------------------------------------------------------------------------- */
 void codegen(struct Edecl *decl) {
         printf("\n  .globl %s\n", decl->name);
         printf("\n%s:\n", decl->name);
@@ -616,6 +644,9 @@ void prevr(char *r) {
         free(r);
         regCount--;
 }
+/* ----------------------------------------------------------------------------------------------------------- */
+/* --------------------------------------------------- END --------------------------------------------------- */
+/* ----------------------------------------------------------------------------------------------------------- */
 
 int main(int argc, char **argv) {
         if (argc < 2) assert(0);
