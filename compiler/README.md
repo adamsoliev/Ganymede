@@ -23,5 +23,15 @@ $ make
   > A succinct, practical book that focuses on theory solely within the context of a C compiler. 
 - Engineering a Compiler by Keith D. Cooper and Linda Torczon
   > A nicely written, theory-focused book that covers most aspects of compilation. 
-
+- Compilers: Principles, Techniques, and Tools by Alfred Aho, Jeffrey Ullman, Ravi Sethi and Monica Lam
+  > A classic
+---
+- [tcc](https://bellard.org/tcc/)
+  > Inspiration
+- [chibicc](https://github.com/rui314/chibicc)
+  > Approachable compiler source code with a strong emphasis on code readability and being able to follow along.
+- [lcc](https://github.com/drh/lcc)
+  > Opinionated compiler source code with many insights/tricks about programming in C and compiling it.
+- [Erik Eidt](https://stackoverflow.com/users/471129/erik-eidt)
+  > Assembly language
 
