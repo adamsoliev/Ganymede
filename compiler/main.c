@@ -33,8 +33,8 @@ enum TokenKind { /* KEYWORDS */
                 XOR,    // ^
                 LSH,    // <<
                 RSH,    // >>
-                SEMIC,
-                ASGN,
+                SEMIC,  // ;
+                ASGN,   // =
                 IDENT,
                 ICON,
 };
@@ -60,7 +60,7 @@ struct Edecl {
                                 - expr for expr-stmt
                             */
 
-        enum EdeclKind { FUNC, DECL, S_IF, S_RETURN, S_COMP } kind;
+        enum EdeclKind { FUNC, DECL, S_IF, S_RETURN, S_COMP, S_EXPR } kind;
         /* STMT */
         struct Expr *cond;
         struct Edecl *then;
@@ -73,7 +73,8 @@ enum ExprType {
         // clang-format off
         E_ADD, E_SUB, E_MUL, E_DIV, E_MOD,
         E_ICON, E_IDENT, E_LT, E_GT, E_LE, E_GE, E_EQ, E_NEQ,
-        E_LOR, E_LAND, E_BOR, E_BAND, E_XOR, E_LSH, E_RSH
+        E_LOR, E_LAND, E_BOR, E_BAND, E_XOR, E_LSH, E_RSH,
+        E_ASGN
         // clang-format on
 };
 struct Expr {
@@ -91,7 +92,12 @@ int LEN; /* used in the scanning step to keep track of string length for identif
 /* --------- HASH TABLE --------- */
 struct KeyValuePair {
         const char *key;
+        struct Sym *sym;
+};
+
+struct Sym {
         int64_t value;
+        int offset;
 };
 
 #define TABLE_SIZE 4096
@@ -109,12 +115,15 @@ int hash(const char *key) {
 void insert(const char *key, int64_t value) {
         int index = hash(key);
         ht[index].key = key;
-        ht[index].value = value;
+        struct Sym *sym = malloc(sizeof(struct Sym));
+        sym->value = value;
+        sym->offset = 0;
+        ht[index].sym = sym;
 }
 
-uint64_t get(const char *key) {
+struct Sym *get(const char *key) {
         int index = hash(key);
-        return ht[index].value;
+        return ht[index].sym;
 }
 /* --------- END --------- */
 
@@ -138,6 +147,8 @@ char *cg_expr(struct Expr *cond);
 char *nextr(void);
 void prevr(char *r);
 int indexify(struct Token *token);
+struct Expr *asgn(struct Token **token);
+void assignoffsets(struct Edecl **decls);
 
 struct Token *newtoken(enum TokenKind kind, const char *lexeme) {
         struct Token *token = (struct Token *)malloc(sizeof(struct Token));
@@ -353,29 +364,8 @@ struct Edecl *parse(struct Token *head) {
                 consume(&current, OCBR);
 
                 while (current->kind != CCBR) {
-                        /* LOCAL LEVEL */
                         if (current->kind == INT) {
                                 ldecltail = ldecltail->next = declaration(&current);
-                        } else if (current->kind == IF) {
-                                struct Edecl *lstmt = malloc(sizeof(struct Edecl));
-                                lstmt->kind = S_IF;
-                                consume(&current, IF);
-                                consume(&current, OPAR);
-
-                                /* EXPR */
-                                struct Expr *cond = expr(4, &current);
-                                lstmt->cond = cond;
-
-                                consume(&current, CPAR);
-                                consume(&current, OCBR);
-
-                                /* STMT */
-                                struct Edecl *then = stmt(&current);
-                                lstmt->then = then;
-
-                                consume(&current, CCBR);
-
-                                ldecltail = ldecltail->next = lstmt;
                         } else {
                                 struct Edecl *lstmt = stmt(&current);
                                 ldecltail = ldecltail->next = lstmt;
@@ -391,6 +381,7 @@ struct Edecl *parse(struct Token *head) {
 
 struct Edecl *declaration(struct Token **token) {
         struct Edecl *ldecl = malloc(sizeof(struct Edecl));
+        ldecl->kind = DECL;
 
         struct Token *current = *token;
 
@@ -403,6 +394,7 @@ struct Edecl *declaration(struct Token **token) {
         consume(&current, ASGN);
 
         struct Expr *value = malloc(sizeof(struct Expr));
+        value->kind = E_ICON;
         value->value = current->value.icon;
         ldecl->value = value;
         consume(&current, ICON);
@@ -419,13 +411,34 @@ struct Edecl *stmt(struct Token **token) {
         struct Token *current = *token;
 
         struct Edecl *lstmt = malloc(sizeof(struct Edecl));
-        lstmt->kind = S_RETURN;
-        consume(&current, RETURN);
+        if (current->kind == IF) {
+                lstmt->kind = S_IF;
+                consume(&current, IF);
+                consume(&current, OPAR);
 
-        lstmt->value = expr(4, &current);
+                /* EXPR */
+                struct Expr *cond = expr(4, &current);
+                lstmt->cond = cond;
 
-        consume(&current, SEMIC);
+                consume(&current, CPAR);
+                consume(&current, OCBR);
 
+                /* STMT */
+                struct Edecl *then = stmt(&current);
+                lstmt->then = then;
+
+                consume(&current, CCBR);
+        } else if (current->kind == RETURN) {
+                lstmt->kind = S_RETURN;
+                consume(&current, RETURN);
+                lstmt->value = expr(4, &current);
+                consume(&current, SEMIC);
+        } else if (current->kind == IDENT) {
+                lstmt->kind = S_EXPR;
+                lstmt->value = asgn(&current);
+                consume(&current, SEMIC);
+        } else
+                assert(0);
         *token = current;
         return lstmt;
 }
@@ -482,6 +495,23 @@ int indexify(struct Token *token) {
 }
 // clang-format on
 
+// assignment-expression:
+//      conditional-expression
+//      unary-expression assign-operator assignment-expression
+struct Expr *asgn(struct Token **token) {
+        struct Token *current = *token;
+        /* will recognize all correct exprs as well as some incorrect ones since 
+        if it isn't a conditinal expr, it must be a unary, not binary as here */
+        struct Expr *lhs = expr(4, &current);
+        if (current->kind == ASGN) {
+                consume(&current, ASGN);
+                struct Expr *rhs = asgn(&current);
+                lhs = newexpr(E_ASGN, lhs, rhs);
+        }
+        *token = current;
+        return lhs;
+}
+
 // binary expression
 struct Expr *expr(int k, struct Token **token) {
         struct Token *current = *token;
@@ -531,6 +561,10 @@ void codegen(struct Edecl *decl) {
 
         // body
         struct Edecl *body = decl->body;
+
+        struct Edecl *decls = body;
+        assignoffsets(&decls);
+
         while (body != NULL) {
                 cg_stmt(body);
                 body = body->next;
@@ -541,6 +575,27 @@ void codegen(struct Edecl *decl) {
         printf("  ld      s0,8(sp)\n");
         printf("  addi    sp,sp,16\n");
         printf("  jr      ra\n");
+}
+
+void assignoffsets(struct Edecl **decls) {
+        struct Edecl *current = *decls;
+        int cnt = -20; /* 5 vars */
+        while (current != NULL) {
+                if (current->kind != DECL) {
+                        current = current->next;
+                        continue;
+                }
+                struct Sym *sym = get(current->name);
+                sym->offset = cnt;
+                cnt += 4;
+
+                char *rg = nextr();
+                printf("  li      %s,%lu\n", rg, sym->value);
+                printf("  sw      %s,%d(s0)\n", rg, sym->offset);
+                prevr(rg);
+
+                current = current->next;
+        }
 }
 
 void cg_stmt(struct Edecl *lstmt) {
@@ -555,6 +610,8 @@ void cg_stmt(struct Edecl *lstmt) {
                 printf("  mv      a0,%s\n", rg);
                 printf("  j      .Lend\n");
                 prevr(rg);
+        } else if (lstmt->kind == S_EXPR) {
+                cg_expr(lstmt->value);
         } else
                 ; /* declaration */
 }
@@ -566,8 +623,17 @@ char *cg_expr(struct Expr *cond) {
                 printf("  li      %s,%lu\n", rg, cond->value);
                 return rg;
         } else if (cond->kind == E_IDENT) {
-                int value = get(cond->ident);
-                printf("  li      %s,%d\n", rg, value);
+                struct Sym *sym = get(cond->ident);
+                printf("  lw      %s,%d(s0)\n", rg, sym->offset);
+                return rg;
+        } else if (cond->kind == E_ASGN) {
+                struct Sym *sym = get(cond->lhs->ident);
+                char *rhs = cg_expr(cond->rhs);
+                printf("  sw      %s,%d(s0)\n", rhs, sym->offset);
+                printf("  mv      %s,%s\n",
+                       rg,
+                       rhs); /* just so that we can return rg. otherwise, no need to have this and return anything here */
+                prevr(rhs);
                 return rg;
         } else {
                 char *lhs = cg_expr(cond->lhs);
