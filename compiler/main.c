@@ -139,7 +139,7 @@ bool ispunctuation(char c) {
 
 // FORWARD DECLARATIONS
 struct Edecl *declaration(struct Token **token);
-struct Expr *expr(int k, struct Token **token);
+struct Expr *binary(int k, struct Token **token);
 struct Expr *primary(struct Token **token);
 struct Edecl *stmt(struct Token **token);
 void cg_stmt(struct Edecl *lstmt);
@@ -417,7 +417,7 @@ struct Edecl *stmt(struct Token **token) {
                 consume(&current, OPAR);
 
                 /* EXPR */
-                struct Expr *cond = expr(4, &current);
+                struct Expr *cond = binary(4, &current);
                 lstmt->cond = cond;
 
                 consume(&current, CPAR);
@@ -431,7 +431,7 @@ struct Edecl *stmt(struct Token **token) {
         } else if (current->kind == RETURN) {
                 lstmt->kind = S_RETURN;
                 consume(&current, RETURN);
-                lstmt->value = expr(4, &current);
+                lstmt->value = binary(4, &current);
                 consume(&current, SEMIC);
         } else if (current->kind == IDENT) {
                 lstmt->kind = S_EXPR;
@@ -502,7 +502,7 @@ struct Expr *asgn(struct Token **token) {
         struct Token *current = *token;
         /* will recognize all correct exprs as well as some incorrect ones since 
         if it isn't a conditinal expr, it must be a unary, not binary as here */
-        struct Expr *lhs = expr(4, &current);
+        struct Expr *lhs = binary(4, &current);
         if (current->kind == ASGN) {
                 consume(&current, ASGN);
                 struct Expr *rhs = asgn(&current);
@@ -513,7 +513,7 @@ struct Expr *asgn(struct Token **token) {
 }
 
 // binary expression
-struct Expr *expr(int k, struct Token **token) {
+struct Expr *binary(int k, struct Token **token) {
         struct Token *current = *token;
         struct Expr *lhs = primary(&current);
         for (int k1 = prec[indexify(current)]; k1 >= k; k1--) {
@@ -521,7 +521,7 @@ struct Expr *expr(int k, struct Token **token) {
                         int op = indexify(current);
                         current = current->next;
 
-                        struct Expr *rhs = expr(k1 + 1, &current);
+                        struct Expr *rhs = binary(k1 + 1, &current);
                         lhs = newexpr(oper[op], lhs, rhs);
                 }
         }
@@ -581,19 +581,16 @@ void assignoffsets(struct Edecl **decls) {
         struct Edecl *current = *decls;
         int cnt = -20; /* 5 vars */
         while (current != NULL) {
-                if (current->kind != DECL) {
-                        current = current->next;
-                        continue;
+                if (current->kind == DECL) {
+                        struct Sym *sym = get(current->name);
+                        sym->offset = cnt;
+                        cnt += 4;
+
+                        char *rg = nextr();
+                        printf("  li      %s,%lu\n", rg, sym->value);
+                        printf("  sw      %s,%d(s0)\n", rg, sym->offset);
+                        prevr(rg);
                 }
-                struct Sym *sym = get(current->name);
-                sym->offset = cnt;
-                cnt += 4;
-
-                char *rg = nextr();
-                printf("  li      %s,%lu\n", rg, sym->value);
-                printf("  sw      %s,%d(s0)\n", rg, sym->offset);
-                prevr(rg);
-
                 current = current->next;
         }
 }
@@ -611,7 +608,7 @@ void cg_stmt(struct Edecl *lstmt) {
                 printf("  j      .Lend\n");
                 prevr(rg);
         } else if (lstmt->kind == S_EXPR) {
-                cg_expr(lstmt->value);
+                cg_expr(lstmt->value); /* return is being ignored */
         } else
                 ; /* declaration */
 }
@@ -630,10 +627,9 @@ char *cg_expr(struct Expr *cond) {
                 struct Sym *sym = get(cond->lhs->ident);
                 char *rhs = cg_expr(cond->rhs);
                 printf("  sw      %s,%d(s0)\n", rhs, sym->offset);
-                printf("  mv      %s,%s\n",
-                       rg,
-                       rhs); /* just so that we can return rg. otherwise, no need to have this and return anything here */
+                printf("  mv      %s,%s\n", rg, rhs);
                 prevr(rhs);
+                /* FYI - no need to return anything here and have move instruction above */
                 return rg;
         } else {
                 char *lhs = cg_expr(cond->lhs);
