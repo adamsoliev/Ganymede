@@ -659,7 +659,7 @@ char *cg_expr(struct Expr *cond) {
                 char *con = cg_expr(cond->lhs);
                 char *tcase = cg_expr(cond->rhs->lhs);
                 char *fcase = cg_expr(cond->rhs->rhs);
-                printf("  beqz    %s,.L3end.1\n", rg);
+                printf("  beqz    %s,.L3end.1\n", con);
                 printf("  mv      %s,%s\n", rg, tcase);
                 printf("  j       .L3end\n");
                 printf(".L3end.1:\n");
