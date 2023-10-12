@@ -38,6 +38,7 @@ enum TokenKind { /* KEYWORDS */
                 QUES,   // ?
                 COLON,  // :
                 INCR,   // ++x
+                DECR,   // --x
                 IDENT,
                 ICON,
 };
@@ -77,7 +78,7 @@ enum ExprType {
         E_ADD, E_SUB, E_MUL, E_DIV, E_MOD,
         E_ICON, E_IDENT, E_LT, E_GT, E_LE, E_GE, E_EQ, E_NEQ,
         E_LOR, E_LAND, E_BOR, E_BAND, E_XOR, E_LSH, E_RSH,
-        E_ASGN, E_RIGHT, E_COND, E_INCR
+        E_ASGN, E_RIGHT, E_COND,
         // clang-format on
 };
 struct Expr {
@@ -170,6 +171,7 @@ struct Token *newtoken(enum TokenKind kind, const char *lexeme) {
                 case LOR:   case LAND:  case BOR:   case BAND:  case XOR:
                 case LSH:   case RSH:   case ADD:   case SUB:   case MUL:
                 case DIV:   case MOD:   case QUES:  case COLON: case INCR:
+                case DECR:
                 case ASGN:
                 case SEMIC: break;
                 default: assert(0);
@@ -243,7 +245,11 @@ void scan(const char *program, struct Token **tokenlist) {
                                                 kind = ADD;
                                 } else if (program[current] == '-') {
                                         current++;
-                                        kind = SUB;
+                                        if (program[current] == '-') {
+                                                current++;
+                                                kind = DECR;
+                                        } else
+                                                kind = SUB;
                                 } else if (program[current] == '*') {
                                         current++;
                                         kind = MUL;
@@ -448,7 +454,7 @@ struct Edecl *stmt(struct Token **token) {
                 consume(&current, RETURN);
                 lstmt->value = binary(4, &current);
                 consume(&current, SEMIC);
-        } else if (current->kind == IDENT || current->kind == INCR) {
+        } else if (current->kind == IDENT || current->kind == INCR || current->kind == DECR) {
                 lstmt->kind = S_EXPR;
                 lstmt->value = asgn(&current);
                 consume(&current, SEMIC);
@@ -567,13 +573,14 @@ struct Expr *unary(struct Token **token) {
         struct Token *current = *token;
         struct Expr *lhs;
         switch (current->kind) {
-                case INCR: {
-                        // e += 1
-                        consume(&current, INCR);
+                case INCR:
+                case DECR: {
+                        enum ExprType ek = current->kind == INCR ? E_ADD : E_SUB;
+                        consume(&current, current->kind);
                         lhs = unary(&current);
                         struct Expr *rhs = newexpr(E_ICON, NULL, NULL);
                         rhs->value = 1;
-                        struct Expr *add = newexpr(E_ADD, lhs, rhs);
+                        struct Expr *add = newexpr(ek, lhs, rhs);
                         lhs = newexpr(E_ASGN, lhs, add);
                         break;
                 }
