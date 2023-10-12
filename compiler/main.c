@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* TODO: make naming consistent (e.g., kind for token and type for expr? )*/
+
 // DATA STRUCTURES
 // clang-format off
 enum TokenKind { /* KEYWORDS */
@@ -39,6 +41,7 @@ enum TokenKind { /* KEYWORDS */
                 COLON,  // :
                 INCR,   // ++x
                 DECR,   // --x
+                NOT,    // !
                 IDENT,
                 ICON,
 };
@@ -78,7 +81,7 @@ enum ExprType {
         E_ADD, E_SUB, E_MUL, E_DIV, E_MOD,
         E_ICON, E_IDENT, E_LT, E_GT, E_LE, E_GE, E_EQ, E_NEQ,
         E_LOR, E_LAND, E_BOR, E_BAND, E_XOR, E_LSH, E_RSH,
-        E_ASGN, E_RIGHT, E_COND,
+        E_ASGN, E_RIGHT, E_COND, E_NOT,
         // clang-format on
 };
 struct Expr {
@@ -171,7 +174,7 @@ struct Token *newtoken(enum TokenKind kind, const char *lexeme) {
                 case LOR:   case LAND:  case BOR:   case BAND:  case XOR:
                 case LSH:   case RSH:   case ADD:   case SUB:   case MUL:
                 case DIV:   case MOD:   case QUES:  case COLON: case INCR:
-                case DECR:
+                case DECR:  case NOT:
                 case ASGN:
                 case SEMIC: break;
                 default: assert(0);
@@ -307,7 +310,7 @@ void scan(const char *program, struct Token **tokenlist) {
                                                 current++;
                                                 kind = NEQ;
                                         } else
-                                                assert(0);
+                                                kind = NOT;
                                 } else if (program[current] == '|') {
                                         current++;
                                         if (program[current] == '|') {
@@ -590,11 +593,17 @@ struct Expr *unary(struct Token **token) {
                         enum TokenKind tk = current->kind;
                         consume(&current, tk);
                         e = unary(&current);
-                        if (tk == ADD) break;
+                        if (tk == ADD) break; /* ignored */
                         struct Expr *one = newexpr(E_ICON, NULL, NULL);
                         one->value = 0;
                         struct Expr *neg = newexpr(E_SUB, one, e);
                         e = newexpr(E_ASGN, e, neg);
+                        break;
+                }
+                case NOT: {
+                        consume(&current, NOT);
+                        e = unary(&current);
+                        e = newexpr(E_NOT, e, NULL);
                         break;
                 }
                 default: e = primary(&current);
@@ -714,6 +723,10 @@ char *cg_expr(struct Expr *cond) {
                 prevr(con);
                 prevr(tcase);
                 prevr(fcase);
+        } else if (cond->kind == E_NOT) {
+                char *e = cg_expr(cond->lhs);
+                printf("  snez      %s,%s\n", rg, e);
+                printf("  xori      %s,%s,1\n", rg, rg); /* invert least significant bit */
         } else {
                 char *lhs = cg_expr(cond->lhs);
                 char *rhs = cg_expr(cond->rhs);
