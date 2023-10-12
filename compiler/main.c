@@ -77,7 +77,7 @@ struct Edecl {
 
 enum ExprKind {
         // clang-format off
-        E_ADD, E_SUB, E_MUL, E_DIV, E_MOD,
+        E_ADD, E_SUB, E_MUL, E_DIV, E_MOD, E_PADD, E_PSUB,
         E_ICON, E_IDENT, E_LT, E_GT, E_LE, E_GE, E_EQ, E_NEQ,
         E_LOR, E_LAND, E_BOR, E_BAND, E_XOR, E_LSH, E_RSH,
         E_ASGN, E_RIGHT, E_COND, E_NOT, E_BCOMPL,
@@ -157,6 +157,7 @@ struct Expr *asgn(struct Token **token);
 void assignoffsets(struct Edecl **decls);
 struct Expr *cond(struct Token **token);
 struct Expr *unary(struct Token **token);
+struct Expr *postfix(struct Token **token);
 
 struct Token *newtoken(enum TokenKind kind, const char *lexeme) {
         struct Token *token = (struct Token *)malloc(sizeof(struct Token));
@@ -459,7 +460,6 @@ struct Edecl *stmt(struct Token **token) {
                 lstmt->kind = S_RETURN;
                 consume(&current, RETURN);
                 lstmt->value = asgn(&current);
-                // lstmt->value = binary(4, &current);
                 consume(&current, SEMIC);
         } else if (current->kind == IDENT || current->kind == INCR || current->kind == DECR ||
                    current->kind == ADD || current->kind == SUB) {
@@ -586,9 +586,9 @@ struct Expr *unary(struct Token **token) {
                         enum ExprKind ek = current->kind == INCR ? E_ADD : E_SUB;
                         consume(&current, current->kind);
                         e = unary(&current);
-                        struct Expr *rhs = newexpr(E_ICON, NULL, NULL);
-                        rhs->value = 1;
-                        struct Expr *add = newexpr(ek, e, rhs);
+                        struct Expr *one = newexpr(E_ICON, NULL, NULL);
+                        one->value = 1;
+                        struct Expr *add = newexpr(ek, e, one);
                         e = newexpr(E_ASGN, e, add);
                         break;
                 }
@@ -611,7 +611,27 @@ struct Expr *unary(struct Token **token) {
                         e = newexpr(ek, e, NULL);
                         break;
                 }
-                default: e = primary(&current);
+                default: e = postfix(&current);
+        }
+        *token = current;
+        return e;
+}
+
+struct Expr *postfix(struct Token **token) {
+        struct Token *current = *token;
+        struct Expr *e = primary(&current);
+        switch (current->kind) {
+                case INCR:
+                case DECR: {
+                        enum ExprKind ek = current->kind == INCR ? E_PADD : E_PSUB;
+                        consume(&current, current->kind);
+                        struct Expr *one = newexpr(E_ICON, NULL, NULL);
+                        one->value = 1;
+                        struct Expr *add = newexpr(ek, e, one);
+                        e = newexpr(E_ASGN, e, add);
+                        break;
+                }
+                default: break;
         }
         *token = current;
         return e;
@@ -712,6 +732,11 @@ char *cg_expr(struct Expr *cond) {
                 struct Sym *sym = get(cond->lhs->ident);
                 char *rhs = cg_expr(cond->rhs);
                 printf("  sw      %s,%d(s0)\n", rhs, sym->offset);
+                if (cond->rhs->kind == E_PADD || cond->rhs->kind == E_PSUB) {
+                        int incr = -1;
+                        if (cond->rhs->kind == E_PSUB) incr = 1;
+                        printf("  addi     %s,%s,%d\n", rhs, rhs, incr);
+                }
                 printf("  mv      %s,%s\n", rg, rhs);
                 prevr(rhs);
         } else if (cond->kind == E_COND) {
@@ -740,9 +765,9 @@ char *cg_expr(struct Expr *cond) {
                 char *lhs = cg_expr(cond->lhs);
                 char *rhs = cg_expr(cond->rhs);
 
-                if (cond->kind == E_ADD) {
+                if (cond->kind == E_ADD || cond->kind == E_PADD) {
                         printf("  add      %s,%s,%s\n", rg, lhs, rhs);
-                } else if (cond->kind == E_SUB) {
+                } else if (cond->kind == E_SUB || cond->kind == E_PSUB) {
                         printf("  sub      %s,%s,%s\n", rg, lhs, rhs);
                 } else if (cond->kind == E_MUL) {
                         printf("  mul      %s,%s,%s\n", rg, lhs, rhs);
