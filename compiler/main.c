@@ -5,8 +5,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* TODO: make naming consistent (e.g., kind for token and type for expr? )*/
-
 // DATA STRUCTURES
 // clang-format off
 enum TokenKind { /* KEYWORDS */
@@ -77,7 +75,7 @@ struct Edecl {
         struct Edecl *next;
 };
 
-enum ExprType {
+enum ExprKind {
         // clang-format off
         E_ADD, E_SUB, E_MUL, E_DIV, E_MOD,
         E_ICON, E_IDENT, E_LT, E_GT, E_LE, E_GE, E_EQ, E_NEQ,
@@ -86,7 +84,7 @@ enum ExprType {
         // clang-format on
 };
 struct Expr {
-        enum ExprType kind;
+        enum ExprKind kind;
         uint64_t value;
         char *ident;
         struct Expr *lhs;
@@ -184,11 +182,12 @@ struct Token *newtoken(enum TokenKind kind, const char *lexeme) {
         return token;
 }
 
-struct Expr *newexpr(enum ExprType kind, struct Expr *lhs, struct Expr *rhs) {
+struct Expr *newexpr(enum ExprKind kind, struct Expr *lhs, struct Expr *rhs) {
         struct Expr *expr = malloc(sizeof(struct Expr));
         expr->kind = kind;
         expr->lhs = lhs;
         expr->rhs = rhs;
+        expr->value = 0;
         return expr;
 }
 
@@ -584,7 +583,7 @@ struct Expr *unary(struct Token **token) {
         switch (current->kind) {
                 case INCR:
                 case DECR: {
-                        enum ExprType ek = current->kind == INCR ? E_ADD : E_SUB;
+                        enum ExprKind ek = current->kind == INCR ? E_ADD : E_SUB;
                         consume(&current, current->kind);
                         e = unary(&current);
                         struct Expr *rhs = newexpr(E_ICON, NULL, NULL);
@@ -599,15 +598,14 @@ struct Expr *unary(struct Token **token) {
                         consume(&current, tk);
                         e = unary(&current);
                         if (tk == ADD) break; /* ignored */
-                        struct Expr *one = newexpr(E_ICON, NULL, NULL);
-                        one->value = 0;
-                        struct Expr *neg = newexpr(E_SUB, one, e);
+                        struct Expr *zero = newexpr(E_ICON, NULL, NULL);
+                        struct Expr *neg = newexpr(E_SUB, zero, e);
                         e = newexpr(E_ASGN, e, neg);
                         break;
                 }
                 case TILDA:
                 case NOT: {
-                        enum ExprType ek = current->kind == NOT ? E_NOT : E_BCOMPL;
+                        enum ExprKind ek = current->kind == NOT ? E_NOT : E_BCOMPL;
                         consume(&current, current->kind);
                         e = unary(&current);
                         e = newexpr(ek, e, NULL);
@@ -622,7 +620,6 @@ struct Expr *unary(struct Token **token) {
 struct Expr *primary(struct Token **token) {
         struct Token *current = *token;
         struct Expr *expr = malloc(sizeof(struct Expr));
-
         if (current->kind == IDENT) {
                 expr->ident = strdup(current->value.scon);
                 expr->kind = E_IDENT;
