@@ -37,6 +37,7 @@ enum TokenKind { /* KEYWORDS */
                 ASGN,   // =
                 QUES,   // ?
                 COLON,  // :
+                INCR,   // ++x
                 IDENT,
                 ICON,
 };
@@ -76,7 +77,7 @@ enum ExprType {
         E_ADD, E_SUB, E_MUL, E_DIV, E_MOD,
         E_ICON, E_IDENT, E_LT, E_GT, E_LE, E_GE, E_EQ, E_NEQ,
         E_LOR, E_LAND, E_BOR, E_BAND, E_XOR, E_LSH, E_RSH,
-        E_ASGN, E_RIGHT, E_COND
+        E_ASGN, E_RIGHT, E_COND, E_INCR
         // clang-format on
 };
 struct Expr {
@@ -152,6 +153,7 @@ int indexify(struct Token *token);
 struct Expr *asgn(struct Token **token);
 void assignoffsets(struct Edecl **decls);
 struct Expr *cond(struct Token **token);
+struct Expr *unary(struct Token **token);
 
 struct Token *newtoken(enum TokenKind kind, const char *lexeme) {
         struct Token *token = (struct Token *)malloc(sizeof(struct Token));
@@ -167,7 +169,7 @@ struct Token *newtoken(enum TokenKind kind, const char *lexeme) {
                 case GT:    case LE:    case GE:    case EQ:    case NEQ: 
                 case LOR:   case LAND:  case BOR:   case BAND:  case XOR:
                 case LSH:   case RSH:   case ADD:   case SUB:   case MUL:
-                case DIV:   case MOD:   case QUES:  case COLON:
+                case DIV:   case MOD:   case QUES:  case COLON: case INCR:
                 case ASGN:
                 case SEMIC: break;
                 default: assert(0);
@@ -234,7 +236,11 @@ void scan(const char *program, struct Token **tokenlist) {
                         } else if (ispunctuation(program[current])) { /* PUNCTUATION */
                                 if (program[current] == '+') {
                                         current++;
-                                        kind = ADD;
+                                        if (program[current] == '+') {
+                                                current++;
+                                                kind = INCR;
+                                        } else
+                                                kind = ADD;
                                 } else if (program[current] == '-') {
                                         current++;
                                         kind = SUB;
@@ -442,7 +448,7 @@ struct Edecl *stmt(struct Token **token) {
                 consume(&current, RETURN);
                 lstmt->value = binary(4, &current);
                 consume(&current, SEMIC);
-        } else if (current->kind == IDENT) {
+        } else if (current->kind == IDENT || current->kind == INCR) {
                 lstmt->kind = S_EXPR;
                 lstmt->value = asgn(&current);
                 consume(&current, SEMIC);
@@ -540,9 +546,10 @@ struct Expr *cond(struct Token **token) {
 }
 
 // binary expression
+//      unary-expression { binary-operator unary-expression }
 struct Expr *binary(int k, struct Token **token) {
         struct Token *current = *token;
-        struct Expr *lhs = primary(&current);
+        struct Expr *lhs = unary(&current);
         for (int k1 = prec[indexify(current)]; k1 >= k; k1--) {
                 while (prec[indexify(current)] == k1) {
                         int op = indexify(current);
@@ -551,6 +558,26 @@ struct Expr *binary(int k, struct Token **token) {
                         struct Expr *rhs = binary(k1 + 1, &current);
                         lhs = newexpr(oper[op], lhs, rhs);
                 }
+        }
+        *token = current;
+        return lhs;
+}
+
+struct Expr *unary(struct Token **token) {
+        struct Token *current = *token;
+        struct Expr *lhs;
+        switch (current->kind) {
+                case INCR: {
+                        // e += 1
+                        consume(&current, INCR);
+                        lhs = unary(&current);
+                        struct Expr *rhs = newexpr(E_ICON, NULL, NULL);
+                        rhs->value = 1;
+                        struct Expr *add = newexpr(E_ADD, lhs, rhs);
+                        lhs = newexpr(E_ASGN, lhs, add);
+                        break;
+                }
+                default: lhs = primary(&current);
         }
         *token = current;
         return lhs;
@@ -654,7 +681,6 @@ char *cg_expr(struct Expr *cond) {
                 printf("  sw      %s,%d(s0)\n", rhs, sym->offset);
                 printf("  mv      %s,%s\n", rg, rhs);
                 prevr(rhs);
-                /* FYI - no need to return anything here and have move instruction above */
         } else if (cond->kind == E_COND) {
                 char *con = cg_expr(cond->lhs);
                 char *tcase = cg_expr(cond->rhs->lhs);

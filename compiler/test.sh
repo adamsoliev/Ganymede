@@ -21,6 +21,8 @@ assert() {
     fi
 }
 
+assert 24 "int main() { int a = 23; ++a; return a; }";
+
 assert 100 "int main() { int a = 23; a = a > 10 ? 100 : 1; return a; }";
 assert 1 "int main() { int a = 23; a = a < 10 ? 100 : 1; return a; }";
 assert 9 "int main() { int a = 23; a = a == 10 ? 100 : 1; return a * 9; }";
