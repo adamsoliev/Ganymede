@@ -454,7 +454,8 @@ struct Edecl *stmt(struct Token **token) {
                 consume(&current, RETURN);
                 lstmt->value = binary(4, &current);
                 consume(&current, SEMIC);
-        } else if (current->kind == IDENT || current->kind == INCR || current->kind == DECR) {
+        } else if (current->kind == IDENT || current->kind == INCR || current->kind == DECR ||
+                   current->kind == ADD || current->kind == SUB) {
                 lstmt->kind = S_EXPR;
                 lstmt->value = asgn(&current);
                 consume(&current, SEMIC);
@@ -571,23 +572,35 @@ struct Expr *binary(int k, struct Token **token) {
 
 struct Expr *unary(struct Token **token) {
         struct Token *current = *token;
-        struct Expr *lhs;
+        struct Expr *e;
         switch (current->kind) {
                 case INCR:
                 case DECR: {
                         enum ExprType ek = current->kind == INCR ? E_ADD : E_SUB;
                         consume(&current, current->kind);
-                        lhs = unary(&current);
+                        e = unary(&current);
                         struct Expr *rhs = newexpr(E_ICON, NULL, NULL);
                         rhs->value = 1;
-                        struct Expr *add = newexpr(ek, lhs, rhs);
-                        lhs = newexpr(E_ASGN, lhs, add);
+                        struct Expr *add = newexpr(ek, e, rhs);
+                        e = newexpr(E_ASGN, e, add);
                         break;
                 }
-                default: lhs = primary(&current);
+                case ADD:
+                case SUB: {
+                        enum TokenKind tk = current->kind;
+                        consume(&current, tk);
+                        e = unary(&current);
+                        if (tk == ADD) break;
+                        struct Expr *one = newexpr(E_ICON, NULL, NULL);
+                        one->value = 0;
+                        struct Expr *neg = newexpr(E_SUB, one, e);
+                        e = newexpr(E_ASGN, e, neg);
+                        break;
+                }
+                default: e = primary(&current);
         }
         *token = current;
-        return lhs;
+        return e;
 }
 
 struct Expr *primary(struct Token **token) {
