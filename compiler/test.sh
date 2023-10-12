@@ -39,6 +39,7 @@ assert 9 "int main() { int a = 23; a = a == 10 ? 100 : 1; return a * 9; }";
 
 assert 26 "int main() { int a = 23; a = a + 3; return a; }";
 assert 55 "int main() { int a = 23; int b = 32; a = a + b; return a; }";
+assert 12 "int main() { int a = 3; int b = 2; int c = 5; a = a + b; b = b + c;  return a + b; }";
 assert 55 "int main() { int a = 23; int b = 32; if (a + b) { b = a + b; } return b; }";
 
 assert 56 "int main() { int a = 23; if (a + a + 10) { return a + a + 10; } return 0; }";

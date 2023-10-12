@@ -92,7 +92,8 @@ struct Expr {
 };
 
 /* GLOBALS */
-int LEN; /* used in the scanning step to keep track of string length for identifiers and scon */
+int LEN;    /* used in the scanning step to keep track of string length for identifiers and scon */
+int OFFSET; /* used to sum local var offsets during function definition parsing */
 #define TYPE_INT 0x0000000000000003  // 0000,0000,0011
 
 /* --------- HASH TABLE --------- */
@@ -376,6 +377,7 @@ struct Edecl *parse(struct Token *head) {
         struct Token *current = head;
         struct Edecl *decl = malloc(sizeof(struct Edecl)); /* FUNCTION */
         decl->kind = FUNC;
+        OFFSET = 0;
         while (current != NULL) {
                 decl->type |= TYPE_INT;
                 consume(&current, INT);
@@ -421,11 +423,10 @@ struct Edecl *declaration(struct Token **token) {
 
         consume(&current, ASGN);
 
-        struct Expr *value = malloc(sizeof(struct Expr));
-        value->kind = E_ICON;
-        value->value = current->value.icon;
-        ldecl->value = value;
+        ldecl->value = newexpr(E_ICON, NULL, NULL);
+        ldecl->value->value = current->value.icon;
         consume(&current, ICON);
+        OFFSET += 4;
 
         insert(ldecl->name, ldecl->value->value);
 
@@ -686,7 +687,7 @@ void codegen(struct Edecl *decl) {
 
 void assignoffsets(struct Edecl **decls) {
         struct Edecl *current = *decls;
-        int cnt = -20; /* 5 vars */
+        int cnt = -(OFFSET);
         while (current != NULL) {
                 if (current->kind == DECL) {
                         struct Sym *sym = get(current->name);
