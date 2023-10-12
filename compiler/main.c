@@ -42,6 +42,7 @@ enum TokenKind { /* KEYWORDS */
                 INCR,   // ++x
                 DECR,   // --x
                 NOT,    // !
+                TILDA,  // ~
                 IDENT,
                 ICON,
 };
@@ -81,7 +82,7 @@ enum ExprType {
         E_ADD, E_SUB, E_MUL, E_DIV, E_MOD,
         E_ICON, E_IDENT, E_LT, E_GT, E_LE, E_GE, E_EQ, E_NEQ,
         E_LOR, E_LAND, E_BOR, E_BAND, E_XOR, E_LSH, E_RSH,
-        E_ASGN, E_RIGHT, E_COND, E_NOT,
+        E_ASGN, E_RIGHT, E_COND, E_NOT, E_BCOMPL,
         // clang-format on
 };
 struct Expr {
@@ -141,7 +142,7 @@ bool isicon(char c) { return c >= '0' && c <= '9'; }
 bool ispunctuation(char c) {
         return c == '(' || c == ')' || c == '{' || c == '}' || c == '>' || c == '<' || c == '=' ||
                c == ';' || c == '!' || c == '|' || c == '&' || c == '^' || c == '+' || c == '-' ||
-               c == '*' || c == '/' || c == '%' || c == '?' || c == ':';
+               c == '*' || c == '/' || c == '%' || c == '?' || c == ':' || c == '~';
 }
 
 // FORWARD DECLARATIONS
@@ -174,7 +175,7 @@ struct Token *newtoken(enum TokenKind kind, const char *lexeme) {
                 case LOR:   case LAND:  case BOR:   case BAND:  case XOR:
                 case LSH:   case RSH:   case ADD:   case SUB:   case MUL:
                 case DIV:   case MOD:   case QUES:  case COLON: case INCR:
-                case DECR:  case NOT:
+                case DECR:  case NOT:   case TILDA:
                 case ASGN:
                 case SEMIC: break;
                 default: assert(0);
@@ -334,6 +335,9 @@ void scan(const char *program, struct Token **tokenlist) {
                                 } else if (program[current] == ':') {
                                         current++;
                                         kind = COLON;
+                                } else if (program[current] == '~') {
+                                        current++;
+                                        kind = TILDA;
                                 } else {
                                         assert(0);
                                 }
@@ -441,7 +445,7 @@ struct Edecl *stmt(struct Token **token) {
                 consume(&current, OPAR);
 
                 /* EXPR */
-                struct Expr *cond = binary(4, &current);
+                struct Expr *cond = asgn(&current);
                 lstmt->cond = cond;
 
                 consume(&current, CPAR);
@@ -455,7 +459,8 @@ struct Edecl *stmt(struct Token **token) {
         } else if (current->kind == RETURN) {
                 lstmt->kind = S_RETURN;
                 consume(&current, RETURN);
-                lstmt->value = binary(4, &current);
+                lstmt->value = asgn(&current);
+                // lstmt->value = binary(4, &current);
                 consume(&current, SEMIC);
         } else if (current->kind == IDENT || current->kind == INCR || current->kind == DECR ||
                    current->kind == ADD || current->kind == SUB) {
@@ -600,10 +605,12 @@ struct Expr *unary(struct Token **token) {
                         e = newexpr(E_ASGN, e, neg);
                         break;
                 }
+                case TILDA:
                 case NOT: {
-                        consume(&current, NOT);
+                        enum ExprType ek = current->kind == NOT ? E_NOT : E_BCOMPL;
+                        consume(&current, current->kind);
                         e = unary(&current);
-                        e = newexpr(E_NOT, e, NULL);
+                        e = newexpr(ek, e, NULL);
                         break;
                 }
                 default: e = primary(&current);
@@ -727,6 +734,11 @@ char *cg_expr(struct Expr *cond) {
                 char *e = cg_expr(cond->lhs);
                 printf("  snez      %s,%s\n", rg, e);
                 printf("  xori      %s,%s,1\n", rg, rg); /* invert least significant bit */
+                prevr(e);
+        } else if (cond->kind == E_BCOMPL) {
+                char *e = cg_expr(cond->lhs);
+                printf("  not      %s,%s\n", rg, e);
+                prevr(e);
         } else {
                 char *lhs = cg_expr(cond->lhs);
                 char *rhs = cg_expr(cond->rhs);
