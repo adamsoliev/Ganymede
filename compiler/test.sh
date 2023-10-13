@@ -21,6 +21,11 @@ assert() {
     fi
 }
 
+assert 23 "int main() { int a = 23; if (a) return 23; else return 0; }";
+assert 23 "int main() { int a = 24; if (a > 23) return 23; else if (a == 23) return 10; else return 0; }";
+assert 10 "int main() { int a = 23; if (a > 23) return 23; else if (a == 23) return 10; else return 0; }";
+assert 0 "int main() { int a = 22; if (a > 23) return 23; else if (a == 23) return 10; else return 0; }";
+
 assert 23 "int main() { int a; a = 23; return a; }";
 assert 46 "int main() { int a; int b; a = 23; b = a * 2; return b; }";
 assert 24 "int main() { int a = 23; ++a; return a; }";
