@@ -423,12 +423,10 @@ struct Edecl *declaration(struct Token **token) {
 
         consume(&current, ASGN);
 
-        ldecl->value = newexpr(E_ICON, NULL, NULL);
-        ldecl->value->value = current->value.icon;
-        consume(&current, ICON);
+        ldecl->value = asgn(&current);
         OFFSET += 4;
 
-        insert(ldecl->name, ldecl->value->value);
+        insert(ldecl->name, 0);
 
         consume(&current, SEMIC);
 
@@ -694,8 +692,7 @@ void assignoffsets(struct Edecl **decls) {
                         sym->offset = cnt;
                         cnt += 4;
 
-                        char *rg = nextr();
-                        printf("  li      %s,%lu\n", rg, sym->value);
+                        char *rg = cg_expr(current->value);
                         printf("  sw      %s,%d(s0)\n", rg, sym->offset);
                         prevr(rg);
                 }
