@@ -669,15 +669,8 @@ void codegen(struct Edecl *decl) {
         printf("  addi    s0,sp,16\n");
 
         // body
-        struct Edecl *body = decl->body;
-
-        struct Edecl *decls = body;
-        assignoffsets(&decls);
-
-        while (body != NULL) {
-                cg_stmt(body);
-                body = body->next;
-        }
+        assignoffsets(&decl->body);
+        cg_stmt(decl->body);
 
         // epilogue
         printf(".L.end:\n");
@@ -696,12 +689,6 @@ void assignoffsets(struct Edecl **decls) {
                 struct Sym *sym = get(current->name);
                 sym->offset = OFFSET;
                 OFFSET += 4;
-
-                if (current->value != NULL) {
-                        char *rg = cg_expr(current->value);
-                        printf("  sw      %s,%d(s0)\n", rg, sym->offset);
-                        prevr(rg);
-                }
         }
 }
 
@@ -733,13 +720,22 @@ void cg_stmt(struct Edecl *lstmt) {
         } else if (lstmt->kind == S_EXPR) {
                 cg_expr(lstmt->value); /* return is being ignored */
         } else if (lstmt->kind == S_COMP) {
-                struct Edecl *body = lstmt->body;
-                while (body != NULL) {
-                        cg_stmt(body);
-                        body = body->next;
+                struct Edecl *declOrStmt = lstmt->body;
+                while (declOrStmt != NULL) {
+                        if (declOrStmt->kind == DECL) {
+                                if (declOrStmt->value != NULL) {
+                                        struct Sym *sym = get(declOrStmt->name);
+                                        char *rg = cg_expr(declOrStmt->value);
+                                        printf("  sw      %s,%d(s0)\n", rg, sym->offset);
+                                        prevr(rg);
+                                }
+                        } else {
+                                cg_stmt(declOrStmt);
+                        }
+                        declOrStmt = declOrStmt->next;
                 }
         } else
-                ; /* declaration */
+                assert(0);
 }
 
 char *cg_expr(struct Expr *cond) {
@@ -789,31 +785,31 @@ char *cg_expr(struct Expr *cond) {
                 char *rhs = cg_expr(cond->rhs);
 
                 if (cond->kind == E_ADD || cond->kind == E_PADD) {
-                        printf("  add      %s,%s,%s\n", rg, lhs, rhs);
+                        printf("  add     %s,%s,%s\n", rg, lhs, rhs);
                 } else if (cond->kind == E_SUB || cond->kind == E_PSUB) {
-                        printf("  sub      %s,%s,%s\n", rg, lhs, rhs);
+                        printf("  sub     %s,%s,%s\n", rg, lhs, rhs);
                 } else if (cond->kind == E_MUL) {
-                        printf("  mul      %s,%s,%s\n", rg, lhs, rhs);
+                        printf("  mul     %s,%s,%s\n", rg, lhs, rhs);
                 } else if (cond->kind == E_DIV) {
-                        printf("  div      %s,%s,%s\n", rg, lhs, rhs);
+                        printf("  div     %s,%s,%s\n", rg, lhs, rhs);
                 } else if (cond->kind == E_MOD) {
-                        printf("  rem      %s,%s,%s\n", rg, lhs, rhs);
+                        printf("  rem     %s,%s,%s\n", rg, lhs, rhs);
                 } else if (cond->kind == E_GT) {
-                        printf("  slt      %s,%s,%s\n", rg, rhs, lhs);
+                        printf("  slt     %s,%s,%s\n", rg, rhs, lhs);
                 } else if (cond->kind == E_LT) {
                         printf("  slt     %s,%s,%s\n", rg, lhs, rhs);
                 } else if (cond->kind == E_LE) {
-                        printf("  slt      %s,%s,%s\n", rg, rhs, lhs);
-                        printf("  xori     %s,%s,1\n", rg, rg); /* invert least significant bit */
+                        printf("  slt     %s,%s,%s\n", rg, rhs, lhs);
+                        printf("  xori    %s,%s,1\n", rg, rg); /* invert least significant bit */
                 } else if (cond->kind == E_GE) {
-                        printf("  slt      %s,%s,%s\n", rg, lhs, rhs);
-                        printf("  xori     %s,%s,1\n", rg, rg);
+                        printf("  slt     %s,%s,%s\n", rg, lhs, rhs);
+                        printf("  xori    %s,%s,1\n", rg, rg);
                 } else if (cond->kind == E_EQ) {
-                        printf("  xor      %s,%s,%s\n", rg, lhs, rhs);
-                        printf("  sltiu    %s,%s,1\n", rg, rg);
+                        printf("  xor     %s,%s,%s\n", rg, lhs, rhs);
+                        printf("  sltiu   %s,%s,1\n", rg, rg);
                 } else if (cond->kind == E_NEQ) {
-                        printf("  xor      %s,%s,%s\n", rg, lhs, rhs);
-                        printf("  sltu     %s,x0,%s\n", rg, rg);
+                        printf("  xor     %s,%s,%s\n", rg, lhs, rhs);
+                        printf("  sltu    %s,x0,%s\n", rg, rg);
                 } else if (cond->kind == E_LOR || cond->kind == E_LAND || cond->kind == E_BOR ||
                            cond->kind == E_BAND || cond->kind == E_XOR) {
                         if (cond->kind == E_LOR || cond->kind == E_BOR)
