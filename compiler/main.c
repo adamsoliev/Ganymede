@@ -668,7 +668,7 @@ void codegen(struct Edecl *decl) {
         }
 
         // epilogue
-        printf(".Lend:\n");
+        printf(".L.end:\n");
         printf("  ld      s0,8(sp)\n");
         printf("  addi    sp,sp,16\n");
         printf("  jr      ra\n");
@@ -694,18 +694,17 @@ void cg_stmt(struct Edecl *lstmt) {
         if (lstmt->kind == S_IF) {
                 int i = nexti();
                 char *rg = cg_expr(lstmt->cond);
-                printf("  beqz    %s,.L%dend%d\n", rg, i, i);
+                printf("  beqz    %s,.L.end.%d\n", rg, i);
                 prevr(rg);
                 cg_stmt(lstmt->then);
-                printf(".L%dend%d:\n", i, i);
+                printf(".L.end.%d:\n", i);
                 if (lstmt->els != NULL) {
                         cg_stmt(lstmt->els);
-                        printf(".L%dend:\n", i);
                 }
         } else if (lstmt->kind == S_RETURN) {
                 char *rg = cg_expr(lstmt->value);
                 printf("  mv      a0,%s\n", rg);
-                printf("  j      .Lend\n");
+                printf("  j      .L.end\n");
                 prevr(rg);
         } else if (lstmt->kind == S_EXPR) {
                 cg_expr(lstmt->value); /* return is being ignored */
@@ -733,15 +732,16 @@ char *cg_expr(struct Expr *cond) {
                 printf("  mv      %s,%s\n", rg, rhs);
                 prevr(rhs);
         } else if (cond->kind == E_COND) {
+                int i = nexti();
                 char *con = cg_expr(cond->lhs);
                 char *tcase = cg_expr(cond->rhs->lhs);
                 char *fcase = cg_expr(cond->rhs->rhs);
-                printf("  beqz    %s,.L3end.1\n", con);
+                printf("  beqz    %s,.L.else.%d\n", con, i);
                 printf("  mv      %s,%s\n", rg, tcase);
-                printf("  j       .L3end\n");
-                printf(".L3end.1:\n");
+                printf("  j       .L.end.%d\n", i);
+                printf(".L.else.%d:\n", i);
                 printf("  mv      %s,%s\n", rg, fcase);
-                printf(".L3end:\n");
+                printf(".L.end.%d:\n", i);
                 prevr(con);
                 prevr(tcase);
                 prevr(fcase);
