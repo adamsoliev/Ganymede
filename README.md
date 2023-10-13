@@ -15,7 +15,8 @@
 1. Compiler
 
    - [Chibicc](https://github.com/rui314/chibicc)
-   - [Tiny C Compiler](https://bellard.org/tcc/)
+   - [LCC](https://github.com/drh/lcc)
+   - [TCC](https://bellard.org/tcc/)
    - [QBE](https://c9x.me/compile/)
 
 2. Processor
