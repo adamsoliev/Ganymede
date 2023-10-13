@@ -388,23 +388,7 @@ struct Edecl *parse(struct Token *head) {
                 consume(&current, OPAR);
                 consume(&current, CPAR);
 
-                struct Edecl *ldeclhead = malloc(sizeof(struct Edecl));
-                struct Edecl *ldecltail = ldeclhead;
-
-                consume(&current, OCBR);
-
-                while (current->kind != CCBR) {
-                        if (current->kind == INT) {
-                                ldecltail = ldecltail->next = declaration(&current);
-                        } else {
-                                struct Edecl *lstmt = stmt(&current);
-                                ldecltail = ldecltail->next = lstmt;
-                        }
-                }
-                assert(current->kind == CCBR);
-                consume(&current, CCBR);
-
-                decl->body = ldeclhead->next;
+                decl->body = stmt(&current);
         }
         return decl;
 }
@@ -465,6 +449,18 @@ struct Edecl *stmt(struct Token **token) {
                 lstmt->kind = S_EXPR;
                 lstmt->value = asgn(&current);
                 consume(&current, SEMIC);
+        } else if (current->kind == OCBR) {
+                consume(&current, OCBR);
+                struct Edecl *lstmttail = lstmt;
+                while (current->kind != CCBR) {
+                        if (current->kind == INT) {
+                                lstmttail = lstmttail->next = declaration(&current);
+                        } else {
+                                struct Edecl *lstmt = stmt(&current);
+                                lstmttail = lstmttail->next = lstmt;
+                        }
+                }
+                consume(&current, CCBR);
         } else
                 assert(0);
         *token = current;
