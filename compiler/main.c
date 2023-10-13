@@ -407,7 +407,7 @@ struct Edecl *declaration(struct Token **token) {
                 consume(&current, ASGN);
                 ldecl->value = asgn(&current);
         }
-        OFFSET += 4;
+        OFFSET -= 4;
 
         int value = -100;
         if (ldecl->value != NULL && ldecl->value->kind == E_ICON) {
@@ -455,17 +455,19 @@ struct Edecl *stmt(struct Token **token) {
                 consume(&current, SEMIC);
         } else if (current->kind == OCBR) {
                 consume(&current, OCBR);
-                struct Edecl *lstmttail = lstmt;
+                lstmt->kind = S_COMP;
+                struct Edecl *head = calloc(1, sizeof(struct Edecl));
+                struct Edecl *body = head;
                 while (current->kind != CCBR) {
                         if (current->kind == INT) {
-                                lstmttail = lstmttail->next = declaration(&current);
+                                body = body->next = declaration(&current);
                         } else {
                                 struct Edecl *lstmt = stmt(&current);
-                                lstmttail = lstmttail->next = lstmt;
+                                body = body->next = lstmt;
                         }
                 }
                 consume(&current, CCBR);
-                lstmt = lstmt->next;
+                lstmt->body = head->next;
         } else
                 assert(0);
         *token = current;
@@ -685,12 +687,15 @@ void codegen(struct Edecl *decl) {
 }
 
 void assignoffsets(struct Edecl **decls) {
-        int cnt = -(OFFSET);
-        for (struct Edecl *current = *decls; current; current = current->next) {
-                if (current->kind != DECL) continue;
+        for (struct Edecl *current = (*decls)->body; current; current = current->next) {
+                if (current->kind != DECL) {
+                        if (current->then && current->then->kind == S_COMP)
+                                assignoffsets(&(current->then));
+                        continue;
+                }
                 struct Sym *sym = get(current->name);
-                sym->offset = cnt;
-                cnt += 4;
+                sym->offset = OFFSET;
+                OFFSET += 4;
 
                 if (current->value != NULL) {
                         char *rg = cg_expr(current->value);
@@ -727,6 +732,12 @@ void cg_stmt(struct Edecl *lstmt) {
                 prevr(rg);
         } else if (lstmt->kind == S_EXPR) {
                 cg_expr(lstmt->value); /* return is being ignored */
+        } else if (lstmt->kind == S_COMP) {
+                struct Edecl *body = lstmt->body;
+                while (body != NULL) {
+                        cg_stmt(body);
+                        body = body->next;
+                }
         } else
                 ; /* declaration */
 }
@@ -790,16 +801,16 @@ char *cg_expr(struct Expr *cond) {
                 } else if (cond->kind == E_GT) {
                         printf("  slt      %s,%s,%s\n", rg, rhs, lhs);
                 } else if (cond->kind == E_LT) {
-                        printf("  slt      %s,%s,%s\n", rg, lhs, rhs);
+                        printf("  slt     %s,%s,%s\n", rg, lhs, rhs);
                 } else if (cond->kind == E_LE) {
                         printf("  slt      %s,%s,%s\n", rg, rhs, lhs);
-                        printf("  xori      %s,%s,1\n", rg, rg); /* invert least significant bit */
+                        printf("  xori     %s,%s,1\n", rg, rg); /* invert least significant bit */
                 } else if (cond->kind == E_GE) {
                         printf("  slt      %s,%s,%s\n", rg, lhs, rhs);
-                        printf("  xori      %s,%s,1\n", rg, rg);
+                        printf("  xori     %s,%s,1\n", rg, rg);
                 } else if (cond->kind == E_EQ) {
                         printf("  xor      %s,%s,%s\n", rg, lhs, rhs);
-                        printf("  sltiu     %s,%s,1\n", rg, rg);
+                        printf("  sltiu    %s,%s,1\n", rg, rg);
                 } else if (cond->kind == E_NEQ) {
                         printf("  xor      %s,%s,%s\n", rg, lhs, rhs);
                         printf("  sltu     %s,x0,%s\n", rg, rg);
