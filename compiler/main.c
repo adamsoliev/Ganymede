@@ -405,12 +405,17 @@ struct Edecl *declaration(struct Token **token) {
         ldecl->name = strdup(current->value.scon);
         consume(&current, IDENT);
 
-        consume(&current, ASGN);
-
-        ldecl->value = asgn(&current);
+        if (current->kind == ASGN) {
+                consume(&current, ASGN);
+                ldecl->value = asgn(&current);
+        }
         OFFSET += 4;
 
-        insert(ldecl->name, 0);
+        int value = -100;
+        if (ldecl->value != NULL && ldecl->value->kind == E_ICON) {
+                value = ldecl->value->value;
+        }
+        insert(ldecl->name, value);
 
         consume(&current, SEMIC);
 
@@ -680,19 +685,18 @@ void codegen(struct Edecl *decl) {
 }
 
 void assignoffsets(struct Edecl **decls) {
-        struct Edecl *current = *decls;
         int cnt = -(OFFSET);
-        while (current != NULL) {
-                if (current->kind == DECL) {
-                        struct Sym *sym = get(current->name);
-                        sym->offset = cnt;
-                        cnt += 4;
+        for (struct Edecl *current = *decls; current; current = current->next) {
+                if (current->kind != DECL) continue;
+                struct Sym *sym = get(current->name);
+                sym->offset = cnt;
+                cnt += 4;
 
+                if (current->value != NULL) {
                         char *rg = cg_expr(current->value);
                         printf("  sw      %s,%d(s0)\n", rg, sym->offset);
                         prevr(rg);
                 }
-                current = current->next;
         }
 }
 
