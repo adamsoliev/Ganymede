@@ -34,6 +34,8 @@ assert 24 "int main() { int a = 23; a++; return a; }";
 assert 23 "int main() { int a = 23; return a++; }";
 assert 23 "int main() { int a = 23; return a--; }";
 
+assert 23 "int main() { int a = 23; if (a) return 23; return 0; }";
+
 assert 23 "int main() { int a = 23; if (a) { return 23; }  return 0; }";
 assert 0 "int main() { int a = 23; if (!a) { return 23; }  return 0; }";
 assert 26 "int main() { int a = 23; a = a - 50; return ~a; }";

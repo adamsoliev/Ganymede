@@ -421,19 +421,9 @@ struct Edecl *stmt(struct Token **token) {
                 lstmt->kind = S_IF;
                 consume(&current, IF);
                 consume(&current, OPAR);
-
-                /* EXPR */
-                struct Expr *cond = asgn(&current);
-                lstmt->cond = cond;
-
+                lstmt->cond = asgn(&current);
                 consume(&current, CPAR);
-                consume(&current, OCBR);
-
-                /* STMT */
-                struct Edecl *then = stmt(&current);
-                lstmt->then = then;
-
-                consume(&current, CCBR);
+                lstmt->then = stmt(&current);
         } else if (current->kind == RETURN) {
                 lstmt->kind = S_RETURN;
                 consume(&current, RETURN);
@@ -456,6 +446,7 @@ struct Edecl *stmt(struct Token **token) {
                         }
                 }
                 consume(&current, CCBR);
+                lstmt = lstmt->next;
         } else
                 assert(0);
         *token = current;
