@@ -8,18 +8,9 @@
 // DATA STRUCTURES
 // clang-format off
 enum TokenKind { /* KEYWORDS */
-                INT,
-                IF,
-                RETURN,
-                OPAR,
-                CPAR,
-                OCBR,
-                CCBR,
-                ADD,
-                SUB,
-                MUL,
-                DIV,
-                MOD,
+                INT, IF, RETURN, OPAR,
+                CPAR, OCBR, CCBR, ADD,
+                SUB, MUL, DIV, MOD,
                 LT,     // <
                 GT,     // >
                 LE,     // <=
@@ -41,8 +32,7 @@ enum TokenKind { /* KEYWORDS */
                 DECR,   // --x
                 NOT,    // !
                 TILDA,  // ~
-                IDENT,
-                ICON,
+                IDENT, ICON,
 };
 // clang-format on
 
@@ -122,7 +112,7 @@ int hash(const char *key) {
 void insert(const char *key, int64_t value) {
         int index = hash(key);
         ht[index].key = key;
-        struct Sym *sym = malloc(sizeof(struct Sym));
+        struct Sym *sym = calloc(1, sizeof(struct Sym));
         sym->value = value;
         sym->offset = 0;
         ht[index].sym = sym;
@@ -161,7 +151,7 @@ struct Expr *unary(struct Token **token);
 struct Expr *postfix(struct Token **token);
 
 struct Token *newtoken(enum TokenKind kind, const char *lexeme) {
-        struct Token *token = (struct Token *)malloc(sizeof(struct Token));
+        struct Token *token = calloc(1, sizeof(struct Token));
         assert(token != NULL);
         token->kind = kind;
         switch (kind) {
@@ -185,7 +175,7 @@ struct Token *newtoken(enum TokenKind kind, const char *lexeme) {
 }
 
 struct Expr *newexpr(enum ExprKind kind, struct Expr *lhs, struct Expr *rhs) {
-        struct Expr *expr = malloc(sizeof(struct Expr));
+        struct Expr *expr = calloc(1, sizeof(struct Expr));
         expr->kind = kind;
         expr->lhs = lhs;
         expr->rhs = rhs;
@@ -375,7 +365,7 @@ void printTokens(struct Token *head) {
 /* ----------------------------------------------------------------------------------------------------------- */
 struct Edecl *parse(struct Token *head) {
         struct Token *current = head;
-        struct Edecl *decl = malloc(sizeof(struct Edecl)); /* FUNCTION */
+        struct Edecl *decl = calloc(1, sizeof(struct Edecl)); /* FUNCTION */
         decl->kind = FUNC;
         OFFSET = 0;
         while (current != NULL) {
@@ -394,7 +384,7 @@ struct Edecl *parse(struct Token *head) {
 }
 
 struct Edecl *declaration(struct Token **token) {
-        struct Edecl *ldecl = malloc(sizeof(struct Edecl));
+        struct Edecl *ldecl = calloc(1, sizeof(struct Edecl));
         ldecl->kind = DECL;
 
         struct Token *current = *token;
@@ -426,7 +416,7 @@ struct Edecl *declaration(struct Token **token) {
 struct Edecl *stmt(struct Token **token) {
         struct Token *current = *token;
 
-        struct Edecl *lstmt = malloc(sizeof(struct Edecl));
+        struct Edecl *lstmt = calloc(1, sizeof(struct Edecl));
         if (current->kind == IF) {
                 lstmt->kind = S_IF;
                 consume(&current, IF);
@@ -639,7 +629,7 @@ struct Expr *postfix(struct Token **token) {
 
 struct Expr *primary(struct Token **token) {
         struct Token *current = *token;
-        struct Expr *expr = malloc(sizeof(struct Expr));
+        struct Expr *expr = calloc(1, sizeof(struct Expr));
         if (current->kind == IDENT) {
                 expr->ident = strdup(current->value.scon);
                 expr->kind = E_IDENT;
