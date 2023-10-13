@@ -21,6 +21,7 @@ assert() {
     fi
 }
 
+assert 10 "int main() { int a = 0; while (a < 10) { a = a + 2; } return a; }";
 assert 23 "int main() { int a = 23; if (a) return 23; else return 0; }";
 assert 23 "int main() { int a = 24; if (a > 23) return 23; else if (a == 23) return 10; else return 0; }";
 assert 10 "int main() { int a = 23; if (a > 23) return 23; else if (a == 23) return 10; else return 0; }";
