@@ -45,36 +45,6 @@ struct Token {
         struct Token *next;
 };
 
-/*
-label_stmt
-    ident ':' stmt                              | value then
-    'case' expr ':' stmt                        | cond then
-    'default' ':' stmt                          | then
-
-compound_stmt
-    '{' block '}'                               | body
-
-expression_stmt
-    expr ';'                                    | value 
-
-selection_stmt
-    'if' '(' expr ')' stmt                      | cond then
-    'if' '(' expr ')' stmt 'else' stmt          | cond then els
-    'switch' '(' expr ')' stmt                  | cond then
-
-iteration_stmt
-    'while' '(' expr ')' stmt                   | cond then
-    'do' stmt 'while' '(' expr ')' ';'          | then cond
-    'for' '(' expr ';' expr ';' expr ')' stmt   | init cond inc then
-    'for' '(' decl expr ';' expr ')' stmt       | init cond inc then
-
-jump_stmt
-    'goto' ident ';'                            | value
-    'continue' ';'                              | 
-    'break' ';'                                 | 
-    'return' expr ';'                           | value
-*/
-
 struct Edecl {
         /* DECL */
         uint64_t type;
@@ -525,29 +495,6 @@ struct Edecl *stmt(struct Token **token) {
         return lstmt;
 }
 
-/*
------------------------------------------------------------------------------
-prec    assoc   purpose     op
------------------------------------------------------------------------------
-1       left                ,
-2       right   asgn        =, *=, /=, +=, -=, %=, <<=, >>=, &=, ^=, |=
-3       right   cond        ? :
-4       left    logor       ||
-5       left    logand      &&
-6       left    inclor      |
-7       left    exclor      ^
-8       left    and         &
-9       left    equal       ==, !=
-10      left    rel         <, >, <=, >=
-11      left    shift       <<, >>
-12      left    add         +, -
-13      left    mul         *, /, %
-        left    cast        
-14      left    unary       ++, --, &, *, -, ~, !
-15      left    postfix     ++, --, ->, .
-                primary
------------------------------------------------------------------------------
-*/
 // clang-format off
 char prec[] = {4,     5,      6,     7,     8,      9,     9,     10,    10, 
                10,    10,     11,    11,    12,     12,    13,    13,    13,    -1};
