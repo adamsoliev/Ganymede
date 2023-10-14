@@ -32,7 +32,7 @@ enum TokenKind { /* KEYWORDS */
                 DECR,   // --x
                 NOT,    // !
                 TILDA,  // ~
-                IDENT, ICON, ELSE, WHILE, FOR
+                IDENT, ICON, ELSE, WHILE, FOR, DO
 };
 // clang-format on
 
@@ -56,7 +56,18 @@ struct Edecl {
                                 - expr for expr-stmt
                             */
 
-        enum EdeclKind { FUNC, DECL, S_IF, S_RETURN, S_COMP, S_EXPR, S_WHILE, S_FOR, S_EMPTY } kind;
+        enum EdeclKind {
+                FUNC,
+                DECL,
+                S_IF,
+                S_RETURN,
+                S_COMP,
+                S_EXPR,
+                S_WHILE,
+                S_FOR,
+                S_EMPTY,
+                S_DO
+        } kind;
         // if or while/do/for stmt
         struct Expr *cond;
         struct Edecl *then;
@@ -172,7 +183,7 @@ struct Token *newtoken(enum TokenKind kind, const char *lexeme) {
                 case LSH:   case RSH:   case ADD:   case SUB:   case MUL:
                 case DIV:   case MOD:   case QUES:  case COLON: case INCR:
                 case DECR:  case NOT:   case TILDA: case ELSE:  case WHILE: 
-                case FOR:
+                case FOR:   case DO:
                 case ASGN:  
                 case SEMIC: break;
                 default: assert(0);
@@ -242,6 +253,9 @@ void scan(const char *program, struct Token **tokenlist) {
                         } else if (strncmp(program + current, "for", 3) == 0) {
                                 current += 3;
                                 kind = FOR;
+                        } else if (strncmp(program + current, "do", 2) == 0) {
+                                current += 2;
+                                kind = DO;
                         } else if (isidentifier(program[current])) { /* IDENTIFIER */
                                 while (isidentifier(program[current])) current++;
                                 LEN = current - start;
@@ -464,6 +478,15 @@ struct Edecl *stmt(struct Token **token) {
                 lstmt->cond = asgn(&current);
                 consume(&current, CPAR);
                 lstmt->then = stmt(&current);
+        } else if (current->kind == DO) {
+                lstmt->kind = S_DO;
+                consume(&current, DO);
+                lstmt->then = stmt(&current);
+                consume(&current, WHILE);
+                consume(&current, OPAR);
+                lstmt->cond = asgn(&current);
+                consume(&current, CPAR);
+                consume(&current, SEMIC);
         } else if (current->kind == RETURN) {
                 lstmt->kind = S_RETURN;
                 consume(&current, RETURN);
@@ -714,6 +737,15 @@ void cg_stmt(struct Edecl *lstmt) {
                 if (lstmt->els != NULL) {
                         cg_stmt(lstmt->els);
                 }
+        } else if (lstmt->kind == S_DO) {
+                int i = nexti();
+                printf(".Loop.%d:\n", i);
+                cg_stmt(lstmt->then);
+                char *rg = cg_expr(lstmt->cond);
+                printf("  beqz    %s,.L.end.%d\n", rg, i);
+                prevr(rg);
+                printf("  j .Loop.%d\n", i);
+                printf(".L.end.%d:\n", i);
         } else if (lstmt->kind == S_WHILE || lstmt->kind == S_FOR) {
                 int i = nexti();
                 if (lstmt->kind == S_FOR) {
