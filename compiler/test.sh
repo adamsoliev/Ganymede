@@ -21,6 +21,9 @@ assert() {
     fi
 }
 
+assert 11 "int main() { int a = 1; int i = 0; for (; i < 10; i++) { a++; } return a; }";
+assert 1 "int main() { int a = 1; int i = 0; for (; i < 10; i++) ; return a; }";
+assert 0 "int main() { int a = 23; if (a) ; else return 0; }";
 assert 11 "int main() { int a = 1; for (int i = 0; i < 10; i++) { a++; } return a; }";
 assert 11 "int main() { int a = 1; int i = 3; for (i = 0; i < 10; i++) { a++; } return a; }";
 

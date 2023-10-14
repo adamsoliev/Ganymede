@@ -56,7 +56,7 @@ struct Edecl {
                                 - expr for expr-stmt
                             */
 
-        enum EdeclKind { FUNC, DECL, S_IF, S_RETURN, S_COMP, S_EXPR, S_WHILE, S_FOR } kind;
+        enum EdeclKind { FUNC, DECL, S_IF, S_RETURN, S_COMP, S_EXPR, S_WHILE, S_FOR, S_EMPTY } kind;
         // if or while/do/for stmt
         struct Expr *cond;
         struct Edecl *then;
@@ -489,6 +489,9 @@ struct Edecl *stmt(struct Token **token) {
                 }
                 consume(&current, CCBR);
                 lstmt->body = head->next;
+        } else if (current->kind == SEMIC) {
+                lstmt->kind = S_EMPTY;
+                consume(&current, SEMIC);
         } else
                 assert(0);
         *token = current;
@@ -754,6 +757,8 @@ void cg_stmt(struct Edecl *lstmt) {
                         }
                         declOrStmt = declOrStmt->next;
                 }
+        } else if (lstmt->kind == S_EMPTY) {
+                ;
         } else
                 assert(0);
 }
