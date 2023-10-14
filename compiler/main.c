@@ -32,7 +32,7 @@ enum TokenKind { /* KEYWORDS */
                 DECR,   // --x
                 NOT,    // !
                 TILDA,  // ~
-                IDENT, ICON, ELSE, WHILE
+                IDENT, ICON, ELSE, WHILE, FOR
 };
 // clang-format on
 
@@ -45,6 +45,36 @@ struct Token {
         struct Token *next;
 };
 
+/*
+label_stmt
+    ident ':' stmt                              | value then
+    'case' expr ':' stmt                        | cond then
+    'default' ':' stmt                          | then
+
+compound_stmt
+    '{' block '}'                               | body
+
+expression_stmt
+    expr ';'                                    | value 
+
+selection_stmt
+    'if' '(' expr ')' stmt                      | cond then
+    'if' '(' expr ')' stmt 'else' stmt          | cond then els
+    'switch' '(' expr ')' stmt                  | cond then
+
+iteration_stmt
+    'while' '(' expr ')' stmt                   | cond then
+    'do' stmt 'while' '(' expr ')' ';'          | then cond
+    'for' '(' expr ';' expr ';' expr ')' stmt   | init cond inc then
+    'for' '(' decl expr ';' expr ')' stmt       | init cond inc then
+
+jump_stmt
+    'goto' ident ';'                            | value
+    'continue' ';'                              | 
+    'break' ';'                                 | 
+    'return' expr ';'                           | value
+*/
+
 struct Edecl {
         /* DECL */
         uint64_t type;
@@ -56,12 +86,16 @@ struct Edecl {
                                 - expr for expr-stmt
                             */
 
-        enum EdeclKind { FUNC, DECL, S_IF, S_RETURN, S_COMP, S_EXPR, S_WHILE } kind;
-        /* STMT */
+        enum EdeclKind { FUNC, DECL, S_IF, S_RETURN, S_COMP, S_EXPR, S_WHILE, S_FOR } kind;
+        // if or while/do/for stmt
         struct Expr *cond;
         struct Edecl *then;
         struct Edecl *els;
-        struct Edecl *body;  // compound stmt
+        struct Edecl *init;
+        struct Expr *inc;
+
+        // compound stmt
+        struct Edecl *body;
 
         struct Edecl *next;
 };
@@ -167,8 +201,9 @@ struct Token *newtoken(enum TokenKind kind, const char *lexeme) {
                 case LOR:   case LAND:  case BOR:   case BAND:  case XOR:
                 case LSH:   case RSH:   case ADD:   case SUB:   case MUL:
                 case DIV:   case MOD:   case QUES:  case COLON: case INCR:
-                case DECR:  case NOT:   case TILDA:
-                case ASGN:  case ELSE:  case WHILE:
+                case DECR:  case NOT:   case TILDA: case ELSE:  case WHILE: 
+                case FOR:
+                case ASGN:  
                 case SEMIC: break;
                 default: assert(0);
                         // clang-format on
@@ -234,6 +269,9 @@ void scan(const char *program, struct Token **tokenlist) {
                         } else if (strncmp(program + current, "while", 5) == 0) {
                                 current += 5;
                                 kind = WHILE;
+                        } else if (strncmp(program + current, "for", 3) == 0) {
+                                current += 3;
+                                kind = FOR;
                         } else if (isidentifier(program[current])) { /* IDENTIFIER */
                                 while (isidentifier(program[current])) current++;
                                 LEN = current - start;
@@ -436,6 +474,19 @@ struct Edecl *stmt(struct Token **token) {
                         consume(&current, ELSE);
                         lstmt->els = stmt(&current);
                 }
+        } else if (current->kind == FOR) {
+                lstmt->kind = S_FOR;
+                consume(&current, FOR);
+                consume(&current, OPAR);
+                if (current->kind == INT) {
+                        lstmt->init = declaration(&current);
+                } else
+                        lstmt->init = stmt(&current);
+                lstmt->cond = asgn(&current);
+                consume(&current, SEMIC);
+                lstmt->inc = asgn(&current);
+                consume(&current, CPAR);
+                lstmt->then = stmt(&current);
         } else if (current->kind == WHILE) {
                 lstmt->kind = S_WHILE;
                 consume(&current, WHILE);
@@ -680,10 +731,20 @@ void codegen(struct Edecl *decl) {
 }
 
 void assignoffsets(struct Edecl **decls) {
+        // single declaration ('init' of 'for' stmt)
+        if ((*decls)->kind == DECL) {
+                struct Sym *sym = get((*decls)->name);
+                sym->offset = OFFSET;
+                OFFSET += 4;
+                return;
+        }
+        // 'compound' stmt
         for (struct Edecl *current = (*decls)->body; current; current = current->next) {
                 if (current->kind != DECL) {
                         if (current->then && current->then->kind == S_COMP)
                                 assignoffsets(&(current->then));
+                        if (current->then && current->then->kind == S_FOR)
+                                assignoffsets(&(current->then->init));
                         continue;
                 }
                 struct Sym *sym = get(current->name);
@@ -703,13 +764,25 @@ void cg_stmt(struct Edecl *lstmt) {
                 if (lstmt->els != NULL) {
                         cg_stmt(lstmt->els);
                 }
-        } else if (lstmt->kind == S_WHILE) {
+        } else if (lstmt->kind == S_WHILE || lstmt->kind == S_FOR) {
                 int i = nexti();
+                if (lstmt->kind == S_FOR) {
+                        if (lstmt->init->kind == DECL) {
+                                struct Sym *sym = get(lstmt->init->name);
+                                char *rg = cg_expr(lstmt->init->value);
+                                printf("  sw      %s,%d(s0)\n", rg, sym->offset);
+                                prevr(rg);
+                        } else
+                                cg_stmt(lstmt->init);
+                }
                 printf(".Loop.%d:\n", i);
                 char *rg = cg_expr(lstmt->cond);
                 printf("  beqz    %s,.L.end.%d\n", rg, i);
                 prevr(rg);
                 cg_stmt(lstmt->then);
+                if (lstmt->kind == S_FOR) {
+                        cg_expr(lstmt->inc);
+                }
                 printf("  j .Loop.%d\n", i);
                 printf(".L.end.%d:\n", i);
         } else if (lstmt->kind == S_RETURN) {
