@@ -851,9 +851,11 @@ void cg_stmt(struct Edecl *lstmt) {
                 printf("%s:\n", lstmt->label);
                 prevr(rg1);
         } else if (lstmt->kind == S_CASE || lstmt->kind == S_DEFAULT) {
+                assert(lstmt->label != NULL);
                 printf("%s:\n", lstmt->label);
                 cg_stmt(lstmt->then);
         } else if (lstmt->kind == S_BREAK || lstmt->kind == S_CONTINUE) {
+                assert(lstmt->label != NULL);
                 printf("  j %s\n", lstmt->label);
         } else if (lstmt->kind == S_DO) {
                 int i = nexti();
@@ -899,6 +901,7 @@ void cg_stmt(struct Edecl *lstmt) {
         } else if (lstmt->kind == S_GOTO) {
                 printf("  j %s\n", lstmt->cond->ident);
         } else if (lstmt->kind == S_LABEL) {
+                assert(lstmt->cond->ident != NULL);
                 printf("%s:\n", lstmt->cond->ident);
                 cg_stmt(lstmt->then);
         } else if (lstmt->kind == S_COMP) {
@@ -939,7 +942,7 @@ char *cg_expr(struct Expr *cond) {
                         if (cond->rhs->kind == E_PSUB) incr = 1;
                         printf("  addi     %s,%s,%d\n", rhs, rhs, incr);
                 }
-                printf("  mv      %s,%s\n", rg, rhs);
+                // printf("  mv      %s,%s\n", rg, rhs);
                 prevr(rhs);
         } else if (cond->kind == E_COND) {
                 int i = nexti();
