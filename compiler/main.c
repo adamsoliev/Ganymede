@@ -149,6 +149,24 @@ bool ispunctuation(char c) {
                c == '*' || c == '/' || c == '%' || c == '?' || c == ':' || c == '~';
 }
 
+char *copystr(char *src) {
+        int len = strlen(src);
+        char *dest = calloc(len, sizeof(char));
+        strncpy(dest, src, len);
+        dest[len] = '\0';
+        return dest;
+}
+
+char *allocfstr(const char *fstr, int value) {
+        int len = snprintf(NULL, 0, fstr, value);
+        if (len < 0) assert(0);
+        char *buffer = malloc(len + 1);
+        if (buffer == NULL) assert(0);
+        int result = snprintf(buffer, len + 1, fstr, value);
+        if (result < 0) assert(0);
+        return buffer;
+}
+
 // FORWARD DECLARATIONS
 struct Edecl *declaration(struct Token **token);
 struct Expr *binary(int k, struct Token **token);
@@ -165,6 +183,7 @@ struct Expr *cond(struct Token **token);
 struct Expr *unary(struct Token **token);
 struct Expr *postfix(struct Token **token);
 int nexti(void);
+void assignlabelsAndgenjumps(struct Edecl *lstmt, char *rg1, char *label);
 
 struct Token *newtoken(enum TokenKind kind, const char *lexeme) {
         struct Token *token = calloc(1, sizeof(struct Token));
@@ -773,14 +792,26 @@ void assignoffsets(struct Edecl **decls) {
         }
 }
 
-char *allocfstr(const char *fstr, int value) {
-        int len = snprintf(NULL, 0, fstr, value);
-        if (len < 0) assert(0);
-        char *buffer = malloc(len + 1);
-        if (buffer == NULL) assert(0);
-        int result = snprintf(buffer, len + 1, fstr, value);
-        if (result < 0) assert(0);
-        return buffer;
+void assignlabelsAndgenjumps(struct Edecl *lstmt, char *rg1, char *label) {
+        for (struct Edecl *s = lstmt->body; s; s = s->next) {
+                int i = nexti();
+                if (s->kind == S_CASE) {
+                        s->label = allocfstr(".L.end.%d", i);
+                        char *rg2 = cg_expr(s->cond);
+                        printf("  xor     %s,%s,%s\n", rg2, rg1, rg2);
+                        printf("  beqz    %s,%s\n", rg2, s->label);
+                        prevr(rg2);
+                        if (s->then && s->then->kind == S_COMP)
+                                assignlabelsAndgenjumps(s->then, rg1, label);
+                } else if (s->kind == S_DEFAULT) {
+                        s->label = allocfstr(".L.end.%d", i);
+                        printf("  j %s\n", s->label);
+                        if (s->then && s->then->kind == S_COMP)
+                                assignlabelsAndgenjumps(s->then, rg1, label);
+                } else if (s->kind == S_BREAK) {
+                        s->label = copystr(label);
+                }
+        }
 }
 
 void cg_stmt(struct Edecl *lstmt) {
@@ -798,21 +829,7 @@ void cg_stmt(struct Edecl *lstmt) {
                 char *rg1 = cg_expr(lstmt->cond);
                 int ii = nexti();
                 lstmt->label = allocfstr(".L.end.%d", ii);
-                for (struct Edecl *s = lstmt->then->body; s; s = s->next) {
-                        int i = nexti();
-                        if (s->kind == S_CASE) {
-                                s->label = allocfstr(".L.end.%d", i);
-                                char *rg2 = cg_expr(s->cond);
-                                printf("  xor     %s,%s,%s\n", rg2, rg1, rg2);
-                                printf("  beqz    %s,%s\n", rg2, s->label);
-                                prevr(rg2);
-                        } else if (s->kind == S_DEFAULT) {
-                                s->label = allocfstr(".L.end.%d", i);
-                                printf("  j %s\n", s->label);
-                        } else if (s->kind == S_BREAK) {
-                                s->label = lstmt->label; /* ! */
-                        }
-                }
+                assignlabelsAndgenjumps(lstmt->then, rg1, lstmt->label);
                 printf("  j %s\n", lstmt->label);
                 cg_stmt(lstmt->then);
                 printf("%s:\n", lstmt->label);

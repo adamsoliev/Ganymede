@@ -23,6 +23,7 @@ assert() {
 
 assert 23 "int main() { int a = 23; if (a > 22) goto Lll; Lll: return a; return 0; }"
 
+assert 90 "int main() { int a = 1; switch (a) { case 1: { a = a * 90; break;} case 2: { a = a * 7; break;} default: { a = a * 2;}} return a; }";
 assert 90 "int main() { int a = 1; switch (a) { case 1: a = a * 90; break; case 2: a = a * 7; break; default: a = a * 2;} return a; }";
 assert 40 "int main() { int a = 2; switch (a) { case 1: a = a * 90; break; case 2: a = a * 20; break; default: a = a * 2;} return a; }";
 assert 6 "int main() { int a = 3; switch (a) { case 1: a = a * 90; break; case 2: a = a * 7; break; default: a = a * 2;} return a; }";
