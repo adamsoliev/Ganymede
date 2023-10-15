@@ -32,7 +32,7 @@ enum TokenKind { /* KEYWORDS */
                 DECR,   // --x
                 NOT,    // !
                 TILDA,  // ~
-                IDENT, ICON, ELSE, WHILE, FOR, DO, SWITCH, CASE, DEFAULT, BREAK, GOTO
+                IDENT, ICON, ELSE, WHILE, FOR, DO, SWITCH, CASE, DEFAULT, BREAK, GOTO, CONTINUE
 };
 // clang-format on
 
@@ -60,7 +60,7 @@ struct Edecl {
         enum EdeclKind {
                 FUNC, DECL,
                 S_IF, S_RETURN, S_COMP, S_EXPR, S_WHILE, S_FOR, S_EMPTY, S_DO, 
-                S_SWITCH, S_CASE, S_DEFAULT, S_BREAK, S_LABEL, S_GOTO
+                S_SWITCH, S_CASE, S_DEFAULT, S_BREAK, S_LABEL, S_GOTO, S_CONTINUE
         } kind;
         // clang-format on
 
@@ -184,6 +184,7 @@ struct Expr *unary(struct Token **token);
 struct Expr *postfix(struct Token **token);
 int nexti(void);
 void assignlabelsAndgenjumps(struct Edecl *lstmt, char *rg1, char *label);
+void assigncontlabel(struct Edecl *lstmt, char *label);
 
 struct Token *newtoken(enum TokenKind kind, const char *lexeme) {
         struct Token *token = calloc(1, sizeof(struct Token));
@@ -202,7 +203,7 @@ struct Token *newtoken(enum TokenKind kind, const char *lexeme) {
                 case DIV:   case MOD:   case QUES:      case COLON:     case INCR:
                 case DECR:  case NOT:   case TILDA:     case ELSE:      case WHILE: 
                 case FOR:   case DO:    case SWITCH:    case CASE:      case DEFAULT:
-                case ASGN:  case BREAK: case GOTO:
+                case ASGN:  case BREAK: case GOTO:      case CONTINUE:
                 case SEMIC: break;
                 default: assert(0);
                         // clang-format on
@@ -289,6 +290,9 @@ void scan(const char *program, struct Token **tokenlist) {
                         } else if (strncmp(program + current, "goto", 4) == 0) {
                                 current += 4;
                                 kind = GOTO;
+                        } else if (strncmp(program + current, "continue", 8) == 0) {
+                                current += 8;
+                                kind = CONTINUE;
                         } else if (isidentifier(program[current])) { /* IDENTIFIER */
                                 while (isidentifier(program[current])) current++;
                                 LEN = current - start;
@@ -509,9 +513,9 @@ struct Edecl *stmt(struct Token **token) {
                 consume(&current, DEFAULT);
                 consume(&current, COLON);
                 lstmt->then = stmt(&current);
-        } else if (current->kind == BREAK) {
-                lstmt->kind = S_BREAK;
-                consume(&current, BREAK);
+        } else if (current->kind == BREAK || current->kind == CONTINUE) {
+                lstmt->kind = current->kind == BREAK ? S_BREAK : S_CONTINUE;
+                consume(&current, current->kind);
                 consume(&current, SEMIC);
         } else if (current->kind == FOR) {
                 lstmt->kind = S_FOR;
@@ -814,6 +818,18 @@ void assignlabelsAndgenjumps(struct Edecl *lstmt, char *rg1, char *label) {
         }
 }
 
+void assigncontlabel(struct Edecl *lstmt, char *label) {
+        if (lstmt->kind == S_CONTINUE) {
+                lstmt->label = copystr(label);
+        } else if (lstmt->kind == S_COMP) {
+                for (struct Edecl *s = lstmt->body; s; s = s->next) {
+                        assigncontlabel(s, label);
+                }
+        } else {
+                if (lstmt->then) assigncontlabel(lstmt->then, label);
+        }
+}
+
 void cg_stmt(struct Edecl *lstmt) {
         if (lstmt->kind == S_IF) {
                 int i = nexti();
@@ -837,7 +853,7 @@ void cg_stmt(struct Edecl *lstmt) {
         } else if (lstmt->kind == S_CASE || lstmt->kind == S_DEFAULT) {
                 printf("%s:\n", lstmt->label);
                 cg_stmt(lstmt->then);
-        } else if (lstmt->kind == S_BREAK) {
+        } else if (lstmt->kind == S_BREAK || lstmt->kind == S_CONTINUE) {
                 printf("  j %s\n", lstmt->label);
         } else if (lstmt->kind == S_DO) {
                 int i = nexti();
@@ -849,6 +865,9 @@ void cg_stmt(struct Edecl *lstmt) {
                 printf("  j .Loop.%d\n", i);
                 printf(".L.end.%d:\n", i);
         } else if (lstmt->kind == S_WHILE || lstmt->kind == S_FOR) {
+                char *contlabel = allocfstr(".L.end.%d", nexti());
+                assigncontlabel(lstmt->then, contlabel);
+
                 int i = nexti();
                 if (lstmt->kind == S_FOR) {
                         if (lstmt->init->kind == DECL) {
@@ -864,6 +883,7 @@ void cg_stmt(struct Edecl *lstmt) {
                 printf("  beqz    %s,.L.end.%d\n", rg, i);
                 prevr(rg);
                 cg_stmt(lstmt->then);
+                printf("%s:\n", contlabel);
                 if (lstmt->kind == S_FOR) {
                         cg_expr(lstmt->inc);
                 }

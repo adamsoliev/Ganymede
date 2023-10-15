@@ -30,6 +30,7 @@ assert 6 "int main() { int a = 3; switch (a) { case 1: a = a * 90; break; case 2
 assert 10 "int main() { int a = 1; do a++; while (a < 10); return a; }";
 assert 16 "int main() { int a = 1; do { a = a * 2; } while (a < 10); return a; }";
 assert 11 "int main() { int a = 1; int i = 0; for (; i < 10; i++) { a++; } return a; }";
+assert 10 "int main() { int a = 1; int i = 0; for (; i < 10; i++) { if (i == 3) continue; a++; } return a; }";
 assert 1 "int main() { int a = 1; int i = 0; for (; i < 10; i++) ; return a; }";
 assert 0 "int main() { int a = 23; if (a) ; else return 0; }";
 assert 11 "int main() { int a = 1; for (int i = 0; i < 10; i++) { a++; } return a; }";
@@ -38,6 +39,8 @@ assert 11 "int main() { int a = 1; int i = 3; for (i = 0; i < 10; i++) { a++; } 
 assert 23 "int main() { int a = 0; while (a <= 20) { if (a % 2 == 0) { a = a + 3; } else { a = a + 10; } } return a; }";
 assert 40 "int main() { int a = 0; while (a <= 20) { int b = a * 2 + 1; a = a + b; } return a; }";
 assert 10 "int main() { int a = 0; while (a < 10) { a = a + 2; } return a; }";
+assert 20 "int main() { int a = 0; while (a < 10) { a = a + 2; if (a == 2) continue; a = a * 2; } return a; }";
+assert 12 "int main() { int a = 0; while (a < 10) { a = a + 2; a = a * 2; } return a; }";
 
 assert 23 "int main() { int a = 23; if (a) return 23; else return 0; }";
 assert 23 "int main() { int a = 24; if (a > 23) return 23; else if (a == 23) return 10; else return 0; }";
