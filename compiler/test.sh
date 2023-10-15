@@ -21,6 +21,9 @@ assert() {
     fi
 }
 
+assert 90 "int main() { int a = 1; switch (a) { case 1: a = a * 90; break; case 2: a = a * 7; break; default: a = a * 2;} return a; }";
+assert 40 "int main() { int a = 2; switch (a) { case 1: a = a * 90; break; case 2: a = a * 20; break; default: a = a * 2;} return a; }";
+assert 6 "int main() { int a = 3; switch (a) { case 1: a = a * 90; break; case 2: a = a * 7; break; default: a = a * 2;} return a; }";
 assert 10 "int main() { int a = 1; do a++; while (a < 10); return a; }";
 assert 16 "int main() { int a = 1; do { a = a * 2; } while (a < 10); return a; }";
 assert 11 "int main() { int a = 1; int i = 0; for (; i < 10; i++) { a++; } return a; }";

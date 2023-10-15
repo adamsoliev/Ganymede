@@ -32,7 +32,7 @@ enum TokenKind { /* KEYWORDS */
                 DECR,   // --x
                 NOT,    // !
                 TILDA,  // ~
-                IDENT, ICON, ELSE, WHILE, FOR, DO
+                IDENT, ICON, ELSE, WHILE, FOR, DO, SWITCH, CASE, DEFAULT, BREAK
 };
 // clang-format on
 
@@ -56,18 +56,14 @@ struct Edecl {
                                 - expr for expr-stmt
                             */
 
+        // clang-format off
         enum EdeclKind {
-                FUNC,
-                DECL,
-                S_IF,
-                S_RETURN,
-                S_COMP,
-                S_EXPR,
-                S_WHILE,
-                S_FOR,
-                S_EMPTY,
-                S_DO
+                FUNC, DECL,
+                S_IF, S_RETURN, S_COMP, S_EXPR, S_WHILE, S_FOR, S_EMPTY, S_DO, S_SWITCH, S_CASE, S_DEFAULT, S_BREAK
+
         } kind;
+        // clang-format on
+
         // if or while/do/for stmt
         struct Expr *cond;
         struct Edecl *then;
@@ -77,6 +73,9 @@ struct Edecl {
 
         // compound stmt
         struct Edecl *body;
+
+        // switch/case/default/break stmt
+        char *label;
 
         struct Edecl *next;
 };
@@ -177,14 +176,14 @@ struct Token *newtoken(enum TokenKind kind, const char *lexeme) {
                 case RETURN: break;
                 case ICON: token->value.icon = strtoll(lexeme, NULL, 10); break;
                 case IDENT: token->value.scon = strndup(lexeme, LEN); break;
-                case OPAR:  case CPAR:  case OCBR:  case CCBR:  case LT:
-                case GT:    case LE:    case GE:    case EQ:    case NEQ: 
-                case LOR:   case LAND:  case BOR:   case BAND:  case XOR:
-                case LSH:   case RSH:   case ADD:   case SUB:   case MUL:
-                case DIV:   case MOD:   case QUES:  case COLON: case INCR:
-                case DECR:  case NOT:   case TILDA: case ELSE:  case WHILE: 
-                case FOR:   case DO:
-                case ASGN:  
+                case OPAR:  case CPAR:  case OCBR:      case CCBR:      case LT:
+                case GT:    case LE:    case GE:        case EQ:        case NEQ: 
+                case LOR:   case LAND:  case BOR:       case BAND:      case XOR:
+                case LSH:   case RSH:   case ADD:       case SUB:       case MUL:
+                case DIV:   case MOD:   case QUES:      case COLON:     case INCR:
+                case DECR:  case NOT:   case TILDA:     case ELSE:      case WHILE: 
+                case FOR:   case DO:    case SWITCH:    case CASE:      case DEFAULT:
+                case ASGN:  case BREAK:
                 case SEMIC: break;
                 default: assert(0);
                         // clang-format on
@@ -256,6 +255,18 @@ void scan(const char *program, struct Token **tokenlist) {
                         } else if (strncmp(program + current, "do", 2) == 0) {
                                 current += 2;
                                 kind = DO;
+                        } else if (strncmp(program + current, "switch", 6) == 0) {
+                                current += 6;
+                                kind = SWITCH;
+                        } else if (strncmp(program + current, "case", 4) == 0) {
+                                current += 4;
+                                kind = CASE;
+                        } else if (strncmp(program + current, "default", 7) == 0) {
+                                current += 7;
+                                kind = DEFAULT;
+                        } else if (strncmp(program + current, "break", 5) == 0) {
+                                current += 5;
+                                kind = BREAK;
                         } else if (isidentifier(program[current])) { /* IDENTIFIER */
                                 while (isidentifier(program[current])) current++;
                                 LEN = current - start;
@@ -458,6 +469,28 @@ struct Edecl *stmt(struct Token **token) {
                         consume(&current, ELSE);
                         lstmt->els = stmt(&current);
                 }
+        } else if (current->kind == SWITCH) {
+                lstmt->kind = S_SWITCH;
+                consume(&current, SWITCH);
+                consume(&current, OPAR);
+                lstmt->cond = asgn(&current);
+                consume(&current, CPAR);
+                lstmt->then = stmt(&current);
+        } else if (current->kind == CASE) {
+                lstmt->kind = S_CASE;
+                consume(&current, CASE);
+                lstmt->cond = asgn(&current);
+                consume(&current, COLON);
+                lstmt->then = stmt(&current);
+        } else if (current->kind == DEFAULT) {
+                lstmt->kind = S_DEFAULT;
+                consume(&current, DEFAULT);
+                consume(&current, COLON);
+                lstmt->then = stmt(&current);
+        } else if (current->kind == BREAK) {
+                lstmt->kind = S_BREAK;
+                consume(&current, BREAK);
+                consume(&current, SEMIC);
         } else if (current->kind == FOR) {
                 lstmt->kind = S_FOR;
                 consume(&current, FOR);
@@ -726,6 +759,16 @@ void assignoffsets(struct Edecl **decls) {
         }
 }
 
+char *allocfstr(const char *fstr, int value) {
+        int len = snprintf(NULL, 0, fstr, value);
+        if (len < 0) assert(0);
+        char *buffer = malloc(len + 1);
+        if (buffer == NULL) assert(0);
+        int result = snprintf(buffer, len + 1, fstr, value);
+        if (result < 0) assert(0);
+        return buffer;
+}
+
 void cg_stmt(struct Edecl *lstmt) {
         if (lstmt->kind == S_IF) {
                 int i = nexti();
@@ -737,6 +780,34 @@ void cg_stmt(struct Edecl *lstmt) {
                 if (lstmt->els != NULL) {
                         cg_stmt(lstmt->els);
                 }
+        } else if (lstmt->kind == S_SWITCH) {
+                char *rg1 = cg_expr(lstmt->cond);
+                int ii = nexti();
+                lstmt->label = allocfstr(".L.end.%d", ii);
+                for (struct Edecl *s = lstmt->then->body; s; s = s->next) {
+                        int i = nexti();
+                        if (s->kind == S_CASE) {
+                                s->label = allocfstr(".L.end.%d", i);
+                                char *rg2 = cg_expr(s->cond);
+                                printf("  xor     %s,%s,%s\n", rg2, rg1, rg2);
+                                printf("  beqz    %s,%s\n", rg2, s->label);
+                                prevr(rg2);
+                        } else if (s->kind == S_DEFAULT) {
+                                s->label = allocfstr(".L.end.%d", i);
+                                printf("  j %s\n", s->label);
+                        } else if (s->kind == S_BREAK) {
+                                s->label = lstmt->label; /* ! */
+                        }
+                }
+                printf("  j %s\n", lstmt->label);
+                cg_stmt(lstmt->then);
+                printf("%s:\n", lstmt->label);
+                prevr(rg1);
+        } else if (lstmt->kind == S_CASE || lstmt->kind == S_DEFAULT) {
+                printf("%s:\n", lstmt->label);
+                cg_stmt(lstmt->then);
+        } else if (lstmt->kind == S_BREAK) {
+                printf("  j %s\n", lstmt->label);
         } else if (lstmt->kind == S_DO) {
                 int i = nexti();
                 printf(".Loop.%d:\n", i);
