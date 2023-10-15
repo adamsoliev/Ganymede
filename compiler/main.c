@@ -32,7 +32,7 @@ enum TokenKind { /* KEYWORDS */
                 DECR,   // --x
                 NOT,    // !
                 TILDA,  // ~
-                IDENT, ICON, ELSE, WHILE, FOR, DO, SWITCH, CASE, DEFAULT, BREAK
+                IDENT, ICON, ELSE, WHILE, FOR, DO, SWITCH, CASE, DEFAULT, BREAK, GOTO
 };
 // clang-format on
 
@@ -59,12 +59,12 @@ struct Edecl {
         // clang-format off
         enum EdeclKind {
                 FUNC, DECL,
-                S_IF, S_RETURN, S_COMP, S_EXPR, S_WHILE, S_FOR, S_EMPTY, S_DO, S_SWITCH, S_CASE, S_DEFAULT, S_BREAK
-
+                S_IF, S_RETURN, S_COMP, S_EXPR, S_WHILE, S_FOR, S_EMPTY, S_DO, 
+                S_SWITCH, S_CASE, S_DEFAULT, S_BREAK, S_LABEL, S_GOTO
         } kind;
         // clang-format on
 
-        // if or while/do/for stmt
+        // if/while/do/for/label/goto stmt
         struct Expr *cond;
         struct Edecl *then;
         struct Edecl *els;
@@ -183,7 +183,7 @@ struct Token *newtoken(enum TokenKind kind, const char *lexeme) {
                 case DIV:   case MOD:   case QUES:      case COLON:     case INCR:
                 case DECR:  case NOT:   case TILDA:     case ELSE:      case WHILE: 
                 case FOR:   case DO:    case SWITCH:    case CASE:      case DEFAULT:
-                case ASGN:  case BREAK:
+                case ASGN:  case BREAK: case GOTO:
                 case SEMIC: break;
                 default: assert(0);
                         // clang-format on
@@ -267,6 +267,9 @@ void scan(const char *program, struct Token **tokenlist) {
                         } else if (strncmp(program + current, "break", 5) == 0) {
                                 current += 5;
                                 kind = BREAK;
+                        } else if (strncmp(program + current, "goto", 4) == 0) {
+                                current += 4;
+                                kind = GOTO;
                         } else if (isidentifier(program[current])) { /* IDENTIFIER */
                                 while (isidentifier(program[current])) current++;
                                 LEN = current - start;
@@ -527,9 +530,16 @@ struct Edecl *stmt(struct Token **token) {
                 consume(&current, SEMIC);
         } else if (current->kind == IDENT || current->kind == INCR || current->kind == DECR ||
                    current->kind == ADD || current->kind == SUB) {
-                lstmt->kind = S_EXPR;
-                lstmt->value = asgn(&current);
-                consume(&current, SEMIC);
+                if (current->kind == IDENT && current->next->kind == COLON) {
+                        lstmt->kind = S_LABEL;
+                        lstmt->cond = primary(&current);
+                        consume(&current, COLON);
+                        lstmt->then = stmt(&current);
+                } else {
+                        lstmt->kind = S_EXPR;
+                        lstmt->value = asgn(&current);
+                        consume(&current, SEMIC);
+                }
         } else if (current->kind == OCBR) {
                 consume(&current, OCBR);
                 lstmt->kind = S_COMP;
@@ -545,6 +555,10 @@ struct Edecl *stmt(struct Token **token) {
                 }
                 consume(&current, CCBR);
                 lstmt->body = head->next;
+        } else if (current->kind == GOTO) {
+                lstmt->kind = S_GOTO;
+                consume(&current, GOTO);
+                lstmt->cond = primary(&current);
         } else if (current->kind == SEMIC) {
                 lstmt->kind = S_EMPTY;
                 consume(&current, SEMIC);
@@ -845,6 +859,11 @@ void cg_stmt(struct Edecl *lstmt) {
                 prevr(rg);
         } else if (lstmt->kind == S_EXPR) {
                 cg_expr(lstmt->value); /* return is being ignored */
+        } else if (lstmt->kind == S_GOTO) {
+                printf("  j %s\n", lstmt->cond->ident);
+        } else if (lstmt->kind == S_LABEL) {
+                printf("%s:\n", lstmt->cond->ident);
+                cg_stmt(lstmt->then);
         } else if (lstmt->kind == S_COMP) {
                 struct Edecl *declOrStmt = lstmt->body;
                 while (declOrStmt != NULL) {
