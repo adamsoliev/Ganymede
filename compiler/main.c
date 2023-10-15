@@ -758,9 +758,9 @@ void codegen(struct Edecl *decl) {
         printf("\n%s:\n", decl->name);
 
         // prologue
-        printf("  addi    sp,sp,-16\n");
-        printf("  sd      s0,8(sp)\n");
-        printf("  addi    s0,sp,16\n");
+        printf("  addi    sp,sp,-32\n");
+        printf("  sd      s0,24(sp)\n");
+        printf("  addi    s0,sp,32\n");
 
         // body
         assignoffsets(&decl->body);
@@ -768,8 +768,8 @@ void codegen(struct Edecl *decl) {
 
         // epilogue
         printf(".L.end:\n");
-        printf("  ld      s0,8(sp)\n");
-        printf("  addi    sp,sp,16\n");
+        printf("  ld      s0,24(sp)\n");
+        printf("  addi    sp,sp,32\n");
         printf("  jr      ra\n");
 }
 

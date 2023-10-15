@@ -22,8 +22,15 @@ assert() {
 }
 
 assert 23 "int main() { int a = 23; if (a > 22) goto Lll; Lll: return a; return 0; }"
+assert 23 "int main() { int a = 23; goto Lll; Lll: return a; return 0; }"
 
 assert 90 "int main() { int a = 1; switch (a) { case 1: { a = a * 90; break;} case 2: { a = a * 7; break;} default: { a = a * 2;}} return a; }";
+assert 90 "int main() { int a = 1; switch (a) { case 1: { a = a * 90; break;} case 2: { a = a * 7; break;} default: a = a * 2;} return a; }";
+assert 70 "int main() { int a = 1; switch (a) { case 1: { a = a * 10;} case 2: { a = a * 7; break;} default: a = a * 2;} return a; }";
+assert 140 "int main() { int a = 1; switch (a) { case 1: { a = a * 10;} case 2: { a = a * 7;} default: a = a * 2;} return a; }";
+assert 10 "int main() { int a = 1; switch (a) { case 1: { a = a * 10;} } return a; }";
+assert 2 "int main() { int a = 1; switch (a) { default: a = a * 2;} return a; }";
+assert 1 "int main() { int a = 1; switch (a) {} return a; }";
 assert 90 "int main() { int a = 1; switch (a) { case 1: a = a * 90; break; case 2: a = a * 7; break; default: a = a * 2;} return a; }";
 assert 40 "int main() { int a = 2; switch (a) { case 1: a = a * 90; break; case 2: a = a * 20; break; default: a = a * 2;} return a; }";
 assert 6 "int main() { int a = 3; switch (a) { case 1: a = a * 90; break; case 2: a = a * 7; break; default: a = a * 2;} return a; }";
