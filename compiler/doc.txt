@@ -82,3 +82,84 @@ Properties that simplify the problem of validating their correctness
 2. Another property that eases compiler testing is that the semantics of the source language are usually specified
 3. The fact that for most popular programming languages, there are multiple supposedly equivalent implementations, which compiler testing can exploit as an oracle for differential testing 
 
+
+-------------------------------------------------------------------
+1. Put parameters in a place where the procedure can access them.
+x10 - x17       : param registers
+-------------------------------------------------------------------
+2. Transfer control to the procedure.
+jal x1, lable   : jump to label and write return address to x1
+-------------------------------------------------------------------
+3. Acquire the storage resources needed for the procedure.
+allocate space in stack and move stack/frame pointers accordingly
+-------------------------------------------------------------------
+4. Perform the desired task.
+-------------------------------------------------------------------
+5. Put the result value in a place where the calling program can access it.
+x10 - x17       : param registers
+-------------------------------------------------------------------
+6. Return control to the point of origin, since a procedure can be called from
+several points in a program.
+jalr x0, 0(x1)  : return from a function
+-------------------------------------------------------------------
+
+Register        ABI Name        Description             Saver           Preserved on call?
+x0              zero            Zero constant           —               n.a
+x1              ra              Return address          Callee          yes
+x2              sp              Stack pointer           Callee          yes
+x3              gp              Global pointer          —               yes
+x4              tp              Thread pointer          —               yes
+x5-x7           t0-t2           Temporaries             Caller          no
+x8              s0/fp           Saved/frame pointer     Callee          yes
+x9              s1              Saved register          Callee          yes
+x10-x11         a0-a1           Fn args/return values   Caller          no
+x12-x17         a2-a7           Fn args                 Caller          no
+x18-x27         s2-s11          Saved registers         Callee          yes
+x28-x31         t3-t6           Temporaries             Caller          no
+
+
+Convention
+1. Registers 
+        ABI     Preserved on call?
+        zero    yes
+        ra      yes
+        sp      yes
+        gp      yes
+        tp      yes
+        t0-t6   no      Temporaries
+        s0-s11  yes     Saved 
+        a0-a7   no      Args/Return
+2. Function calls
+        function calls are made using
+                jal ra label     (jal label)
+                jalr ra rd imm   (jalr rd when imm is 0)
+                both essentially do:
+                        ra = PC + 4
+                        PC += label offset || rd + imm
+        * standard jump in a loop uses x0 instead of ra (doesn't save return address)
+                jal x0 label     (j label)
+                jalr x0 rd imm   (jr rd when imm is 0)
+3. Entering/exiting a function (prologue/epilogue)
+        • sp will be preserved (unless we store return values on the stack)
+        • All s registers will be preserved
+        • Function will return to the address stored in ra, assuming no abnormal execution
+
+        • prologue
+        Decrement sp by number of used 'saved registers' + local variable space
+        Store any saved registers used
+        Store ra if a function call is made        
+
+        • epilogue
+        Reload any saved registers used
+        Reload ra (if necessary)
+        Increment sp back to previous value
+        Jump back to return address
+
+* Using Convention to Debug
+        • Check that you stored ra properly. For recursion make sure you link ra
+        for each recursive call. You can test this by putting a break point at the
+        end of the epilogue and seeing where you return.
+        • Check that you don’t use any t registers after a function call.
+        • Check that sp enters and exits with the same value.
+        • Check the number of times you enter the prologue equals the number of times you enter the epilogue.
+        • Make sure you restore every register you modified.

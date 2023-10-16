@@ -21,6 +21,8 @@ assert() {
     fi
 }
 
+assert 12 "int func(int ab) { return ab * 3; } int main() { int a = func(4); return a; }";
+
 assert 23 "int main() { int a = 23; if (a > 22) goto Lll; Lll: return a; return 0; }"
 assert 23 "int main() { int a = 23; goto Lll; Lll: return a; return 0; }"
 

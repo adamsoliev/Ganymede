@@ -32,7 +32,8 @@ enum TokenKind { /* KEYWORDS */
                 DECR,   // --x
                 NOT,    // !
                 TILDA,  // ~
-                IDENT, ICON, ELSE, WHILE, FOR, DO, SWITCH, CASE, DEFAULT, BREAK, GOTO, CONTINUE
+                IDENT, ICON, ELSE, WHILE, FOR, DO, SWITCH, CASE, DEFAULT, BREAK, GOTO, CONTINUE,
+                TEOF
 };
 // clang-format on
 
@@ -43,6 +44,12 @@ struct Token {
                 const char *scon;  // identifier string | string literal
         } value;
         struct Token *next;
+};
+
+struct Param {
+        uint64_t type;
+        char *name;
+        struct Param *next;
 };
 
 struct Edecl {
@@ -77,6 +84,8 @@ struct Edecl {
         // switch/case/default/break stmt
         char *label;
 
+        struct Param *params;
+
         struct Edecl *next;
 };
 
@@ -85,7 +94,7 @@ enum ExprKind {
         E_ADD, E_SUB, E_MUL, E_DIV, E_MOD, E_PADD, E_PSUB,
         E_ICON, E_IDENT, E_LT, E_GT, E_LE, E_GE, E_EQ, E_NEQ,
         E_LOR, E_LAND, E_BOR, E_BAND, E_XOR, E_LSH, E_RSH,
-        E_ASGN, E_RIGHT, E_COND, E_NOT, E_BCOMPL,
+        E_ASGN, E_RIGHT, E_COND, E_NOT, E_BCOMPL, E_FUNCALL, E_PARAMS
         // clang-format on
 };
 struct Expr {
@@ -185,6 +194,7 @@ struct Expr *postfix(struct Token **token);
 int nexti(void);
 void assignlabelsAndgenjumps(struct Edecl *lstmt, char *rg1, char *label);
 void assigncontlabel(struct Edecl *lstmt, char *label);
+struct Edecl *function(struct Token **token);
 
 struct Token *newtoken(enum TokenKind kind, const char *lexeme) {
         struct Token *token = calloc(1, sizeof(struct Token));
@@ -203,7 +213,7 @@ struct Token *newtoken(enum TokenKind kind, const char *lexeme) {
                 case DIV:   case MOD:   case QUES:      case COLON:     case INCR:
                 case DECR:  case NOT:   case TILDA:     case ELSE:      case WHILE: 
                 case FOR:   case DO:    case SWITCH:    case CASE:      case DEFAULT:
-                case ASGN:  case BREAK: case GOTO:      case CONTINUE:
+                case ASGN:  case BREAK: case GOTO:      case CONTINUE:  case TEOF:
                 case SEMIC: break;
                 default: assert(0);
                         // clang-format on
@@ -410,6 +420,8 @@ void scan(const char *program, struct Token **tokenlist) {
                         addtoken(&head, &tail, token);
                 }
         }
+        struct Token *token = newtoken(TEOF, program + start);
+        addtoken(&head, &tail, token);
         *tokenlist = head;
 }
 
@@ -432,22 +444,47 @@ void printTokens(struct Token *head) {
 /* ----------------------------------------------------------------------------------------------------------- */
 struct Edecl *parse(struct Token *head) {
         struct Token *current = head;
-        struct Edecl *decl = calloc(1, sizeof(struct Edecl)); /* FUNCTION */
-        decl->kind = FUNC;
-        OFFSET = 0;
-        while (current != NULL) {
-                decl->type |= TYPE_INT;
-                consume(&current, INT);
+        struct Edecl *prog = calloc(1, sizeof(struct Edecl));
+        struct Edecl *p = prog;
+        while (current->kind != TEOF) {
+                OFFSET = -8;
+                p = p->next = function(&current);
+        }
+        return prog->next;
+}
 
-                decl->name = strdup(current->value.scon);
+struct Edecl *function(struct Token **token) {
+        struct Token *current = *token;
+        struct Edecl *func = calloc(1, sizeof(struct Edecl)); /* FUNCTION */
+        func->kind = FUNC;
+
+        func->type |= TYPE_INT;
+        consume(&current, INT);
+
+        func->name = strdup(current->value.scon);
+        consume(&current, IDENT);
+
+        consume(&current, OPAR);
+
+        if (current->kind == INT) {
+                OFFSET -= 8;
+                func->params = calloc(1, sizeof(struct Param));
+                struct Param *p = func->params;
+                p->type |= TYPE_INT;
+                consume(&current, INT);
+                p->name = strdup(current->value.scon);
                 consume(&current, IDENT);
 
-                consume(&current, OPAR);
-                consume(&current, CPAR);
-
-                decl->body = stmt(&current);
+                insert(p->name, -100);
+                struct Sym *sym = get(p->name);
+                sym->offset = OFFSET;
         }
-        return decl;
+
+        consume(&current, CPAR);
+
+        func->body = stmt(&current);
+        *token = current;
+        return func;
 }
 
 struct Edecl *declaration(struct Token **token) {
@@ -466,7 +503,7 @@ struct Edecl *declaration(struct Token **token) {
                 consume(&current, ASGN);
                 ldecl->value = asgn(&current);
         }
-        OFFSET -= 4;
+        OFFSET -= 8;
 
         int value = -100;
         if (ldecl->value != NULL && ldecl->value->kind == E_ICON) {
@@ -727,6 +764,16 @@ struct Expr *postfix(struct Token **token) {
                         e = newexpr(E_ASGN, e, add);
                         break;
                 }
+                case OPAR: {
+                        consume(&current, OPAR);
+                        struct Expr *first = newexpr(E_ICON, NULL, NULL);
+                        first->value = current->value.icon;
+                        consume(&current, ICON);
+                        struct Expr *params = newexpr(E_PARAMS, first, NULL);
+                        e = newexpr(E_FUNCALL, e, params);
+                        consume(&current, CPAR);
+                        break;
+                }
                 default: break;
         }
         *token = current;
@@ -753,24 +800,44 @@ struct Expr *primary(struct Token **token) {
 /* ----------------------------------------------------------------------------------------------------------- */
 /* ------------------------------------------------- CODEGEN ------------------------------------------------- */
 /* ----------------------------------------------------------------------------------------------------------- */
+static struct Edecl *current_fn;
 void codegen(struct Edecl *decl) {
-        printf("\n  .globl %s\n", decl->name);
-        printf("\n%s:\n", decl->name);
+        for (struct Edecl *d = decl; d; d = d->next) {
+                current_fn = d;
+                printf("  .globl %s\n", d->name);
+                printf("%s:\n", d->name);
 
-        // prologue
-        printf("  addi    sp,sp,-32\n");
-        printf("  sd      s0,24(sp)\n");
-        printf("  addi    s0,sp,32\n");
+                // prologue
+                printf("  addi    sp,sp,-32\n");
+                if (strncmp(d->name, "main", 4) == 0) printf("  sd      ra,24(sp)\n");
+                if (strncmp(d->name, "main", 4) == 0)
+                        printf("  sd      s0,16(sp)\n");
+                else
+                        printf("  sd      s0,24(sp)\n");
+                printf("  addi    s0,sp,32\n");
 
-        // body
-        assignoffsets(&decl->body);
-        cg_stmt(decl->body);
+                if (d->params != NULL) {
+                        char *rg = nextr();
+                        printf("  mv      %s,a0\n", rg);
+                        struct Sym *sym = get(d->params->name);
+                        printf("  sw      %s,%d(s0)\n", rg, sym->offset);
+                        prevr(rg);
+                }
 
-        // epilogue
-        printf(".L.end:\n");
-        printf("  ld      s0,24(sp)\n");
-        printf("  addi    sp,sp,32\n");
-        printf("  jr      ra\n");
+                // body
+                assignoffsets(&d->body);
+                cg_stmt(d->body);
+
+                // epilogue
+                printf(".L.end.%s:\n", d->name);
+                if (strncmp(d->name, "main", 4) == 0) printf("  ld      ra,24(sp)\n");
+                if (strncmp(d->name, "main", 4) == 0)
+                        printf("  ld      s0,16(sp)\n");
+                else
+                        printf("  ld      s0,24(sp)\n");
+                printf("  addi    sp,sp,32\n");
+                printf("  jr      ra\n\n");
+        }
 }
 
 void assignoffsets(struct Edecl **decls) {
@@ -894,7 +961,7 @@ void cg_stmt(struct Edecl *lstmt) {
         } else if (lstmt->kind == S_RETURN) {
                 char *rg = cg_expr(lstmt->value);
                 printf("  mv      a0,%s\n", rg);
-                printf("  j      .L.end\n");
+                printf("  j      .L.end.%s\n", current_fn->name);
                 prevr(rg);
         } else if (lstmt->kind == S_EXPR) {
                 cg_expr(lstmt->value); /* return is being ignored */
@@ -967,6 +1034,12 @@ char *cg_expr(struct Expr *cond) {
                 char *e = cg_expr(cond->lhs);
                 printf("  not      %s,%s\n", rg, e);
                 prevr(e);
+        } else if (cond->kind == E_FUNCALL) {
+                char *rg1 = cg_expr(cond->rhs->lhs);
+                printf("  mv      a0,%s\n", rg1);
+                printf("  call    %s\n", cond->lhs->ident);
+                printf("  mv      %s,a0\n", rg);
+                prevr(rg1);
         } else {
                 char *lhs = cg_expr(cond->lhs);
                 char *rhs = cg_expr(cond->rhs);
@@ -1019,27 +1092,22 @@ char *cg_expr(struct Expr *cond) {
         return rg;
 }
 
-static int regCount = 1;
+static int rgindex = 0;
+// clang-format off
+static char *registers[] = {
+"t0", "t1", "t2", "t3", "t4", "t5", "t6", 
+"a0", "a1", "a2", "a3", "a4", "a5", "a6", "a7"};
+// clang-format on
 char *nextr(void) {
-        int size = 0;
-        if (regCount < 10)
-                size = 1;
-        else if (regCount < 100)
-                size = 2;
-        else {
-                printf("Too many registers in use\n");
-                exit(1);
-        }
-
-        char *reg = calloc(size + 1, sizeof(char));
-        snprintf(reg, sizeof(reg), "a%d", regCount);
-        regCount++;
-        return reg;
+        assert(rgindex < 14);
+        rgindex++;
+        return copystr(registers[rgindex]);
 }
 
 void prevr(char *r) {
         free(r);
-        regCount--;
+        rgindex--;
+        assert(rgindex >= 0);
 }
 
 static int count = 0;
