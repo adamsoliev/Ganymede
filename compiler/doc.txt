@@ -1,3 +1,8 @@
+**************************************************************************************************
+Parsing
+**************************************************************************************************
+
+
 -----------------------------------------------------------------------------
 prec    assoc   purpose     op
 -----------------------------------------------------------------------------
@@ -54,6 +59,10 @@ jump_stmt
 -----------------------------------------------------------------------------
 
 
+**************************************************************************************************
+Compiler Testing
+**************************************************************************************************
+
 A Survey of Compiler Testing
 https://sci-hub.ru/https://dl.acm.org/doi/fullHtml/10.1145/3363562
 
@@ -82,6 +91,10 @@ Properties that simplify the problem of validating their correctness
 2. Another property that eases compiler testing is that the semantics of the source language are usually specified
 3. The fact that for most popular programming languages, there are multiple supposedly equivalent implementations, which compiler testing can exploit as an oracle for differential testing 
 
+
+**************************************************************************************************
+RISC-V ASSEMBLY
+**************************************************************************************************
 
 -------------------------------------------------------------------
 1. Put parameters in a place where the procedure can access them.
@@ -163,3 +176,20 @@ Convention
         • Check that sp enters and exits with the same value.
         • Check the number of times you enter the prologue equals the number of times you enter the epilogue.
         • Make sure you restore every register you modified.
+
+
+ACTIVATION RECORD
+-----------------------------------------------------------------------------
+ fp ->   -----------
+        | incoming  |   first 8 args are passed in a0-a7
+        |   args    |   rest are passed here
+         -----------
+        |  ra (old) |   so that we can return
+         -----------
+        |  fp (old) |   so that we have idea of prev AR's fp
+         -----------|
+        |   s1-s11  |   so that we have some regs preserved during funcall
+         -----------|
+        |   locals  |   for local calculations
+ sp ->   -----------
+-----------------------------------------------------------------------------

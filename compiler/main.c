@@ -447,7 +447,7 @@ struct Edecl *parse(struct Token *head) {
         struct Edecl *prog = calloc(1, sizeof(struct Edecl));
         struct Edecl *p = prog;
         while (current->kind != TEOF) {
-                OFFSET = -8;
+                OFFSET = -16; /* for return address and prev frame pointer */
                 p = p->next = function(&current);
         }
         return prog->next;
@@ -808,13 +808,10 @@ void codegen(struct Edecl *decl) {
                 printf("%s:\n", d->name);
 
                 // prologue
-                printf("  addi    sp,sp,-32\n");
-                if (strncmp(d->name, "main", 4) == 0) printf("  sd      ra,24(sp)\n");
-                if (strncmp(d->name, "main", 4) == 0)
-                        printf("  sd      s0,16(sp)\n");
-                else
-                        printf("  sd      s0,24(sp)\n");
-                printf("  addi    s0,sp,32\n");
+                printf("  addi    sp,sp,-32\n"); /* allocate space on stack */
+                printf("  sd      ra,24(sp)\n"); /* save return address */
+                printf("  sd      s0,16(sp)\n"); /* save prev frame pointer */
+                printf("  addi    s0,sp,32\n");  /* adjust new frame pointer */
 
                 if (d->params != NULL) {
                         char *rg = nextr();
@@ -830,11 +827,8 @@ void codegen(struct Edecl *decl) {
 
                 // epilogue
                 printf(".L.end.%s:\n", d->name);
-                if (strncmp(d->name, "main", 4) == 0) printf("  ld      ra,24(sp)\n");
-                if (strncmp(d->name, "main", 4) == 0)
-                        printf("  ld      s0,16(sp)\n");
-                else
-                        printf("  ld      s0,24(sp)\n");
+                printf("  ld      ra,24(sp)\n");
+                printf("  ld      s0,16(sp)\n");
                 printf("  addi    sp,sp,32\n");
                 printf("  jr      ra\n\n");
         }
