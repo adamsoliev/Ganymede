@@ -5,7 +5,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-// DATA STRUCTURES
 // clang-format off
 enum TokenKind { /* KEYWORDS */
                 INT, IF, RETURN, OPAR,
@@ -84,9 +83,7 @@ struct Edecl {
 
         // switch/case/default/break stmt
         char *label;
-
         struct Param *params;
-
         struct Edecl *next;
 };
 
@@ -472,22 +469,7 @@ struct Edecl *function(struct Token **token) {
         consume(&current, IDENT);
 
         consume(&current, OPAR);
-
         func->params = params(&current);
-        // if (current->kind == INT) {
-        //         OFFSET -= 8;
-        //         func->params = calloc(1, sizeof(struct Param));
-        //         struct Param *p = func->params;
-        //         p->type |= TYPE_INT;
-        //         consume(&current, INT);
-        //         p->name = strdup(current->value.scon);
-        //         consume(&current, IDENT);
-
-        //         insert(p->name, -100);
-        //         struct Sym *sym = get(p->name);
-        //         sym->offset = OFFSET;
-        // }
-
         consume(&current, CPAR);
 
         func->body = stmt(&current);
@@ -539,7 +521,6 @@ struct Edecl *declaration(struct Token **token) {
                 value = ldecl->value->value;
         }
         insert(ldecl->name, value);
-
         consume(&current, SEMIC);
 
         *token = current;
@@ -730,7 +711,6 @@ struct Expr *binary(int k, struct Token **token) {
                 while (prec[indexify(current)] == k1) {
                         int op = indexify(current);
                         current = current->next;
-
                         struct Expr *rhs = binary(k1 + 1, &current);
                         lhs = newexpr(oper[op], lhs, rhs);
                 }
@@ -797,19 +777,15 @@ struct Expr *postfix(struct Token **token) {
                         consume(&current, OPAR);
                         struct Expr *lhs = asgn(&current);
                         struct Expr *ps = newexpr(E_PARAMS, lhs, NULL);
-                        struct Expr *c = ps;
-                        while (current->kind == COMMA) {
-                                consume(&current, COMMA);
-                                lhs = asgn(&current);
-                                c->rhs = newexpr(E_PARAMS, lhs, NULL);
-                                c = c->rhs;
-                        }
-                        // struct Expr *first = newexpr(E_ICON, NULL, NULL);
-                        // first->value = current->value.icon;
-                        // consume(&current, ICON);
-                        // struct Expr *params = newexpr(E_PARAMS, first, NULL);
-                        e = newexpr(E_FUNCALL, e, ps);
-                        consume(&current, CPAR);
+                        struct Expr *c = ps;  // clang-format off
+                        while (current->kind == COMMA) {                                //      func
+                                consume(&current, COMMA);                               //    /      \ 
+                                lhs = asgn(&current);                                   //   name   params
+                                c->rhs = newexpr(E_PARAMS, lhs, NULL);                  //         /      \ 
+                                c = c->rhs;                                             //        1st     params
+                        }                                                               //               /      \ 
+                        e = newexpr(E_FUNCALL, e, ps);                                  //             2nd      NULL
+                        consume(&current, CPAR);  // clang-format on
                         break;
                 }
                 default: break;
@@ -852,13 +828,6 @@ void codegen(struct Edecl *decl) {
                 printf("  addi    s0,sp,32\n");  /* adjust new frame pointer */
 
                 cg_params(d->params);
-                // if (d->params != NULL) {
-                //         char *rg = nextr();
-                //         printf("  mv      %s,a0\n", rg);
-                //         struct Sym *sym = get(d->params->name);
-                //         printf("  sw      %s,%d(s0)\n", rg, sym->offset);
-                //         prevr(rg);
-                // }
 
                 // body
                 assignoffsets(&d->body);
@@ -1087,7 +1056,6 @@ char *cg_expr(struct Expr *cond) {
                 paramindex = 0;
                 char *rg1 = cg_expr(cond->rhs); /* load args to a0-... */
                 prevr(rg1);
-                // printf("  mv      a0,%s\n", rg1);
                 printf("  call    %s\n", cond->lhs->ident);
                 printf("  mv      %s,a0\n", rg);
         } else if (cond->kind == E_PARAMS) {
@@ -1101,7 +1069,6 @@ char *cg_expr(struct Expr *cond) {
         } else {
                 char *lhs = cg_expr(cond->lhs);
                 char *rhs = cg_expr(cond->rhs);
-
                 if (cond->kind == E_ADD || cond->kind == E_PADD) {
                         printf("  add     %s,%s,%s\n", rg, lhs, rhs);
                 } else if (cond->kind == E_SUB || cond->kind == E_PSUB) {
@@ -1143,7 +1110,6 @@ char *cg_expr(struct Expr *cond) {
                                 printf("  srl      %s,%s,%s\n", rg, lhs, rhs);
                 } else
                         assert(0);
-
                 prevr(lhs);
                 prevr(rhs);
         }
@@ -1179,11 +1145,9 @@ int nexti(void) {
 
 int main(int argc, char **argv) {
         if (argc < 2) assert(0);
-
         struct Token *tokenlist = NULL;
         scan(argv[1], &tokenlist);
         struct Edecl *decllist = parse(tokenlist);
         codegen(decllist);
-
         return 0;
 }
