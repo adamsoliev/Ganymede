@@ -21,6 +21,8 @@ assert() {
     fi
 }
 
+assert 17 "int sum(int ab, int ba, int ca) { return ab + ba + ca; } int main() { int a = sum(4, 9, 4); return a; }";
+assert 13 "int sum(int ab, int ba) { return ab + ba; } int main() { int a = sum(4, 9); return a; }";
 assert 12 "int func(int ab) { return ab * 3; } int main() { int a = func(4); return a; }";
 
 assert 23 "int main() { int a = 23; if (a > 22) goto Lll; Lll: return a; return 0; }"
