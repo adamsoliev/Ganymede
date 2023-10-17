@@ -482,7 +482,7 @@ struct Param *params(struct Token **token) {
         struct Param *prms = calloc(1, sizeof(struct Param));
         struct Param *p = prms;
         while (current->kind != CPAR) {
-                OFFSET -= 4;
+                OFFSET -= 8;
                 p = p->next = calloc(1, sizeof(struct Param));
                 p->type |= TYPE_INT;
                 consume(&current, INT);
@@ -778,13 +778,13 @@ struct Expr *postfix(struct Token **token) {
                         struct Expr *lhs = asgn(&current);
                         struct Expr *ps = newexpr(E_PARAMS, lhs, NULL);
                         struct Expr *c = ps;  // clang-format off
-                        while (current->kind == COMMA) {                                //      func
-                                consume(&current, COMMA);                               //    /      \ 
-                                lhs = asgn(&current);                                   //   name   params
-                                c->rhs = newexpr(E_PARAMS, lhs, NULL);                  //         /      \ 
-                                c = c->rhs;                                             //        1st     params
-                        }                                                               //               /      \ 
-                        e = newexpr(E_FUNCALL, e, ps);                                  //             2nd      NULL
+                        while (current->kind == COMMA) {                                /*      func                  */
+                                consume(&current, COMMA);                               /*    /      \                */
+                                lhs = asgn(&current);                                   /*   name   params            */
+                                c->rhs = newexpr(E_PARAMS, lhs, NULL);                  /*         /      \           */
+                                c = c->rhs;                                             /*        1st     params      */
+                        }                                                               /*               /      \     */
+                        e = newexpr(E_FUNCALL, e, ps);                                  /*             2nd      NULL  */
                         consume(&current, CPAR);  // clang-format on
                         break;
                 }
@@ -862,7 +862,7 @@ void assignoffsets(struct Edecl **decls) {
         if ((*decls)->kind == DECL) {
                 struct Sym *sym = get((*decls)->name);
                 sym->offset = OFFSET;
-                OFFSET += 4;
+                OFFSET += 8;
                 return;
         }
         // 'compound' stmt
@@ -876,7 +876,7 @@ void assignoffsets(struct Edecl **decls) {
                 }
                 struct Sym *sym = get(current->name);
                 sym->offset = OFFSET;
-                OFFSET += 4;
+                OFFSET += 8;
         }
 }
 
@@ -1009,10 +1009,11 @@ void cg_stmt(struct Edecl *lstmt) {
                 assert(0);
 }
 
-static int paramindex = 0;
 char *cg_expr(struct Expr *cond) {
-        assert(cond != NULL);
+        static int paramindex;
         char *rg = nextr();
+        assert(cond != NULL);
+
         if (cond->kind == E_ICON) {
                 printf("  li      %s,%lu\n", rg, cond->value);
         } else if (cond->kind == E_IDENT) {
@@ -1116,12 +1117,12 @@ char *cg_expr(struct Expr *cond) {
         return rg;
 }
 
-static int rgindex = 0;
 // clang-format off
 static char *registers[] = {
 "t0", "t1", "t2", "t3", "t4", "t5", "t6", 
 "a0", "a1", "a2", "a3", "a4", "a5", "a6", "a7"};
 // clang-format on
+static int rgindex = 0;
 char *nextr(void) {
         assert(rgindex < 14);
         rgindex++;
