@@ -2,7 +2,6 @@
 Parsing
 **************************************************************************************************
 
-
 -----------------------------------------------------------------------------
 prec    assoc   purpose     op
 -----------------------------------------------------------------------------
@@ -57,39 +56,6 @@ jump_stmt
     'break' ';'                                 | 
     'return' expr ';'                           | value
 -----------------------------------------------------------------------------
-
-
-**************************************************************************************************
-Compiler Testing
-**************************************************************************************************
-
-A Survey of Compiler Testing
-https://sci-hub.ru/https://dl.acm.org/doi/fullHtml/10.1145/3363562
-
-Previous interesting compilers
-https://en.wikipedia.org/wiki/PL/8
-
-COMPILER TESTING
-https://stackoverflow.com/questions/1104922/compiler-test-cases-or-how-to-test-a-compiler
-https://gcc.gnu.org/onlinedocs//gccint/C-Tests.html
-https://software-dl.ti.com/ccs/esd/documents/sdto_cgt_compiler_validations.html
-https://users.cs.utah.edu/~regehr/papers/pldi11-preprint.pdf
-
-https://github.com/c-testsuite/c-testsuite/tree/master
-https://github.com/nlsandler/write_a_c_compiler
-https://github.com/llvm/llvm-test-suite/tree/main/SingleSource/UnitTests
-https://github.com/csmith-project/creduce [reduce large C/C++ programs into small ones that have the same behavior]
-https://github.com/csmith-project/csmith [random generator of C programs]
-
-Challenges
-1. One challenge is the lack of a formal specification of what exactly a compiler is supposed to do
-2. Another challenge for testing is the semantic richness of the input and output languages that compilers deal with
-3. A third important challenge is that compilers have various options and features
-
-Properties that simplify the problem of validating their correctness
-1. One such property is that the inputs to compilers are written in a programming language, i.e., the space of possible inputs is clearly defined by the language grammar
-2. Another property that eases compiler testing is that the semantics of the source language are usually specified
-3. The fact that for most popular programming languages, there are multiple supposedly equivalent implementations, which compiler testing can exploit as an oracle for differential testing 
 
 
 **************************************************************************************************
@@ -193,3 +159,35 @@ ACTIVATION RECORD
         |   locals  |   for local calculations
  sp ->   -----------
 -----------------------------------------------------------------------------
+
+
+source, tokens, trees, and lists trees
+
+goals - learning about compiler implementation in general and about code generation in particular 
+(how high level structures are translated to assembly) simplicity
+
+Compilers cooperate with processors, linkers, loaders, debuggers, assemblers, and operating system
+
+Miniamal storage management
+    it usually callocs away, only freeing when necessary (e.g., register names)
+
+Symbol Management
+    the lexical analyzer adds identifiers to the identifier table, and the parser adds type
+    information to these identifiers. The code generators add target-specific
+    data to symbol-table entries    
+
+    attributes of identifier that names a local variable might include variable's type, its location 
+    in a stack frame for the procedure in which it is declared, and its storage class
+
+    scope or visibility rules imposed by the ANSI C standard
+
+    There are three separate name spaces for labels, tags, and identifiers, and, for each structure or union,
+    there is a separate name space for its members. For each name space, there can be only one visible identifier 
+    of a given name at any point in the program. There can, however, be more than one visible identifier 
+    at any point in the program if each such identifier is in a different name space
+
+    Roughly speaking, there is a separate symbol table for each name
+    space, and symbol tables themselves handle scope. 1 cc also uses sepa-
+    rate symbol tables for unscoped collections, like constants
+
+    struct Symbol => struct Table =>   
