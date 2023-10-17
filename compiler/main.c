@@ -672,9 +672,8 @@ int indexify(struct Token *token) {
 //      unary-expression assign-operator assignment-expression
 struct Expr *asgn(struct Token **token) {
         struct Token *current = *token;
-        /* will recognize all correct exprs as well as some incorrect ones since 
-        if it isn't a conditinal expr, it must be a unary, not cond no matter 
-        what as here */
+        /* TODO: will recognize all correct exprs as well as some incorrect ones since 
+        if it isn't a conditinal expr, it must be a unary, not cond no matter what, as here */
         struct Expr *lhs = cond(&current);
         if (current->kind == ASGN) {
                 consume(&current, ASGN);
@@ -971,7 +970,8 @@ void cg_stmt(struct Edecl *lstmt) {
                 cg_stmt(lstmt->then);
                 printf("%s:\n", contlabel);
                 if (lstmt->kind == S_FOR) {
-                        cg_expr(lstmt->inc);
+                        char *rg = cg_expr(lstmt->inc);
+                        prevr(rg);
                 }
                 printf("  j .Loop.%d\n", i);
                 printf(".L.end.%d:\n", i);
@@ -981,7 +981,8 @@ void cg_stmt(struct Edecl *lstmt) {
                 printf("  j      .L.end.%s\n", current_fn->name);
                 prevr(rg);
         } else if (lstmt->kind == S_EXPR) {
-                cg_expr(lstmt->value); /* return is being ignored */
+                char *rg = cg_expr(lstmt->value);
+                prevr(rg);
         } else if (lstmt->kind == S_GOTO) {
                 printf("  j %s\n", lstmt->cond->ident);
         } else if (lstmt->kind == S_LABEL) {
@@ -1062,6 +1063,7 @@ char *cg_expr(struct Expr *cond) {
         } else if (cond->kind == E_PARAMS) {
                 char *rg1 = cg_expr(cond->lhs);
                 printf("  mv      a%d,%s\n", paramindex++, rg1);
+                assert(paramindex < 8);
                 prevr(rg1);
                 if (cond->rhs != NULL) {
                         char *rg1 = cg_expr(cond->rhs);
