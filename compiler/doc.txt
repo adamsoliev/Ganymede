@@ -1,3 +1,35 @@
+-----------------------------------------------------------------------------
+DESCRIPTION OF CURRENT STATE: source -> tokens -> AST -> RISC-V
+-----------------------------------------------------------------------------
+Goals
+    learning about compiler implementation in general and about code generation in particular 
+    (how high level structures are translated to assembly) 
+
+Minimal memory management
+    it usually callocs away, only freeing when necessary (e.g., register names)
+
+Minimal symbol management
+    it uses a single hash table with string/symbol key-value pair. symbol is a struct that has value and offset fields
+
+Scanning
+    except keywords/numbers, which are handled using library functions, it is a hand-coded scanner that examines 
+    the source char by char, generating respective tokens
+
+Parsing 
+    recursive descend parser; all EXPRESSIONS and STATEMENTS are implemented; binary expressions are handled using 
+    a table-driven approach, which is both efficient and less verbose. missing major pieces are (more complex) 
+    DECLARATIONS, TYPES except INT (type are represented using bit-string) and nice error messages/graceful handling  
+
+AST/Semantic analysis
+    again, could be improved. declaration/statement combo is handled via one struct type, which simplified parsing and 
+    aided in the codegen. type checking is left out since the only handled type is INT. some name resolution is enforced 
+    by the hash table 
+
+Codegen
+    high level constructs in AST are translated as straighforwardly as it possible  
+-----------------------------------------------------------------------------
+
+
 **************************************************************************************************
 Parsing
 **************************************************************************************************
@@ -161,33 +193,29 @@ ACTIVATION RECORD
 -----------------------------------------------------------------------------
 
 
-source, tokens, trees, and lists trees
+-----------------------------------------------------------------------------
+GENERAL NOTES 
+-----------------------------------------------------------------------------
+INSTRUCTION SELECTION
+  converting from tree structured IR to sequence of instructions
+    – create temporary locations to store values
+    – choose which operations 
+      • can combine or breakup original operations
+  match portions of tree and convert to triple
 
-goals - learning about compiler implementation in general and about code generation in particular 
-(how high level structures are translated to assembly) simplicity
+REGISTER ALLOCATION
+  map important vars & temps in assembly to either registers or slots in activation frame by
+    - assignment (assign to vars & temps registers)
+    - spilling (if can't assign to a register, assign a slot in activation frame)
+    - coalescing (eliminate moves a<->b and map both a&b to the same location)
 
-Compilers cooperate with processors, linkers, loaders, debuggers, assemblers, and operating system
+  solutions
+    - interference graph -> attempt register allocation by searching for a K-coloring
+      * NP-complete but a linear-time simplification algorithm works well in practice
+  
+  rules
+    vars & temps with interfering live ranges may not be assigned to the same machine register
 
-Miniamal storage management
-    it usually callocs away, only freeing when necessary (e.g., register names)
-
-Symbol Management
-    the lexical analyzer adds identifiers to the identifier table, and the parser adds type
-    information to these identifiers. The code generators add target-specific
-    data to symbol-table entries    
-
-    attributes of identifier that names a local variable might include variable's type, its location 
-    in a stack frame for the procedure in which it is declared, and its storage class
-
-    scope or visibility rules imposed by the ANSI C standard
-
-    There are three separate name spaces for labels, tags, and identifiers, and, for each structure or union,
-    there is a separate name space for its members. For each name space, there can be only one visible identifier 
-    of a given name at any point in the program. There can, however, be more than one visible identifier 
-    at any point in the program if each such identifier is in a different name space
-
-    Roughly speaking, there is a separate symbol table for each name
-    space, and symbol tables themselves handle scope. 1 cc also uses sepa-
-    rate symbol tables for unscoped collections, like constants
-
-    struct Symbol => struct Table =>   
+STATIC SINGLE ASSIGNMENT
+  each name is assigned in only one location
+  simplifies many optimizations
