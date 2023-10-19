@@ -194,8 +194,27 @@ ACTIVATION RECORD
 
 
 -----------------------------------------------------------------------------
-GENERAL NOTES 
+GENERAL NOTES ON BACKENDS
 -----------------------------------------------------------------------------
+It’s usually best (easiest) to solve a problem at the highest level of abstraction possible
+    ASSEMBLY    => can eliminate a few redundant instructions
+    LINEAR IR   => can speed up a long code sequence with smart register allocation
+    DAG/AST     => can eliminate entire chunks of unused code
+
+Optimizations can be done at local/global (within a single function)/interprocedural levels (between different functions)
+    high-level
+        Constant Folding - reduce expressions to constants
+        Strength Reduction - convert special case(s) of an expensive operation to a cheaper one
+        Loop Unrolling
+        Code Hoisting - move unchanging expression code (constant) outside of the loop
+        Function Inlining
+        Dead Code Detection and Elimination
+    low-level
+        Peephole Optimizations - replace a small section of code with simplier one (e.g., redundant load elimination)
+        Instruction Selection - replace subtrees in to-be-compiled program's tree with respective subtrees built from instructions  
+        Register Allocation
+    * beware of optimizations that have clear benefits and unclear costs
+
 INSTRUCTION SELECTION
   converting from tree structured IR to sequence of instructions
     – create temporary locations to store values
