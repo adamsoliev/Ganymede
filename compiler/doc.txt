@@ -194,7 +194,73 @@ ACTIVATION RECORD
 
 
 -----------------------------------------------------------------------------
-GENERAL NOTES ON BACKENDS
+GENERAL NOTES 
+-----------------------------------------------------------------------------
+In 1951, Grace Murray Hopper wrote A0, considered by some to be the ﬁrst compiler
+
+Changes in languages and computing environments pose a variety of challenges that require compiler writers to adapt their practices to obtain best results
+    object orientation, late binding of names to types and classes, dynamic loading, and polymorphism
+    freeze on single-thread performance -> improvements in architecture and parallelism
+
+Division of a compiler into three phases, a front end, an optimizer, and a back end, creates a useful separation of concerns
+    FE works to understand the source program and record the results of that analysis in IR form. Should run in O(n) time
+    OPTIMIZER tries to improve the IR so that it produces a more efficient execution. 
+    BE maps the optimized IR program onto the target machine’s ISA in a way that makes efficient use of resources
+
+Symbol tables
+    symbol tables, structure layout tables and constant tables
+    each table should have:
+        mapping mechanism (from name to repository): 
+            - hashmap
+            - multiset discrimination
+        repository: 
+            - should be contiguous/block contiguous
+            - each should have enough information to rebuild the lookup structure (e.g., for expansion)
+            - should support changes to the search path (going in/out of scope)
+    
+    Example implementation 
+                                 N              N              N
+    --------          -------- <---> -------- <---> -------- <---> --------                                                                                      
+   |        |        |        |     |        |     |        |     |        |                                                                                     
+   | global |        |  per   |     |        |     |        |     |        |                                                                                     
+   | symbol |        |function|     |        |     |        |     |        |                                                                                     
+   |  table |        |        |     |        |     |        |     |        |                                                                                     
+   |        |        |        |     |        |     |        |     |        |                                                                                     
+    --------          --------       --------       --------       --------                                                                                      
+                      CH |           CH |           CH |                                                                               
+                         v              v              v                                                                               
+                      --------       --------       --------                                                                           
+                     |        |     |        |     |        |                                                                           
+                     |        |     |        |     |        |                                                                           
+                     |        |     |        |     |        |                                                                        
+                     |        |     |        |     |        |                                            
+                     |        |     |        |     |        |                                            
+                      --------       --------       --------                                             
+                       N |                                                                                                       
+                         v                                                                                                       
+                      --------                                            
+                     |        |
+                     |        |
+                     |        |
+                     |        |
+                     |        |
+                      -------- 
+
+Type system (a type is just a collection of properties)
+    base type and compound/constructed types (arrays, strings, structs)
+    type equivalence
+        name equivalence
+        structural equivalence
+    type inference for expressions
+
+Storage layout
+    automatic (often placed in functon's activation record)
+    static (all are lumped into a single static data area, each having its offset)
+    irregular (data on heap)
+    temporary values (might be in AR or memory, depending on how often it is used)
+
+-----------------------------------------------------------------------------
+BACKEND
 -----------------------------------------------------------------------------
 It’s usually best (easiest) to solve a problem at the highest level of abstraction possible
     ASSEMBLY    => can eliminate a few redundant instructions
@@ -234,6 +300,9 @@ REGISTER ALLOCATION
   
   rules
     vars & temps with interfering live ranges may not be assigned to the same machine register
+
+INSTRUCTION SCHEDULING
+    reorder operations to reflect the target machine’s specific performance constraints
 
 STATIC SINGLE ASSIGNMENT
   each name is assigned in only one location
