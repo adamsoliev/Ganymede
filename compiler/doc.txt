@@ -259,6 +259,14 @@ Storage layout
     irregular (data on heap)
     temporary values (might be in AR or memory, depending on how often it is used)
 
+Code Shape
+    short-circuit evaluation of boolean exprs - after each evaluation, if it is false, jump to end of that stmt
+    if-then-else
+        three-block scheme (then and else parts are large)
+        contional move/predicated execution (otherwise)
+    switch/case
+        a linear search, a computed address, and a binary search
+
 -----------------------------------------------------------------------------
 BACKEND
 -----------------------------------------------------------------------------
@@ -267,7 +275,16 @@ It’s usually best (easiest) to solve a problem at the highest level of abstrac
     LINEAR IR   => can speed up a long code sequence with smart register allocation
     DAG/AST     => can eliminate entire chunks of unused code
 
-Optimizations can be done at local/global (within a single function)/interprocedural levels (between different functions)
+Opportunities for optimization arise from 
+    implementation of source-language abstractions
+    target machine
+
+Optimizations can be done at 
+    local (single block - where 1. stmts are executed sequencially and 2. if one stmt executes, whole block executes)
+    regional (multiple blocks - e.g., loop)
+    global (single function)
+    interprocedural levels (whole program - set of functions)
+
     high-level
         Constant Folding - reduce expressions to constants
         Strength Reduction - convert special case(s) of an expensive operation to a cheaper one
