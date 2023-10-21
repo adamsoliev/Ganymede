@@ -275,6 +275,11 @@ It’s usually best (easiest) to solve a problem at the highest level of abstrac
     LINEAR IR   => can speed up a long code sequence with smart register allocation
     DAG/AST     => can eliminate entire chunks of unused code
 
+Analyses
+    Control-flow ----+
+                     |--> SSA form encodes both, easing both analyses and transformations
+    Data-flow    ----+
+
 Opportunities for optimization arise from 
     implementation of source-language abstractions
     target machine
