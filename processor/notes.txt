@@ -1,0 +1,219 @@
+
+https://www.eecs.umich.edu/courses/eecs470/lectures/1.pdf                                                                                                                   
+
+era of high performance computng                                                                                                                    
+era of energy-efficient computng                                                                                                                    
+
+Four decades of Dennard Scaling                                                                                                                 
+    transistor density doubles, power consumption (with twice the number of transistors) stays the same                                                                                                                 
+
+Five key principles to performance                                                                                                                  
+    parallelism - go faster by doing many things at once                                                                                                                    
+    speculation - guess if you can be right most of the time                                                                                                                    
+    locality - related data are “near” one another in time and space                                                                                                                    
+    memoization - programs do the same thing over and over. remember it                                                                                                                 
+    amdahl’s law - make the common case fast…, but speedup ultmately limited by the uncommon case                                                                                                                   
+
+Performance                                                                                                                 
+    - latency (execution time): time to finish a fixed task                                                                                                                     
+    - throughput (bandwidth): number of tasks in fixed time                                                                                                                     
+
+    - very different: throughput can exploit parallelism, latency can’t                                                                                                                     
+        * baking bread analogy                                                                                                                  
+    - often contradictory                                                                                                                   
+    - choose definition to matches measurement goals                                                                                                                    
+
+The “Iron Law” of Processor Performance                                                                                                                 
+    Processor Performance = Time/Program = (Instructions/Program) x (Cycles/Instruction) x (Time/Cycle)                                                                                                                 
+                                           (code size)              (CPI)                  (cycle time)                                                                                                                 
+                                           Architecture             Implementation         Realization                                                                                                                  
+                                           Compiler Designer        Processor Designer     Chip Designer                                                                                                                    
+
+    Iron law “reduces” to: seconds/instruction = (cycles/instruction) * (seconds/cycle)                                                                                                                 
+    MIPS (millions of instructions per second)                                                                                                                  
+        Processor A: CPI = 2, clock = 500 MHz => MIPS = 0.5 * 500 MHz * 10^-6 = 250 MIPS                                                                                                                    
+        Processor B: CPI = 1, clock = 300 MHz => MIPS = 1.0 * 300 MHz * 10^-6 = 300 MIPS (faster)                                                                                                                   
+
+Power                                                                                                                   
+    Increasing bottleneck                                                                                                                   
+
+    Power consumpTon in Waws                                                                                                                    
+        - Determines bawery life in hours                                                                                                                   
+        - Sets packaging limits                                                                                                                     
+    Energy efficiency in joules                                                                                                                     
+        - Rate at which energy is consumed over Tme                                                                                                                     
+        - Energy = power * delay (joules = waws * seconds)                                                                                                                  
+        - Lower energy number means less power to perform a computaTon at same frequency                                                                                                                    
+
+CMOS                                                                                                                    
+    NMOS vs PMOS                                                                                                                    
+
+
+https://www.eecs.umich.edu/courses/eecs470/labs/1.pdf                                                                                                                   
+
+
+Verilog                                                                                                                 
+    forms                                                                                                                   
+        behavioral - used to do computer architecture at UMich                                                                                                                  
+            describes function of design                                                                                                                    
+            abstractions - arithmetic and logical operations                                                                                                                    
+        structural                                                                                                                  
+
+    data types                                                                                                                  
+        synthesizable                                                                                                                   
+            wires - can't hold state                                                                                                                    
+            logic (reg in SysVer) - holds state, might turn into flip-flops                                                                                                                 
+        unsynthesizable                                                                                                                 
+            integer - signed 32-bit                                                                                                                     
+            time - unsigned 64-bit                                                                                                                  
+            real - double-precision float                                                                                                                   
+
+    four state logic                                                                                                                    
+        0 - false, low                                                                                                                  
+        1 - true, high                                                                                                                  
+        z - high-impedance, unconnected net                                                                                                                 
+        x - unknown, invalid, don’t care                                                                                                                    
+
+    literals/constants                                                                                                                  
+        written in the format <bitwidth>’<base><constant>                                                                                                                   
+        options for <base> are                                                                                                                  
+            b - binary      /* assign an_8bit_register = 8'b10101111; */                                                                                                                    
+            o - octal                                                                                                                   
+            d - decimal                                                                                                                 
+            h - hexadecimal /* assign a_32bit_wire = 32'habcd_ef01; */                                                                                                                  
+
+    operators                                                                                                                   
+        Arithmetic                      Shift                                                                                                                                                                                                        
+        *  - Multiplication             >>  - Logical right shift                                                                                                                                                                                                   
+        /  - Division                   <<  - Logical left shift                                                                                                                                                                                            
+        +  - Addition                   >>> -  Arithmetic right shift                                                                                                                                                                                       
+        -  - Subtraction                <<< -  Arithmetic left shift                                                                                                                                                                                            
+        %  - Modulus                    Relational                                                                                                                                                                                                       
+        ** - Exponentiation             >   - Greater than                                                                                                                                                                                                           
+        Bitwise                         >=  - Greater than or equal to                                                                                                                                                                                  
+        ~  - Complement                 <   - Less than                                                                                                                                                                                                          
+        &  - And                        <=  - Less than or equal to                                                                                                                                                                                     
+        |  - Or                         !=  - Inequality                                                                                                                                                                                                
+        ~| - Nor                        !== - 4-state inequality                                                                                                                                                                                       
+        ˆ  - Xor                        ==  - Equality                                                                                                                                                                                                  
+        ~ˆ - Xnor                       === - 4-state equality                                                                                                                                                                                         
+        Logical                         Special                                                                                                                                                                                                      
+        !  - Complement                 {,}     - Concatenation                                                                                                                                                                                                    
+        && - And                        {n{m}}  - Replication                                                                                                                                                                                           
+        || - Or                         ?:      - Ternary                                                                                                                                                                                                   
+
+    assign                                                                                                                  
+        One line descriptions of combinational logic                                                                                                                    
+        Left hand side must be a wire (SystemVerilog allows assign statements on logic type)                                                                                                                    
+        Right hand side can be any one line verilog expression                                                                                                                  
+        Including (possibly nested) ternary (?:)                                                                                                                    
+
+    always blocks                                                                                                                   
+        contents of always blocks are executed whenever anything in the sensitivity list happens                                                                                                                    
+        two main types in this class                                                                                                                    
+            always_comb                                                                                                                 
+                implied sensitivity lists of every signal inside the block                                                                                                                  
+                used for combinational logic. replaced always @*                                                                                                                    
+            always_ff @(posedge clk)                                                                                                                    
+                sensitivity list containing only the positive transition of the clk signal                                                                                                                  
+                used for sequential logic                                                                                                                   
+        all left hand side signals need to be logic type                                                                                                                    
+
+    assignment                                                                                                                  
+        Blocking Assignment                         Nonblocking Assignment                                                                                                                          
+            - Combinational Blocks                      - Sequential Blocks                                                                                                                                                                       
+            - Each assignment is                        - All assignments occur                                                                                                                                                                   
+            processed in order, earlier      vs         “simultaneously,” delays are                                                                                                                                                                  
+            assignments block later ones                necessary for accurate                                                                                                                                                                            
+            - Uses the = operator                       simulation                                                                                                                                                                                
+                                                        - Uses the <= operator                                                                                                                          
+    synthesis tips                                                                                                                  
+        latches - memory device without a clock                                                                                                                 
+            generally bad, unless designed in intentionally                                                                                                                 
+            TIP: always assign every variable on every path                                                                                                                 
+
+    modules - basic organizational unit in verilog                                                                                                                  
+        inputs and outputs must be listed, including size and type format: <dir> <type> <[width-1:0]> <name>;                                                                                                                   
+        two methods of instantiation                                                                                                                    
+            1. my_simple_mux m1(.a_in(a),.b_in(b), .select_in(s),.muxed_out(m)); /* MUCH SAFER */                                                                                                                   
+            2. my_simple_mux m1(a,b,s,m);                                                                                                                   
+
+    remember – behavioral verilog implies no specific hardware design; but, it has to be synthesizable                                                                                                                  
+
+    keys to synthesizability                                                                                                                    
+        combinational logic                                                                                                                 
+            avoid feedback (combinatorial loops)                                                                                                                    
+            always blocks should                                                                                                                    
+                be always_comb blocks                                                                                                                   
+                use the blocking assignment operator =                                                                                                                  
+            all variables assigned on all paths                                                                                                                 
+                default values                                                                                                                  
+                if(...) paired with an else                                                                                                                 
+
+        sequential logic                                                                                                                    
+            avoid clock- and reset-gating                                                                                                                   
+            always blocks should                                                                                                                    
+                be always_ff @(posedge clock) blocks                                                                                                                    
+                use the nonblocking assignment operator, with a delay <= #1                                                                                                                 
+            no path should set a variable more than once                                                                                                                    
+            reset all variables used in the block                                                                                                                   
+            // synopsys sync_set_reset “reset”                                                                                                                  
+
+    flow control
+        all flow control
+            can only be used inside procedural blocks (always, initial, task, function)
+            encapsulate multiline assignments with begin...end
+            remember to assign on all paths
+        synthesizable
+            if/else (TIP: ternary alternative makes code much shorter)
+            case
+        unsynthesizable (useful in testbenches)
+            for
+            while
+            repeat
+            forever
+    
+    anatomy of a test bench
+        a good test bench should, in order
+            1. declare inputs and outputs for the module(s) being tested
+            2. instantiate the module (possibly under the name dut for device under test)
+            3. setup a clock driver (if necessary)
+            4. setup a correctness checking function (if necessary/possible)
+            5. inside an initial block
+                5.1 assign default values to all inputs, including asserting any available reset signal
+                5.2 $monitor or $display important signals
+                5.3 describe changes in input, using good testing practice
+        
+        initial blocks (unsythesizable)
+            procedural blocks, just like always
+            contents are simulated once at the beginning of a simulation
+            used to set values inside a test bench
+            should only be used in test benches
+        
+        tasks/functions
+            task                                    function                        
+                Reuse commonly repeated code            Reuse commonly repeated code    
+                Can have delays (e.g. #5)               No delays, no timing            
+                Can have timing information             Can return values, unlike a task
+                (e.g. @(negedge clock))                 Basically combinational logic   
+                Might be synthesizable                  Might be synthesizable          
+                (difficult, not recommended)            (difficult, not recommended)    
+        
+        system tasks/functions
+            $monitor, $display, etc
+        
+        test bench tips
+            initialize all module inputs
+            then assert reset
+            use @(negedge clock) when changing inputs to avoid race conditions
+        
+    verilog guidelines: https://www.eecs.umich.edu/courses/eecs470/projects/guidelines.pdf
+
+
+                    
+            
+                        
+                    
+            
+                    
+
