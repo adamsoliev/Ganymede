@@ -49,10 +49,10 @@ CMOS
     NMOS vs PMOS                                                                                                                    
 
 
-https://www.eecs.umich.edu/courses/eecs470/labs/1.pdf                                                                                                                   
-
-
 Verilog                                                                                                                 
+    +-------------------------------------------------------+
+    | https://www.eecs.umich.edu/courses/eecs470/labs/1.pdf |                                                                                                                 
+    +-------------------------------------------------------+
     forms                                                                                                                   
         behavioral - used to do computer architecture at UMich                                                                                                                  
             describes function of design                                                                                                                    
@@ -120,13 +120,13 @@ Verilog
         all left hand side signals need to be logic type                                                                                                                    
 
     assignment                                                                                                                  
-        Blocking Assignment                         Nonblocking Assignment                                                                                                                          
-            - Combinational Blocks                      - Sequential Blocks                                                                                                                                                                       
-            - Each assignment is                        - All assignments occur                                                                                                                                                                   
+        blocking assignment                         nonblocking assignment                                                                                                                          
+            - combinational blocks                      - sequential blocks                                                                                                                                                                       
+            - each assignment is                        - all assignments occur                                                                                                                                                                   
             processed in order, earlier      vs         “simultaneously,” delays are                                                                                                                                                                  
             assignments block later ones                necessary for accurate                                                                                                                                                                            
-            - Uses the = operator                       simulation                                                                                                                                                                                
-                                                        - Uses the <= operator                                                                                                                          
+            - uses the = operator                       simulation                                                                                                                                                                                
+                                                        - uses the <= operator                                                                                                                          
     synthesis tips                                                                                                                  
         latches - memory device without a clock                                                                                                                 
             generally bad, unless designed in intentionally                                                                                                                 
@@ -210,10 +210,79 @@ Verilog
     verilog guidelines: https://www.eecs.umich.edu/courses/eecs470/projects/guidelines.pdf
 
 
-                    
-            
-                        
-                    
-            
-                    
+    +-------------------------------------------------------+
+    | https://www.eecs.umich.edu/courses/eecs470/labs/2.pdf |
+    +-------------------------------------------------------+
+    The Verilog Preprocessor: Force for `Good and `Evil (https://www.veripool.org/papers/Preproc_Good_Evil_SNUGBos10_paper.pdf)
+    preprocessor directives
+        generic designs | programmable
+    
+    verilog macros                                                     parameters                                                             
+        syntax: `define <NAME> <value> | `undef <NAME>        VS           constant defined inside a module                                                                       
+        `ifdef  - checks if something is defined                           used to set module properties                                                                      
+        `else   - normal else behavior                                     can be overridden on instantiation                                                     
+        `endif  - end the if                                                                                        
+        `ifndef - checks if something is not defined                                                                                        
+
+        global (name collision), needs `                                   local, no extra chars 
+    
+    verilog headers
+        syntax: `include <FILE NAME>
+        include guards
+    
+    array connections
+        make a simple module a duplicate it several times
+    
+    anatomy of a Makefile
+        targets         are what we want to build
+        dependencies    are what we need to build it
+        commands        are how to build it
+
+        this looks something like the following
+        target: dep1 dep2 ...
+                command1
+                command2
+        
+        macros
+            $@ - the current target name
+            $^ - a list of all dependencies
+            $< - the first prerequisite
+            $? - a list of all dependencies requiring rebuilding
+        
+        special targets
+            .DEFAULT   - sets what runs when make is executed with no arguments
+            .PHONY     - dependencies will be built unconditionally
+            .PRECIOUS  - dependencies will be kept, intermediate or not
+            .SECONDARY - dependencies are automatically treated as intermediates, but not deleted
+    
+
+    +-------------------------------------------------------+
+    | https://www.eecs.umich.edu/courses/eecs470/labs/3.pdf |
+    +-------------------------------------------------------+
+
+    verilog style guide
+        brevity
+        indentation and alignment
+        SystemVerilog features
+            structs
+            enums
+            typedef
+            procedural fsm (finate state machine) design
+
+                                  
+    +-------------------------------------------------------+
+    | https://www.eecs.umich.edu/courses/eecs470/labs/5.pdf |
+    +-------------------------------------------------------+
+
+    SystemVerilog
+        Multidimensional Arrays
+        Unique and Priority
+        Assertions
+        For Loops (KEEP IN MIND: everything runs in parallel)
+        Generate Blocks
+        Assignment
+                              
+                                  
+    
+
 
