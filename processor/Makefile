@@ -1,7 +1,7 @@
 # Makefile for Verilog project
 
 # Define the target executable name
-TARGET = encode
+TARGET = processor
 
 # Source files (Verilog files)
 SOURCES = main.v bench.v 
@@ -14,7 +14,7 @@ VVP = vvp
 all: $(TARGET)
 
 $(TARGET): $(SOURCES)
-	$(IVERILOG) -g2009 -o $(TARGET) $(SOURCES)
+	$(IVERILOG) -DBENCH -g2009 -o $(TARGET) $(SOURCES)
 
 # Run the simulation
 run: $(TARGET)
