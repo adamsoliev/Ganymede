@@ -3,12 +3,6 @@ register file   - read two registers at each cycle, and optionally write-back on
 ALU             - do computation
 decoder         - generate all required internal signals from the bit pattern of the current instruction
 */
-/**
- * Step 4: Creating a RISC-V processor
- *         The instruction decoder
- * central LED blinks, other LEDs show instr type.
- * DONE*
- */
 
 module SOC (
     input  CLK,        // system clock 
@@ -25,27 +19,41 @@ module SOC (
     assign LEDS = leds;
 
    reg [31:0] MEM [0:255]; 
-   reg [31:0] PC;       // program counter
+   reg [31:0] PC=0;       // program counter
    reg [31:0] instr;    // current instruction
    
    `include "riscv_assembly.v"
+    // initial begin
+    //     $dumpfile("processor.vcd");
+    //     $dumpvars(0,CLK, state, LEDS);                                    
+    //     PC = 0;
+    //     ADD(x0,x0,x0);
+    //     ADD(x1,x0,x0);
+    //     ADDI(x1,x1,1);
+    //     ADDI(x1,x1,1);
+    //     ADDI(x1,x1,1);
+    //     ADDI(x1,x1,1);
+    //     ADD(x2,x1,x0);
+    //     ADD(x3,x1,x2);
+    //     SRLI(x3,x3,3);
+    //     SLLI(x3,x3,31);
+    //     SRAI(x3,x3,5);
+    //     SRLI(x1,x3,26);
+    //     EBREAK();
+    // end
+
+    integer L0_=4;
     initial begin
-        $dumpfile("processor.vcd");
-        $dumpvars(0,CLK, state, LEDS);                                    
-        PC = 0;
-        ADD(x0,x0,x0);
-        ADD(x1,x0,x0);
-        ADDI(x1,x1,1);
-        ADDI(x1,x1,1);
-        ADDI(x1,x1,1);
-        ADDI(x1,x1,1);
-        ADD(x2,x1,x0);
+        integer L0_=16;
+        ADDI(x1,x0,1);
+        ADDI(x2,x1,3);
         ADD(x3,x1,x2);
         SRLI(x3,x3,3);
-        SLLI(x3,x3,31);
-        SRAI(x3,x3,5);
-        SRLI(x1,x3,26);
+    Label(L0_);
+        ADDI(x1,x1,1);
+        JAL(x0,LabelRef(L0_));
         EBREAK();
+        endASM();
     end
    
    /* ==================== DECODER ==================== */
@@ -120,8 +128,11 @@ module SOC (
     reg [1:0] state = FETCH_INSTR;
 
     // register write back
-    assign writeBackData = aluOut; 
-    assign writeBackEn = (state == EXECUTE && (isALUreg || isALUimm));  
+    assign writeBackData = (isJAL || isJALR) ? (PC + 4) : aluOut; 
+    assign writeBackEn = (state == EXECUTE && (isALUreg || isALUimm || isJAL || isJALR));  
+    wire [31:0] nextPC = isJAL ? PC + Jimm :
+                         isJALR ? rs1 + Iimm :
+                         PC + 4;
 
     always @(posedge CLK) begin
         if(!resetn) begin
@@ -149,7 +160,7 @@ module SOC (
                 end
                 EXECUTE: begin
                     if(!isSYSTEM) begin
-                        PC <= PC + 4;
+                        PC <= nextPC;
                     end
                     state <= FETCH_INSTR;	      
 `ifdef BENCH      
