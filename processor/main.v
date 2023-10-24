@@ -42,17 +42,15 @@ module SOC (
     //     EBREAK();
     // end
 
-    integer L0_=4;
+    integer L0_=8;
     initial begin
-        integer L0_=16;
-        ADDI(x1,x0,1);
-        ADDI(x2,x1,3);
-        ADD(x3,x1,x2);
-        SRLI(x3,x3,3);
-    Label(L0_);
-        ADDI(x1,x1,1);
-        JAL(x0,LabelRef(L0_));
+        ADD(x1,x0,x0);
+        ADDI(x2,x0,32);
+    Label(L0_); 
+        ADDI(x1,x1,1); 
+        BNE(x1, x2, LabelRef(L0_));
         EBREAK();
+
         endASM();
     end
    
@@ -118,6 +116,20 @@ module SOC (
             3'b101: aluOut = funct7[5] ? ($signed(aluIn1) >>> shamt) : ($signed(aluIn1) >> shamt); 
             3'b110: aluOut = (aluIn1 | aluIn2);
             3'b111: aluOut = (aluIn1 & aluIn2);	
+            default: aluOut = 0;
+        endcase
+    end
+
+    reg takeBranch;
+    always @(*) begin
+        case(funct3)
+            3'b000: takeBranch = (rs1 == rs2);
+            3'b001: takeBranch = (rs1 != rs2);
+            3'b100: takeBranch = ($signed(rs1) < $signed(rs2));
+            3'b101: takeBranch = ($signed(rs1) >= $signed(rs2));
+            3'b110: takeBranch = (rs1 < rs2);
+            3'b111: takeBranch = (rs1 >= rs2);
+            default: takeBranch = 1'b0;
         endcase
     end
 
@@ -130,9 +142,10 @@ module SOC (
     // register write back
     assign writeBackData = (isJAL || isJALR) ? (PC + 4) : aluOut; 
     assign writeBackEn = (state == EXECUTE && (isALUreg || isALUimm || isJAL || isJALR));  
-    wire [31:0] nextPC = isJAL ? PC + Jimm :
-                         isJALR ? rs1 + Iimm :
-                         PC + 4;
+    wire [31:0] nextPC = (isBranch && takeBranch)   ? PC + Bimm  :
+                         isJAL                      ? PC + Jimm  :
+                         isJALR                     ? rs1 + Iimm :
+                                                      PC + 4;
 
     always @(posedge CLK) begin
         if(!resetn) begin
