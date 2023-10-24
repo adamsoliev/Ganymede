@@ -18,17 +18,22 @@ module SOC (
     output TXD         // UART transmit
 );
 
+    wire resetn; 
+
+    // Plug the leds on register 1 to see its contents
+    reg [4:0] leds;
+    assign LEDS = leds;
+
    reg [31:0] MEM [0:255]; 
    reg [31:0] PC;       // program counter
    reg [31:0] instr;    // current instruction
    
    initial begin
+        $dumpfile("processor.vcd");
+        $dumpvars(0,CLK, state, LEDS);                                    
       PC = 0;
-      // add x0, x0, x0
-      //                   rs2   rs1  add  rd   ALUREG
-      instr = 32'b0000000_00000_00000_000_00000_0110011;
       // add x1, x0, x0
-      //                    rs2   rs1  add  rd  ALUREG
+      //                    rs2   rs1  add  rd   ALUREG
       MEM[0] = 32'b0000000_00000_00000_000_00001_0110011;
       // addi x1, x1, 1
       //             imm         rs1  add  rd   ALUIMM
@@ -42,16 +47,28 @@ module SOC (
       // addi x1, x1, 1
       //             imm         rs1  add  rd   ALUIMM
       MEM[4] = 32'b000000000001_00001_000_00001_0010011;
-      // lw x2,0(x1)
-      //             imm         rs1   w   rd   LOAD
-      MEM[5] = 32'b000000000000_00001_010_00010_0000011;
-      // sw x2,0(x1)
-      //             imm   rs2   rs1   w   imm  STORE
-      MEM[6] = 32'b000000_00010_00001_010_00000_0100011;
-      
+      // add x2, x1, x0
+      //                    rs2   rs1  add  rd   ALUREG
+      MEM[5] = 32'b0000000_00000_00001_000_00010_0110011;
+      // add x3, x1, x2
+      //                    rs2   rs1  add  rd   ALUREG
+      MEM[6] = 32'b0000000_00010_00001_000_00011_0110011;
+      // srli x3, x3, 3
+      //                   shamt   rs1  sr  rd   ALUIMM
+      MEM[7] = 32'b0000000_00011_00011_101_00011_0010011;
+      // slli x3, x3, 31
+      //                   shamt   rs1  sl  rd   ALUIMM
+      MEM[8] = 32'b0000000_11111_00011_001_00011_0010011;
+      // srai x3, x3, 5
+      //                   shamt   rs1  sr  rd   ALUIMM
+      MEM[9] = 32'b0100000_00101_00011_101_00011_0010011;
+      // srli x1, x3, 26
+      //                   shamt   rs1  sr  rd   ALUIMM
+      MEM[10] = 32'b0000000_11010_00011_101_00001_0010011;
+
       // ebreak
-      //                                        SYSTEM
-      MEM[7] = 32'b000000000001_00000_000_00000_1110011;
+      //                                          SYSTEM
+      MEM[11] = 32'b000000000001_00000_000_00000_1110011;
    end
    
    /* ==================== DECODER ==================== */
@@ -83,36 +100,114 @@ module SOC (
    wire [2:0] funct3 = instr[14:12];
    wire [6:0] funct7 = instr[31:25];
    /* ==================== END ==================== */
-   
-   always @(posedge CLK) begin
-      if(!isSYSTEM) begin
-        instr <= MEM[PC];   // read an instruction from memory
-        PC <= PC+1;         // increment program counter
-      end
-`ifdef BENCH      
-      if(isSYSTEM) $finish();
-`endif      
-   end
 
-   assign LEDS = isSYSTEM ? 31 : {PC[0],isALUreg,isALUimm,isStore,isLoad};
-   
+    // The register bank
+    reg [31:0] RegisterBank [0:31];
+    reg [31:0] rs1;
+    reg [31:0] rs2;
+    wire [31:0] writeBackData;
+    wire        writeBackEn;
+    assign writeBackData = 0; // for now
+    assign writeBackEn = 0;   // for now
+
 `ifdef BENCH   
-   always @(posedge CLK) begin
-      $display("PC=%0d",PC);
-      case (1'b1)
-        isALUreg: $display("ALUreg rd=%d rs1=%d rs2=%d funct3=%b", rdId, rs1Id, rs2Id, funct3);
-        isALUimm: $display("ALUimm rd=%d rs1=%d imm=%0d funct3=%b", rdId, rs1Id, Iimm, funct3);
-        isBranch: $display("BRANCH");
-        isJAL:    $display("JAL");
-        isJALR:   $display("JALR");
-        isAUIPC:  $display("AUIPC");
-        isLUI:    $display("LUI");	
-        isLoad:   $display("LOAD");
-        isStore:  $display("STORE");
-        isSYSTEM: $display("SYSTEM");
-      endcase 
-   end
+    integer i;
+    initial begin
+        for(i=0; i<32; ++i) begin
+        RegisterBank[i] = 0;
+        end
+    end
+`endif   
+
+    // The ALU
+    wire [31:0] aluIn1 = rs1;
+    wire [31:0] aluIn2 = isALUreg ? rs2 : Iimm;
+    reg [31:0] aluOut;
+    wire [4:0] shamt = isALUreg ? rs2[4:0] : instr[24:20]; // shift amount
+
+    always @(*) begin
+        case(funct3)
+            3'b000: aluOut = (funct7[5] & instr[5]) ?  (aluIn1 - aluIn2) : (aluIn1 + aluIn2);
+            3'b001: aluOut = aluIn1 << shamt;
+            3'b010: aluOut = ($signed(aluIn1) < $signed(aluIn2));
+            3'b011: aluOut = (aluIn1 < aluIn2);
+            3'b100: aluOut = (aluIn1 ^ aluIn2);
+            3'b101: aluOut = funct7[5] ? ($signed(aluIn1) >>> shamt) : ($signed(aluIn1) >> shamt); 
+            3'b110: aluOut = (aluIn1 | aluIn2);
+            3'b111: aluOut = (aluIn1 & aluIn2);	
+        endcase
+    end
+
+    // state machine
+    localparam FETCH_INSTR = 0;
+    localparam FETCH_REGS  = 1;
+    localparam EXECUTE     = 2;
+    reg [1:0] state = FETCH_INSTR;
+
+    // register write back
+    assign writeBackData = aluOut; 
+    assign writeBackEn = (state == EXECUTE && (isALUreg || isALUimm));  
+
+    always @(posedge CLK) begin
+        if(!resetn) begin
+            PC    <= 0;
+            state <= FETCH_INSTR;
+        end else begin
+            if(writeBackEn && rdId != 0) begin
+                RegisterBank[rdId] <= writeBackData;
+                if (rdId == 1) begin
+                    leds <= writeBackData;
+                end
+`ifdef BENCH
+                $display("x%0d <= %b",rdId,writeBackData);
 `endif
+            end
+            case(state)
+                FETCH_INSTR: begin
+                    instr <= MEM[PC];
+                    state <= FETCH_REGS;
+                end
+                FETCH_REGS: begin
+                    rs1 <= RegisterBank[rs1Id];
+                    rs2 <= RegisterBank[rs2Id];
+                    state <= EXECUTE;
+                end
+                EXECUTE: begin
+                    if(!isSYSTEM) begin
+                        PC <= PC + 1;
+                    end
+                    state <= FETCH_INSTR;	      
+`ifdef BENCH      
+                    if(isSYSTEM) $finish();
+`endif      
+                end
+            endcase
+        end 
+    end 
+
+    assign LEDS = isSYSTEM ? 31 : (1 << state);
+   
+`ifdef BENCH
+   always @(posedge CLK) begin
+      if(state == FETCH_REGS) begin
+	 case (1'b1)
+	   isALUreg: $display("ALUreg rd=%d rs1=%d rs2=%d funct3=%b", rdId, rs1Id, rs2Id, funct3);
+	   isALUimm: $display("ALUimm rd=%d rs1=%d imm=%0d funct3=%b", rdId, rs1Id, Iimm, funct3);
+	   isBranch: $display("BRANCH");
+	   isJAL:    $display("JAL");
+	   isJALR:   $display("JALR");
+	   isAUIPC:  $display("AUIPC");
+	   isLUI:    $display("LUI");	
+	   isLoad:   $display("LOAD");
+	   isStore:  $display("STORE");
+	   isSYSTEM: $display("SYSTEM");
+	 endcase 
+	 if(isSYSTEM) begin
+	    $finish();
+	 end
+      end 
+   end
+`endif	
 
    assign TXD  = 1'b0; // not used for now   
 endmodule
