@@ -42,15 +42,21 @@ module SOC (
     //     EBREAK();
     // end
 
-    integer L0_=8;
-    initial begin
-        ADD(x1,x0,x0);
-        ADDI(x2,x0,32);
-    Label(L0_); 
-        ADDI(x1,x1,1); 
-        BNE(x1, x2, LabelRef(L0_));
-        EBREAK();
+    // integer L0_=8;
+    // initial begin
+    //     ADD(x1,x0,x0);
+    //     ADDI(x2,x0,32);
+    // Label(L0_); 
+    //     ADDI(x1,x1,1); 
+    //     BNE(x1, x2, LabelRef(L0_));
+    //     EBREAK();
+    //     endASM();
+    // end
 
+    initial begin
+        LUI(x1, 32'b11111111111111111111111111111111);     // Just takes the 20 MSBs (12 LSBs ignored)
+        ORI(x1, x1, 32'b11111111111111111111111111111111); // Sets the 12 LSBs (20 MSBs ignored)
+        EBREAK();
         endASM();
     end
    
@@ -140,8 +146,11 @@ module SOC (
     reg [1:0] state = FETCH_INSTR;
 
     // register write back
-    assign writeBackData = (isJAL || isJALR) ? (PC + 4) : aluOut; 
-    assign writeBackEn = (state == EXECUTE && (isALUreg || isALUimm || isJAL || isJALR));  
+    assign writeBackData = (isJAL || isJALR) ? (PC + 4)     : 
+                           (isLUI)           ? Uimm         :
+                           (isAUIPC)         ? (PC + Uimm)  :
+                           aluOut; 
+    assign writeBackEn = (state == EXECUTE && (isALUreg || isALUimm || isJAL || isJALR || isLUI || isAUIPC));  
     wire [31:0] nextPC = (isBranch && takeBranch)   ? PC + Bimm  :
                          isJAL                      ? PC + Jimm  :
                          isJALR                     ? rs1 + Iimm :
