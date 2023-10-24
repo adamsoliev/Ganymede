@@ -28,48 +28,25 @@ module SOC (
    reg [31:0] PC;       // program counter
    reg [31:0] instr;    // current instruction
    
-   initial begin
+   `include "riscv_assembly.v"
+    initial begin
         $dumpfile("processor.vcd");
         $dumpvars(0,CLK, state, LEDS);                                    
-      PC = 0;
-      // add x1, x0, x0
-      //                    rs2   rs1  add  rd   ALUREG
-      MEM[0] = 32'b0000000_00000_00000_000_00001_0110011;
-      // addi x1, x1, 1
-      //             imm         rs1  add  rd   ALUIMM
-      MEM[1] = 32'b000000000001_00001_000_00001_0010011;
-      // addi x1, x1, 1
-      //             imm         rs1  add  rd   ALUIMM
-      MEM[2] = 32'b000000000001_00001_000_00001_0010011;
-      // addi x1, x1, 1
-      //             imm         rs1  add  rd   ALUIMM
-      MEM[3] = 32'b000000000001_00001_000_00001_0010011;
-      // addi x1, x1, 1
-      //             imm         rs1  add  rd   ALUIMM
-      MEM[4] = 32'b000000000001_00001_000_00001_0010011;
-      // add x2, x1, x0
-      //                    rs2   rs1  add  rd   ALUREG
-      MEM[5] = 32'b0000000_00000_00001_000_00010_0110011;
-      // add x3, x1, x2
-      //                    rs2   rs1  add  rd   ALUREG
-      MEM[6] = 32'b0000000_00010_00001_000_00011_0110011;
-      // srli x3, x3, 3
-      //                   shamt   rs1  sr  rd   ALUIMM
-      MEM[7] = 32'b0000000_00011_00011_101_00011_0010011;
-      // slli x3, x3, 31
-      //                   shamt   rs1  sl  rd   ALUIMM
-      MEM[8] = 32'b0000000_11111_00011_001_00011_0010011;
-      // srai x3, x3, 5
-      //                   shamt   rs1  sr  rd   ALUIMM
-      MEM[9] = 32'b0100000_00101_00011_101_00011_0010011;
-      // srli x1, x3, 26
-      //                   shamt   rs1  sr  rd   ALUIMM
-      MEM[10] = 32'b0000000_11010_00011_101_00001_0010011;
-
-      // ebreak
-      //                                          SYSTEM
-      MEM[11] = 32'b000000000001_00000_000_00000_1110011;
-   end
+        PC = 0;
+        ADD(x0,x0,x0);
+        ADD(x1,x0,x0);
+        ADDI(x1,x1,1);
+        ADDI(x1,x1,1);
+        ADDI(x1,x1,1);
+        ADDI(x1,x1,1);
+        ADD(x2,x1,x0);
+        ADD(x3,x1,x2);
+        SRLI(x3,x3,3);
+        SLLI(x3,x3,31);
+        SRAI(x3,x3,5);
+        SRLI(x1,x3,26);
+        EBREAK();
+    end
    
    /* ==================== DECODER ==================== */
    // The 10 RISC-V instructions
@@ -107,14 +84,12 @@ module SOC (
     reg [31:0] rs2;
     wire [31:0] writeBackData;
     wire        writeBackEn;
-    assign writeBackData = 0; // for now
-    assign writeBackEn = 0;   // for now
 
 `ifdef BENCH   
     integer i;
     initial begin
         for(i=0; i<32; ++i) begin
-        RegisterBank[i] = 0;
+            RegisterBank[i] = 0;
         end
     end
 `endif   
@@ -164,7 +139,7 @@ module SOC (
             end
             case(state)
                 FETCH_INSTR: begin
-                    instr <= MEM[PC];
+                    instr <= MEM[PC[31:2]];
                     state <= FETCH_REGS;
                 end
                 FETCH_REGS: begin
@@ -174,7 +149,7 @@ module SOC (
                 end
                 EXECUTE: begin
                     if(!isSYSTEM) begin
-                        PC <= PC + 1;
+                        PC <= PC + 4;
                     end
                     state <= FETCH_INSTR;	      
 `ifdef BENCH      
@@ -185,8 +160,6 @@ module SOC (
         end 
     end 
 
-    assign LEDS = isSYSTEM ? 31 : (1 << state);
-   
 `ifdef BENCH
    always @(posedge CLK) begin
       if(state == FETCH_REGS) begin
