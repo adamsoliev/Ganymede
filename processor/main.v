@@ -4,21 +4,41 @@ module Memory (
     input             clk,
     input      [31:0] mem_addr,      // address to be read
     output reg [31:0] mem_rdata,     // data read from memory
-    input   	         mem_rstrb      // goes high when processor wants to read
+    input   	      mem_rstrb      // goes high when processor wants to read
 );
 
     reg [31:0] MEM [0:255];  // 1KB 
 
 `include "riscv_assembly.v"
+    // integer L0_   = 4;
+    // integer wait_ = 20;
+    // integer L1_   = 28;
+
+    // initial begin
+    //     ADD(x10,x0,x0);
+    // Label(L0_); 
+    //     ADDI(x10,x10,1);
+    //     JAL(x1,LabelRef(wait_)); // call(wait_)
+    //     JAL(zero,LabelRef(L0_)); // jump(L0_)
+    //     EBREAK();
+    // Label(wait_);
+    //     ADDI(x11,x0,1);
+    //     SLLI(x11,x11,13);
+    // Label(L1_);
+    //     ADDI(x11,x11,-1);
+    //     BNE(x11,x0,LabelRef(L1_));
+    //     JALR(x0,x1,0);	  
+    //     endASM();
+    // end
+
     integer L0_=8;
     initial begin
         ADD(x1,x0,x0);      
         ADDI(x2,x0,32);
-    Label(L0_); 
-        ADDI(x1,x1,1); 
+    Label(L0_); ADDI(x1,x1,1); 
         BNE(x1, x2, LabelRef(L0_));
         EBREAK();
-        endASM();
+    endASM();
     end
 
     always @(posedge clk) begin
@@ -35,7 +55,7 @@ module Processor (
     output     [31:0]   mem_addr, 
     input      [31:0]   mem_rdata, 
     output 	            mem_rstrb,
-    output reg [31:0]   x1		    // for visual debugging using LEDs  
+    output reg [31:0]   x10		    // for visual debugging using LEDs  
 );
 
     reg [31:0] PC=0;        // program counter
@@ -87,20 +107,50 @@ module Processor (
 
     // The ALU
     wire [31:0] aluIn1 = rs1;
-    wire [31:0] aluIn2 = isALUreg ? rs2 : Iimm;
-    reg [31:0] aluOut;
+    wire [31:0] aluIn2 = isALUreg | isBranch ? rs2 : Iimm;
+
     wire [4:0] shamt = isALUreg ? rs2[4:0] : instr[24:20]; // shift amount
 
+    // The adder is used by both arithmetic instructions and JALR.
+    wire [31:0] aluPlus = aluIn1 + aluIn2;
+
+    // Use a single 33 bits subtract to do subtraction and all comparisons
+    // (trick borrowed from swapforth/J1)
+    wire [32:0] aluMinus = {1'b1, ~aluIn2} + {1'b0,aluIn1} + 33'b1;
+    wire        LT  = (aluIn1[31] ^ aluIn2[31]) ? aluIn1[31] : aluMinus[32];
+    wire        LTU = aluMinus[32];
+    wire        EQ  = (aluMinus[31:0] == 0);
+
+    // Flip a 32 bit word. Used by the shifter (a single shifter for
+    // left and right shifts, saves silicium!)
+    function [31:0] flip32;
+        input [31:0] x;
+        flip32 = {x[ 0], x[ 1], x[ 2], x[ 3], x[ 4], x[ 5], x[ 6], x[ 7], 
+                  x[ 8], x[ 9], x[10], x[11], x[12], x[13], x[14], x[15], 
+                  x[16], x[17], x[18], x[19], x[20], x[21], x[22], x[23],
+                  x[24], x[25], x[26], x[27], x[28], x[29], x[30], x[31]};
+    endfunction
+
+    wire [31:0] shifter_in = (funct3 == 3'b001) ? flip32(aluIn1) : aluIn1;
+
+    /* verilator lint_off WIDTH */
+    wire [31:0] shifter = $signed({instr[30] & aluIn1[31], shifter_in}) >>> aluIn2[4:0];
+    /* verilator lint_on WIDTH */
+
+    wire [31:0] leftshift = flip32(shifter);
+
+    reg [31:0]  aluOut;
     always @(*) begin
         case(funct3)
-            3'b000: aluOut = (funct7[5] & instr[5]) ?  (aluIn1 - aluIn2) : (aluIn1 + aluIn2);
-            3'b001: aluOut = aluIn1 << shamt;
-            3'b010: aluOut = ($signed(aluIn1) < $signed(aluIn2));
-            3'b011: aluOut = (aluIn1 < aluIn2);
+            3'b000: aluOut = (funct7[5] & instr[5]) ? aluMinus[31:0] : aluPlus;
+            3'b001: aluOut = leftshift;
+            3'b010: aluOut = {31'b0, LT};
+            3'b011: aluOut = {31'b0, LTU};
             3'b100: aluOut = (aluIn1 ^ aluIn2);
-            3'b101: aluOut = funct7[5]? ($signed(aluIn1) >>> shamt) : ($signed(aluIn1) >> shamt); 
+            3'b101: aluOut = shifter;
             3'b110: aluOut = (aluIn1 | aluIn2);
             3'b111: aluOut = (aluIn1 & aluIn2);	
+            default: aluOut = 0;
         endcase
     end
 
@@ -108,15 +158,36 @@ module Processor (
     reg takeBranch;
     always @(*) begin
         case(funct3)
-            3'b000: takeBranch = (rs1 == rs2);
-            3'b001: takeBranch = (rs1 != rs2);
-            3'b100: takeBranch = ($signed(rs1) < $signed(rs2));
-            3'b101: takeBranch = ($signed(rs1) >= $signed(rs2));
-            3'b110: takeBranch = (rs1 < rs2);
-            3'b111: takeBranch = (rs1 >= rs2);
+            3'b000: takeBranch = EQ;
+            3'b001: takeBranch = !EQ;
+            3'b100: takeBranch = LT;
+            3'b101: takeBranch = !LT;
+            3'b110: takeBranch = LTU;
+            3'b111: takeBranch = !LTU;
             default: takeBranch = 1'b0;
         endcase
     end
+
+    // Address computation
+    // An adder used to compute branch address, JAL address and AUIPC.
+    // branch->PC+Bimm    AUIPC->PC+Uimm    JAL->PC+Jimm
+    // Equivalent to PCplusImm = PC + (isJAL ? Jimm : isAUIPC ? Uimm : Bimm)
+    wire [31:0] PCplusImm = PC + (instr[3] ? Jimm[31:0] :
+                                  instr[4] ? Uimm[31:0] :
+                                             Bimm[31:0] );
+    wire [31:0] PCplus4 = PC+4;
+
+    // register write back
+    assign writeBackData = (isJAL || isJALR)  ? PCplus4 :
+                                isLUI         ? Uimm :
+                                isAUIPC       ? PCplusImm : 
+                                                aluOut;
+
+    assign writeBackEn = (state == EXECUTE && !isBranch && !isStore);
+
+    wire [31:0] nextPC = ((isBranch && takeBranch) || isJAL) ? PCplusImm  :	       
+                         isJALR                              ? {aluPlus[31:1],1'b0}:
+                         PCplus4;
 
     // The state machine
     localparam FETCH_INSTR = 0;
@@ -125,36 +196,16 @@ module Processor (
     localparam EXECUTE     = 3;
     reg [1:0] state = FETCH_INSTR;
 
-    // register write back
-    assign writeBackData = (isJAL || isJALR) ? (PC + 4) :
-                (isLUI) ? Uimm :
-                (isAUIPC) ? (PC + Uimm) : 
-                aluOut;
-
-    assign writeBackEn = (state == EXECUTE && 
-                (isALUreg || 
-                isALUimm || 
-                isJAL    || 
-                isJALR   ||
-                isLUI    ||
-                isAUIPC)
-                );
-    // next PC
-    wire [31:0] nextPC = (isBranch && takeBranch) ? PC+Bimm  :	       
-                    isJAL                    ? PC+Jimm  :
-                    isJALR                   ? rs1+Iimm :
-                    PC+4;
-
     always @(posedge clk) begin
         if(!resetn) begin
-        PC    <= 0;
-        state <= FETCH_INSTR;
+            PC    <= 0;
+            state <= FETCH_INSTR;
         end else begin
             if(writeBackEn && rdId != 0) begin
                 RegisterBank[rdId] <= writeBackData;
                 // For displaying what happens.
-                if(rdId == 1) begin
-                    x1 <= writeBackData;
+                if(rdId == 10) begin
+                    x10 <= writeBackData;
                 end
 `ifdef BENCH	 
                 $display("x%0d <= %b",rdId,writeBackData);
@@ -175,7 +226,7 @@ module Processor (
                 end
                 EXECUTE: begin
                     if(!isSYSTEM) begin
-                    PC <= nextPC;
+                        PC <= nextPC;
                     end
                     state <= FETCH_INSTR;
 `ifdef BENCH      
@@ -234,7 +285,7 @@ module SOC (
     wire [31:0] mem_addr;
     wire [31:0] mem_rdata;
     wire mem_rstrb;
-    wire [31:0] x1;
+    wire [31:0] x10;
 
     Processor CPU(
         .clk(CLK),
@@ -242,9 +293,9 @@ module SOC (
         .mem_addr(mem_addr),
         .mem_rdata(mem_rdata),
         .mem_rstrb(mem_rstrb),
-        .x1(x1)		 
+        .x10(x10)		 
     );
-    assign LEDS = x1[4:0];
+    assign LEDS = x10[4:0];
 
     assign TXD  = 1'b0; // not used for now   
 
