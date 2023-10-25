@@ -1,6 +1,5 @@
-
-`default_nettype none
-`include "emitter_uart.v"
+    `default_nettype none
+    `include "emitter_uart.v"
 
 module Memory (
     input             clk,
@@ -13,6 +12,12 @@ module Memory (
 
     reg [31:0] MEM [0:1535]; // 1536 4-bytes words = 6 Kb of RAM in total
 
+    `ifdef BENCH
+    localparam slow_bit=12;
+    `else
+    localparam slow_bit=17;
+    `endif
+
     // Memory-mapped IO in IO page, 1-hot addressing in word address.   
     localparam IO_LEDS_bit      = 0;  // W five leds
     localparam IO_UART_DAT_bit  = 1;  // W data to send (8 bits) 
@@ -22,58 +27,132 @@ module Memory (
     function [31:0] IO_BIT_TO_OFFSET;
         input [31:0] bitid;
         begin
-            IO_BIT_TO_OFFSET = 1 << (bitid + 2);
+        IO_BIT_TO_OFFSET = 1 << (bitid + 2);
         end
     endfunction
     
-`include "riscv_assembly.v"
-    integer    L0_      = 12;
-    integer    L1_      = 20;
-    integer    L2_      = 52;      
-    integer    wait_    = 104;
-    integer    wait_L0_ = 112;
-    integer    putc_    = 124; 
-    integer    putc_L0_ = 132;
+    `include "riscv_assembly.v"
+
+    `define mandel_shift 10
+    `define mandel_mul (1 << `mandel_shift)
+    `define xmin (-2*`mandel_mul)
+    `define xmax ( 2*`mandel_mul)
+    `define ymin (-2*`mandel_mul)
+    `define ymax ( 2*`mandel_mul)	
+    `define dx ((`xmax-`xmin)/80)
+    `define dy ((`ymax-`ymin)/80)
+    `define norm_max (4 << `mandel_shift)
+    
+    integer    mandelstart_ = 12;
+    integer    blink_       = 16;
+    integer    loop_y_      = 76;
+    integer    loop_x_      = 84;
+    integer    loop_Z_      = 96;
+    integer    exit_Z_      = 188;
+    integer    wait_        = 264;
+    integer    wait_L0_     = 272;
+    integer    putc_        = 284; 
+    integer    putc_L0_     = 292;
+    integer    mulsi3_      = 308;
+    integer    mulsi3_L0_   = 316;
+    integer    mulsi3_L1_   = 328;
+    
+    integer    colormap_    = 344;
+
+    // X,Y         : s0,s1
+    // Cr,Ci       : s2,s3
+    // Zr,Zi       : s4,s5
+    // Zrr,2Zri,Zii: s6,s7,s8
+    // cnt: s10
+    // 128: s11
     
     initial begin
         LI(sp,32'h1800);   // End of RAM, 6kB
         LI(gp,32'h400000); // IO page
 
-    Label(L0_);
+    Label(mandelstart_);
 
-        // Count from 0 to 15 on the LEDs      
-        LI(s0,16); // upper bound of loop
-        LI(a0,0);
-    Label(L1_);
+        // Blink 5 times.
+        LI(s0,5);      
+    Label(blink_);
+        LI(a0,5);
         SW(a0,gp,IO_BIT_TO_OFFSET(IO_LEDS_bit));
         CALL(LabelRef(wait_));
-        ADDI(a0,a0,1);
-        BNE(a0,s0,LabelRef(L1_));
-
-        // Send abcdef...xyz to the UART
-        LI(s0,26); // upper bound of loop     
-        LI(a0,"a");
-        LI(s1,0);
-    Label(L2_);
-        CALL(LabelRef(putc_));
-        ADDI(a0,a0,1);
-        ADDI(s1,s1,1);
-        BNE(s1,s0,LabelRef(L2_));
-
-        // CR;LF
-        LI(a0,13);
-        CALL(LabelRef(putc_));
         LI(a0,10);
-        CALL(LabelRef(putc_));
+        SW(a0,gp,IO_BIT_TO_OFFSET(IO_LEDS_bit));
+        CALL(LabelRef(wait_));
+        ADDI(s0,s0,-1);
+        BNEZ(s0,LabelRef(blink_));
+        LI(a0,0);
+        SW(a0,gp,IO_BIT_TO_OFFSET(IO_LEDS_bit));      
         
-        J(LabelRef(L0_));
+        
+        LI(s1,0);
+        LI(s3,`xmin);
+        LI(s11,80);
+        
+    Label(loop_y_);
+        LI(s0,0);
+        LI(s2,`ymin);
+
+    Label(loop_x_);
+        MV(s4,s2); // Z <- C
+        MV(s5,s3);
+
+        LI(s10,9); // iter <- 9
+
+    Label(loop_Z_);
+        MV(a0,s4); // Zrr  <- (Zr*Zr) >> mandel_shift
+        MV(a1,s4);
+        CALL(LabelRef(mulsi3_));
+        SRLI(s6,a0,`mandel_shift);
+        MV(a0,s4); // Zri <- (Zr*Zi) >> (mandel_shift-1)
+        MV(a1,s5);
+        CALL(LabelRef(mulsi3_));
+        SRAI(s7,a0,`mandel_shift-1);
+        MV(a0,s5); // Zii <- (Zi*Zi) >> (mandel_shift)
+        MV(a1,s5);
+        CALL(LabelRef(mulsi3_));
+        SRLI(s8,a0,`mandel_shift);
+        SUB(s4,s6,s8); // Zr <- Zrr - Zii + Cr  
+        ADD(s4,s4,s2);
+        ADD(s5,s7,s3); // Zi <- 2Zri + Cr
+
+        ADD(s6,s6,s8); // if norm > norm max, exit loop
+        LI(s7,`norm_max);
+        BGT(s6,s7,LabelRef(exit_Z_));
+        
+        ADDI(s10,s10,-1);  // iter--, loop if non-zero
+        BNEZ(s10,LabelRef(loop_Z_));
+        
+    Label(exit_Z_);
+        LI(a0,colormap_);
+        ADD(a0,a0,s10);
+        LBU(a0,a0,0);
+        CALL(LabelRef(putc_));
+
+        ADDI(s0,s0,1);
+        ADDI(s2,s2,`dx);
+        BNE(s0,s11,LabelRef(loop_x_));
+
+        LI(a0," ");
+        CALL(LabelRef(putc_));
+        LI(a0,"\n");
+        CALL(LabelRef(putc_));      
+
+        ADDI(s1,s1,1);
+        ADDI(s3,s3,`dy);
+        BNE(s1,s11,LabelRef(loop_y_));
+
+        
+        J(LabelRef(mandelstart_));
         
         EBREAK(); // I systematically keep it before functions
                     // in case I decide to remove the loop...
 
     Label(wait_);
         LI(t0,1);
-        SLLI(t0,t0,12);
+        SLLI(t0,t0,slow_bit);
     Label(wait_L0_);
         ADDI(t0,t0,-1);
         BNEZ(t0,LabelRef(wait_L0_));
@@ -82,13 +161,35 @@ module Memory (
     Label(putc_);
         // Send character to UART
         SW(a0,gp,IO_BIT_TO_OFFSET(IO_UART_DAT_bit));
-        // Read UART status, and loop until bit 9 (busy sending) is zero.
+        // Read UART status, and loop until bit 9 (busy sending)
+        // is zero.
         LI(t0,1<<9);
     Label(putc_L0_);
         LW(t1,gp,IO_BIT_TO_OFFSET(IO_UART_CNTL_bit));     
         AND(t1,t1,t0);
         BNEZ(t1,LabelRef(putc_L0_));
         RET();
+
+        // Mutiplication routine,
+        // Input in a0 and a1
+        // Result in a0
+    Label(mulsi3_);
+        MV(a2,a0);
+        LI(a0,0);
+    Label(mulsi3_L0_); 
+        ANDI(a3,a1,1);
+        BEQZ(a3,LabelRef(mulsi3_L1_)); 
+        ADD(a0,a0,a2);
+    Label(mulsi3_L1_);
+        SRLI(a1,a1,1);
+        SLLI(a2,a2,1);
+        BNEZ(a1,LabelRef(mulsi3_L0_));
+        RET();
+
+    Label(colormap_);
+        DATAB(" ",".",",",":");
+        DATAB(";","o","x","%");
+        DATAB("#","@", 0 , 0 );            
         endASM();
     end
 
@@ -103,18 +204,17 @@ module Memory (
         if(mem_wmask[2]) MEM[word_addr][23:16] <= mem_wdata[23:16];
         if(mem_wmask[3]) MEM[word_addr][31:24] <= mem_wdata[31:24];	 
     end
-endmodule
+    endmodule
 
-
-module Processor (
-    input 	  clk,
-    input 	  resetn,
-    output [31:0] mem_addr, 
-    input [31:0]  mem_rdata, 
-    output 	  mem_rstrb,
-    output [31:0] mem_wdata,
-    output [3:0]  mem_wmask
-);
+    module Processor (
+        input 	  clk,
+        input 	  resetn,
+        output [31:0] mem_addr, 
+        input [31:0]  mem_rdata, 
+        output 	  mem_rstrb,
+        output [31:0] mem_wdata,
+        output [3:0]  mem_wmask
+    );
 
     reg [31:0] PC=0;        // program counter
     reg [31:0] instr;       // current instruction
@@ -160,7 +260,7 @@ module Processor (
     integer     i;
     initial begin
         for(i=0; i<32; ++i) begin
-            RegisterBank[i] = 0;
+        RegisterBank[i] = 0;
         end
     end
     `endif   
@@ -212,15 +312,14 @@ module Processor (
     reg [31:0]  aluOut;
     always @(*) begin
         case(funct3)
-            3'b000: aluOut = (funct7[5] & instr[5]) ? aluMinus[31:0] : aluPlus;
-            3'b001: aluOut = leftshift;
-            3'b010: aluOut = {31'b0, LT};
-            3'b011: aluOut = {31'b0, LTU};
-            3'b100: aluOut = (aluIn1 ^ aluIn2);
-            3'b101: aluOut = shifter;
-            3'b110: aluOut = (aluIn1 | aluIn2);
-            3'b111: aluOut = (aluIn1 & aluIn2);	
-            default: aluOut = 0;
+        3'b000: aluOut = (funct7[5] & instr[5]) ? aluMinus[31:0] : aluPlus;
+        3'b001: aluOut = leftshift;
+        3'b010: aluOut = {31'b0, LT};
+        3'b011: aluOut = {31'b0, LTU};
+        3'b100: aluOut = (aluIn1 ^ aluIn2);
+        3'b101: aluOut = shifter;
+        3'b110: aluOut = (aluIn1 | aluIn2);
+        3'b111: aluOut = (aluIn1 & aluIn2);	
         endcase
     end
 
@@ -228,13 +327,13 @@ module Processor (
     reg takeBranch;
     always @(*) begin
         case(funct3)
-            3'b000: takeBranch = EQ;
-            3'b001: takeBranch = !EQ;
-            3'b100: takeBranch = LT;
-            3'b101: takeBranch = !LT;
-            3'b110: takeBranch = LTU;
-            3'b111: takeBranch = !LTU;
-            default: takeBranch = 1'b0;
+        3'b000: takeBranch = EQ;
+        3'b001: takeBranch = !EQ;
+        3'b100: takeBranch = LT;
+        3'b101: takeBranch = !LT;
+        3'b110: takeBranch = LTU;
+        3'b111: takeBranch = !LTU;
+        default: takeBranch = 1'b0;
         endcase
     end
     
@@ -254,8 +353,6 @@ module Processor (
                     isAUIPC       ? PCplusImm :
                     isLoad        ? LOAD_data :
                                     aluOut;
-
-    assign writeBackEn = (state==EXECUTE && !isBranch && !isStore) || (state==WAIT_DATA) ;
 
     wire [31:0] nextPC = ((isBranch && takeBranch) || isJAL) ? PCplusImm   :
                                         isJALR   ? {aluPlus[31:1],1'b0} :
@@ -328,8 +425,8 @@ module Processor (
     
     always @(posedge clk) begin
         if(!resetn) begin
-            PC    <= 0;
-            state <= FETCH_INSTR;
+        PC    <= 0;
+        state <= FETCH_INSTR;
         end else begin
         if(writeBackEn && rdId != 0) begin
             RegisterBank[rdId] <= writeBackData;
@@ -337,57 +434,60 @@ module Processor (
             // For displaying what happens.
         end
         case(state)
-            FETCH_INSTR: begin
-                state <= WAIT_INSTR;
+        FETCH_INSTR: begin
+            state <= WAIT_INSTR;
+        end
+        WAIT_INSTR: begin
+            instr <= mem_rdata;
+            state <= FETCH_REGS;
+        end
+        FETCH_REGS: begin
+            rs1 <= RegisterBank[rs1Id];
+            rs2 <= RegisterBank[rs2Id];
+            state <= EXECUTE;
+        end
+        EXECUTE: begin
+            if(!isSYSTEM) begin
+            PC <= nextPC;
             end
-            WAIT_INSTR: begin
-                instr <= mem_rdata;
-                state <= FETCH_REGS;
-            end
-            FETCH_REGS: begin
-                rs1 <= RegisterBank[rs1Id];
-                rs2 <= RegisterBank[rs2Id];
-                state <= EXECUTE;
-            end
-            EXECUTE: begin
-                if(!isSYSTEM) begin
-                    PC <= nextPC;
-                end
-                state <= isLoad  ? LOAD  : 
-                    isStore ? STORE : 
-                    FETCH_INSTR;
-`ifdef BENCH      
-                if(isSYSTEM) $finish();
-`endif      
-            end
-            LOAD: begin
-                state <= WAIT_DATA;
-            end
-            WAIT_DATA: begin
-                state <= FETCH_INSTR;
-            end
-            STORE: begin
-                state <= FETCH_INSTR;
-            end
+            state <= isLoad  ? LOAD  : 
+                isStore ? STORE : 
+                FETCH_INSTR;
+    `ifdef BENCH      
+            if(isSYSTEM) $finish();
+    `endif      
+        end
+        LOAD: begin
+            state <= WAIT_DATA;
+        end
+        WAIT_DATA: begin
+            state <= FETCH_INSTR;
+        end
+        STORE: begin
+            state <= FETCH_INSTR;
+        end
         endcase 
         end
     end
+
+    assign writeBackEn = (state==EXECUTE && !isBranch && !isStore) ||
+                (state==WAIT_DATA) ;
     
     assign mem_addr = (state == WAIT_INSTR || state == FETCH_INSTR) ?
                 PC : loadstore_addr ;
     assign mem_rstrb = (state == FETCH_INSTR || state == LOAD);
     assign mem_wmask = {4{(state == STORE)}} & STORE_wmask;
+    
+    endmodule
 
-endmodule
 
-
-module SOC (
-    input 	     CLK, // system clock 
-    input 	     RESET, // reset button
-    output reg [4:0] LEDS, // system LEDs
-    input 	     RXD, // UART receive
-    output 	     TXD         // UART transmit
-);
+    module SOC (
+        input 	     CLK, // system clock 
+        input 	     RESET, // reset button
+        output reg [4:0] LEDS, // system LEDs
+        input 	     RXD, // UART receive
+        output 	     TXD         // UART transmit
+    );
 
     wire resetn;
 
@@ -406,7 +506,7 @@ module SOC (
         .mem_wdata(mem_wdata),
         .mem_wmask(mem_wmask)
     );
-
+    
     wire [31:0] RAM_rdata;
     wire [29:0] mem_wordaddr = mem_addr[31:2];
     wire isIO  = mem_addr[22];
@@ -430,7 +530,8 @@ module SOC (
     
     always @(posedge CLK) begin
         if(isIO & mem_wstrb & mem_wordaddr[IO_LEDS_bit]) begin
-            LEDS <= mem_wdata;
+        LEDS <= mem_wdata;
+    //	 $display("Value sent to LEDS: %b %d %d",mem_wdata,mem_wdata,$signed(mem_wdata));
         end
     end
 
@@ -438,8 +539,8 @@ module SOC (
     wire uart_ready;
     
     corescore_emitter_uart #(
-        .clk_freq_hz(20*1000000), // magic 45 is CPU_FREQ
-        .baud_rate(115200)			    
+        .clk_freq_hz(53*1000000),
+        .baud_rate(1000000)			    
     ) UART(
         .i_clk(CLK),
         .i_rst(!resetn),
@@ -449,19 +550,23 @@ module SOC (
         .o_uart_tx(TXD)      			       
     );
 
-    wire [31:0] IO_rdata = mem_wordaddr[IO_UART_CNTL_bit] ? { 22'b0, !uart_ready, 9'b0} : 32'b0;
+    wire [31:0] IO_rdata = 
+            mem_wordaddr[IO_UART_CNTL_bit] ? { 22'b0, !uart_ready, 9'b0}
+                                            : 32'b0;
     
-    assign mem_rdata = isRAM ? RAM_rdata : IO_rdata ;
+    assign mem_rdata = isRAM ? RAM_rdata :
+                            IO_rdata ;
     
     
-`ifdef BENCH
+    `ifdef BENCH
     always @(posedge CLK) begin
-        $display("%b", uart_valid);
+        //  $write("%c", mem_wdata[7:0] );
         if(uart_valid) begin
-            $write("%c", mem_wdata[7:0] );
-            $fflush(32'h8000_0001);
+        $write("%c", mem_wdata[7:0] );
+        $fflush(32'h8000_0001);
         end
     end
-`endif   
+    `endif   
     
-endmodule
+
+    endmodule
