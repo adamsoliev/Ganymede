@@ -27,9 +27,9 @@
 # .PHONY: all run clean
 
 all:
-	verilator -Wall -cc uart.v; cd obj_dir; make -f Vuart.mk
-	g++ -I /usr/share/verilator/include -I obj_dir/ /usr/share/verilator/include/verilated.cpp uart.cpp obj_dir/Vuart__ALL.a -o uart 
-	./uart 
+	verilator -Wall -cc processor.v; cd obj_dir; make -f Vprocessor.mk
+	g++ -I /usr/share/verilator/include -I obj_dir/ /usr/share/verilator/include/verilated.cpp processor.cpp obj_dir/Vprocessor__ALL.a -o processor 
+	./processor 
 
 clean:
-	rm -rf obj_dir; rm uart
+	rm -rf obj_dir; rm processor
