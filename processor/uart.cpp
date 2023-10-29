@@ -117,22 +117,30 @@ int main(int argc, char **argv) {
 
         uart->setup(baudclocks);
 
-        std::string message = "Hello World!";
+        std::string message = "Hello World! Hello World!";
         int charCount = message.size();
         int index = 0;
         int output = 0;
         int hz_counter = 22;
         bool sendchar = false;
+        bool restart = false;
         for (int i = 0; i < 12 * baudclocks * charCount; i++) {
                 tick(tb);
 
+                // restart the whole process once a second
                 if (hz_counter == 0) {
                         hz_counter = CLOCK_RATE_HZ - 1;
                 } else {
                         hz_counter--;
                 }
+                restart = hz_counter == 1;
 
-                if (hz_counter == 1) sendchar = true;
+                // send char
+                if (restart) {
+                        sendchar = true;
+                } else if (sendchar && (!tb->busy) && (index == charCount)) {
+                        sendchar = false;
+                }
 
                 if (sendchar) {
                         tb->wr = 1;
