@@ -59,7 +59,6 @@ class UARTSIM {
                         if (m_rx_bits >= 8) {
                                 m_rx_state = RXIDLE;
                                 putchar(m_rx_data);
-                                putchar('\n');
                                 fflush(stdout);
                         } else {
                                 m_rx_bits++;
@@ -111,14 +110,20 @@ int main(int argc, char **argv) {
         Verilated::commandArgs(argc, argv);
         Vuart *tb = new Vuart;
         UARTSIM *uart = new UARTSIM();
-        uart->setup(868);
 
-        char input = 'm';
-        int output = 0;
         int CLOCK_RATE_HZ = 100000000;  // 100 MHz clock
+        int BAUD_RATE = 115200;         // 115.2 KBaud
+        unsigned baudclocks = CLOCK_RATE_HZ / BAUD_RATE;
+
+        uart->setup(baudclocks);
+
+        std::string message = "Hello World!";
+        int charCount = message.size();
+        int index = 0;
+        int output = 0;
         int hz_counter = 22;
-        bool tx_restart = false;
-        for (int i = 0; i < 12 * 868; i++) {
+        bool sendchar = false;
+        for (int i = 0; i < 12 * baudclocks * charCount; i++) {
                 tick(tb);
 
                 if (hz_counter == 0) {
@@ -127,14 +132,18 @@ int main(int argc, char **argv) {
                         hz_counter--;
                 }
 
-                tx_restart = (hz_counter == 1);
+                if (hz_counter == 1) sendchar = true;
 
-                if (tx_restart) {
+                if (sendchar) {
                         tb->wr = 1;
-                        tb->data = input;
+                        tb->data = message[index];
+                }
+
+                if (sendchar && (!tb->busy)) {
+                        index++;
                 }
                 (*uart)(tb->tx);
         }
-        printf("input char:  %c\n", input);
+        printf("\n");
         return 0;
 }
