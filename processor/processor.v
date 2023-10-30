@@ -72,10 +72,9 @@ module processor(
         end
     end
 
-
     wire [63:0] aluIn1 = rs1;
     wire [63:0] aluIn2 = isOP ? rs2 : Iimm;
-    reg [63:0] aluOut;
+    reg [63:0] aluOut = 0;
     wire [4:0] shamt = isOP ? rs2[4:0] : instruction[24:20]; // shift amount
 
     // ADD/SUB/ADDI: 
@@ -98,6 +97,20 @@ module processor(
         endcase
     end
 
+    // The predicate for branch instructions
+    reg takeBranch;
+    always @(*) begin
+        case(funct3)
+            3'b000: takeBranch = (rs1 == rs2);
+            3'b001: takeBranch = (rs1 != rs2);
+            3'b100: takeBranch = ($signed(rs1) < $signed(rs2));
+            3'b101: takeBranch = ($signed(rs1) >= $signed(rs2));
+            3'b110: takeBranch = (rs1 < rs2);
+            3'b111: takeBranch = (rs1 >= rs2);
+            default: takeBranch = 1'b0;
+        endcase
+    end
+
     ////////////////////////////////////////////////////////////////////////////////
     // MEMORY ACCESS
     ////////////////////////////////////////////////////////////////////////////////
@@ -105,17 +118,35 @@ module processor(
     ////////////////////////////////////////////////////////////////////////////////
     // WRITE BACK
     ////////////////////////////////////////////////////////////////////////////////
-    assign writeBackData = aluOut;
-    assign writeBackEn = (state == EXECUTE && (isOP || isOP_IMM));
+    // register write back
+    assign writeBackData = (isJAL || isJALR) ? (PC + 4) :
+                (isLUI) ? Uimm :
+                (isAUIPC) ? (PC + Uimm) : 
+                aluOut;
+    
+    assign writeBackEn = (state == EXECUTE && 
+                (isOP || 
+                isOP_IMM || 
+                isJAL    || 
+                isJALR   ||
+                isLUI    ||
+                isAUIPC)
+                );
+    // next PC
+    wire [31:0] nextPC = (isBRANCH && takeBranch) ? PC+Bimm  :	       
+                        isJAL                    ? PC+Jimm  :
+                        isJALR                   ? rs1+Iimm :
+                        PC+4;
 
     // The state machine
     localparam FETCH_INSTR = 0;
     localparam FETCH_REGS  = 1;
     localparam EXECUTE     = 2;
     reg [1:0] state = FETCH_INSTR;
+
     always @(posedge clk) begin
         if(!reset) begin
-            PC    <= 102;
+            PC    <= 64'h80000000;
             state <= FETCH_INSTR;
         end else begin
             if(writeBackEn && rdId != 0) begin
@@ -123,7 +154,7 @@ module processor(
             end
             case(state)
                 FETCH_INSTR: begin
-                    instruction <= MEM[PC];
+                    instruction <= MEM[PC[31:2]];
                     state <= FETCH_REGS;
                 end
                 FETCH_REGS: begin
@@ -132,7 +163,7 @@ module processor(
                     state <= EXECUTE;
                 end
                 EXECUTE: begin
-                    PC <= PC + 1;
+                    PC <= nextPC;
                     state <= FETCH_INSTR;	      
                 end
             endcase 

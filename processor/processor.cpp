@@ -13,7 +13,7 @@ int main(int argc, char **argv) {
         Verilated::commandArgs(argc, argv);
         Vprocessor *tb = new Vprocessor;
 
-        for (int i = 0; i < 20; i++) {
+        for (int i = 0; i < 1000; i++) {
                 tick(tb);
                 if (i == 0) tb->reset == 0;
                 tb->reset = 1;
