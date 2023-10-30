@@ -89,7 +89,14 @@ module processor(
     // 0 for logical shift (SRL/SRLI)
     always @(*) begin
         case(funct3)
-            3'b000: aluOut = (funct7[5] & instruction[5]) ?  (aluIn1 - aluIn2) : (aluIn1 + aluIn2);
+            3'b000: 
+                if (isOP_32 || isOP_IMM_32) begin
+                    aluOut = (funct7[5] & instruction[5]) ?  (aluIn1 - aluIn2) : (aluIn1 + aluIn2);
+                    aluOut = {{32{aluOut[31]}}, aluOut[31:0]};
+                end
+                else begin
+                    aluOut = (funct7[5] & instruction[5]) ?  (aluIn1 - aluIn2) : (aluIn1 + aluIn2);
+                end
             3'b001: aluOut = aluIn1 << shamt;
             3'b010: aluOut = {63'b0, ($signed(aluIn1) < $signed(aluIn2))};
             3'b011: aluOut = {63'b0, (aluIn1 < aluIn2)};
