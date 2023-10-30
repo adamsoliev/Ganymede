@@ -15,6 +15,8 @@ int main(int argc, char **argv) {
 
         for (int i = 0; i < 20; i++) {
                 tick(tb);
+                if (i == 0) tb->reset == 0;
+                tb->reset = 1;
         }
         return 0;
 }

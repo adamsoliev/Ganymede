@@ -1,7 +1,8 @@
 `default_nettype none
 
 module processor(
-    input wire clk
+    input wire clk,
+    input wire reset
 );
     reg [31:0] MEM [0:4096];
     initial $readmemh("/home/adam/dev/computer-stuff/cpu/test_a/rv64ui-p-add", MEM);
@@ -9,12 +10,8 @@ module processor(
     ////////////////////////////////////////////////////////////////////////////////
     // FETCH
     ////////////////////////////////////////////////////////////////////////////////
-    reg [63:0] PC = 0;
-    reg [31:0] instruction = 32'b0000000_00000_00000_000_00000_0110011; // NOP
-    always @(posedge clk) begin
-        instruction <= MEM[PC];
-        PC <= PC + 1'b1;
-    end
+    reg [63:0] PC;
+    reg [31:0] instruction;
 
     ////////////////////////////////////////////////////////////////////////////////
     // DECODE
@@ -62,6 +59,44 @@ module processor(
     ////////////////////////////////////////////////////////////////////////////////
     // EXECUTE
     ////////////////////////////////////////////////////////////////////////////////
+    reg [63:0] RegisterBank [0:31];
+    reg [63:0] rs1;
+    reg [63:0] rs2;
+    wire [63:0] writeBackData;
+    wire        writeBackEn;
+    
+    integer i;
+    initial begin
+        for (i = 0; i < 32; ++i) begin
+            RegisterBank[i] = 0;
+        end
+    end
+
+
+    wire [63:0] aluIn1 = rs1;
+    wire [63:0] aluIn2 = isOP ? rs2 : Iimm;
+    reg [63:0] aluOut;
+    wire [4:0] shamt = isOP ? rs2[4:0] : instruction[24:20]; // shift amount
+
+    // ADD/SUB/ADDI: 
+    // funct7[5] is 1 for SUB and 0 for ADD. We need also to test instr[5]
+    // to make the difference with ADDI
+    //
+    // SRLI/SRAI/SRL/SRA: 
+    // funct7[5] is 1 for arithmetic shift (SRA/SRAI) and 
+    // 0 for logical shift (SRL/SRLI)
+    always @(*) begin
+        case(funct3)
+            3'b000: aluOut = (funct7[5] & instruction[5]) ?  (aluIn1 - aluIn2) : (aluIn1 + aluIn2);
+            3'b001: aluOut = aluIn1 << shamt;
+            3'b010: aluOut = ($signed(aluIn1) < $signed(aluIn2));
+            3'b011: aluOut = (aluIn1 < aluIn2);
+            3'b100: aluOut = (aluIn1 ^ aluIn2);
+            3'b101: aluOut = funct7[5] ? ($signed(aluIn1) >>> shamt) : ($signed(aluIn1) >> shamt); 
+            3'b110: aluOut = (aluIn1 | aluIn2);
+            3'b111: aluOut = (aluIn1 & aluIn2);	
+        endcase
+    end
 
     ////////////////////////////////////////////////////////////////////////////////
     // MEMORY ACCESS
@@ -70,32 +105,65 @@ module processor(
     ////////////////////////////////////////////////////////////////////////////////
     // WRITE BACK
     ////////////////////////////////////////////////////////////////////////////////
+    assign writeBackData = aluOut;
+    assign writeBackEn = (state == EXECUTE && (isOP || isOP_IMM));
 
-
+    // The state machine
+    localparam FETCH_INSTR = 0;
+    localparam FETCH_REGS  = 1;
+    localparam EXECUTE     = 2;
+    reg [1:0] state = FETCH_INSTR;
     always @(posedge clk) begin
-        // $display("%h %b %b", instruction, instruction[31:24], instruction[6:0]);
+        if(!reset) begin
+            PC    <= 102;
+            state <= FETCH_INSTR;
+        end else begin
+            if(writeBackEn && rdId != 0) begin
+                RegisterBank[rdId] <= writeBackData;
+            end
+            case(state)
+                FETCH_INSTR: begin
+                    instruction <= MEM[PC];
+                    state <= FETCH_REGS;
+                end
+                FETCH_REGS: begin
+                    rs1 <= RegisterBank[rs1Id];
+                    rs2 <= RegisterBank[rs2Id];
+                    state <= EXECUTE;
+                end
+                EXECUTE: begin
+                    PC <= PC + 1;
+                    state <= FETCH_INSTR;	      
+                end
+            endcase 
+        end
+    end
 
-        if (isLOAD     ) $display("PC:%3h %h  LOAD     ", PC, instruction);
-        if (isLOAD_FP  ) $display("PC:%3h %h  LOAD_FP  ", PC, instruction);
-        if (isMISC_MEM ) $display("PC:%3h %h  MISC_MEM ", PC, instruction);
-        if (isOP_IMM   ) $display("PC:%3h %h  OP_IMM   ", PC, instruction);
-        if (isAUIPC    ) $display("PC:%3h %h  AUIPC    ", PC, instruction);
-        if (isOP_IMM_32) $display("PC:%3h %h  OP_IMM_32", PC, instruction);
-        if (isSTORE    ) $display("PC:%3h %h  STORE    ", PC, instruction);
-        if (isSTORE_FP ) $display("PC:%3h %h  STORE_FP ", PC, instruction);
-        if (isAMO      ) $display("PC:%3h %h  AMO      ", PC, instruction);
-        if (isOP       ) $display("PC:%3h %h  OP       ", PC, instruction);
-        if (isLUI      ) $display("PC:%3h %h  LUI      ", PC, instruction);
-        if (isOP_32    ) $display("PC:%3h %h  OP_32    ", PC, instruction);
-        if (isMADD     ) $display("PC:%3h %h  MADD     ", PC, instruction);
-        if (isMSUB     ) $display("PC:%3h %h  MSUB     ", PC, instruction);
-        if (isNMSUB    ) $display("PC:%3h %h  NMSUB    ", PC, instruction);
-        if (isNMADD    ) $display("PC:%3h %h  NMADD    ", PC, instruction);
-        if (isOP_FP    ) $display("PC:%3h %h  OP_FP    ", PC, instruction);
-        if (isBRANCH   ) $display("PC:%3h %h  BRANCH   ", PC, instruction);
-        if (isJALR     ) $display("PC:%3h %h  JALR     ", PC, instruction);
-        if (isJAL      ) $display("PC:%3h %h  JAL      ", PC, instruction);
-        if (isSYSTEM   ) $display("PC:%3h %h  SYSTEM   ", PC, instruction);
+    ////////////////////////////////////////////////////////////////////////////////
+    // DEBUG
+    ////////////////////////////////////////////////////////////////////////////////
+    always @(posedge clk) begin
+        if (isLOAD     ) $display("STATE: %0d   PC:%3h %h  LOAD                         ", state, PC, instruction);
+        if (isLOAD_FP  ) $display("STATE: %0d   PC:%3h %h  LOAD_FP                      ", state, PC, instruction);
+        if (isMISC_MEM ) $display("STATE: %0d   PC:%3h %h  MISC_MEM                     ", state, PC, instruction);
+        if (isOP_IMM   ) $display("STATE: %0d   PC:%3h %h  OP_IMM    %0d %0d %0d  rd:%0d", state, PC, instruction, aluIn1, aluIn2, aluOut, rdId);
+        if (isAUIPC    ) $display("STATE: %0d   PC:%3h %h  AUIPC                        ", state, PC, instruction);
+        if (isOP_IMM_32) $display("STATE: %0d   PC:%3h %h  OP_IMM_32                    ", state, PC, instruction);
+        if (isSTORE    ) $display("STATE: %0d   PC:%3h %h  STORE                        ", state, PC, instruction);
+        if (isSTORE_FP ) $display("STATE: %0d   PC:%3h %h  STORE_FP                     ", state, PC, instruction);
+        if (isAMO      ) $display("STATE: %0d   PC:%3h %h  AMO                          ", state, PC, instruction);
+        if (isOP       ) $display("STATE: %0d   PC:%3h %h  OP        %0d %0d %0d  rd:%0d", state, PC, instruction, aluIn1, aluIn2, aluOut, rdId);
+        if (isLUI      ) $display("STATE: %0d   PC:%3h %h  LUI                          ", state, PC, instruction);
+        if (isOP_32    ) $display("STATE: %0d   PC:%3h %h  OP_32                        ", state, PC, instruction);
+        if (isMADD     ) $display("STATE: %0d   PC:%3h %h  MADD                         ", state, PC, instruction);
+        if (isMSUB     ) $display("STATE: %0d   PC:%3h %h  MSUB                         ", state, PC, instruction);
+        if (isNMSUB    ) $display("STATE: %0d   PC:%3h %h  NMSUB                        ", state, PC, instruction);
+        if (isNMADD    ) $display("STATE: %0d   PC:%3h %h  NMADD                        ", state, PC, instruction);
+        if (isOP_FP    ) $display("STATE: %0d   PC:%3h %h  OP_FP                        ", state, PC, instruction);
+        if (isBRANCH   ) $display("STATE: %0d   PC:%3h %h  BRANCH                       ", state, PC, instruction);
+        if (isJALR     ) $display("STATE: %0d   PC:%3h %h  JALR                         ", state, PC, instruction);
+        if (isJAL      ) $display("STATE: %0d   PC:%3h %h  JAL                          ", state, PC, instruction);
+        if (isSYSTEM   ) $display("STATE: %0d   PC:%3h %h  SYSTEM                       ", state, PC, instruction);
    end
 
 endmodule
