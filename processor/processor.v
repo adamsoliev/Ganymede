@@ -40,11 +40,12 @@ module processor(
     wire isSYSTEM       = (instruction[6:0] == 7'b1110011); // special
 
     // 5 immediate formats
-    wire [31:0] Uimm = {  instruction[31:12], {12{1'b0} }};
-    wire [31:0] Iimm = { {21{instruction[31]}}, instruction[30:20] };
-    wire [31:0] Simm = { {21{instruction[31]}}, instruction[30:25], instruction[11:7] };
+    wire [31:0] Uimm = { instruction[31:12], 12'b0 };
+    wire [31:0] Iimm = { {20{instruction[31]}}, instruction[31:20] };
+    wire [31:0] Simm = { {20{instruction[31]}}, instruction[31:25], instruction[11:7] };
     wire [31:0] Bimm = { {20{instruction[31]}}, instruction[7], instruction[30:25], instruction[11:8], 1'b0 };
-    wire [31:0] Jimm = { {12{instruction[31]}}, instruction[19:12], instruction[20], instruction[30:21], 1'b0 };
+    wire [31:0] Jimm = { {11{instruction[31]}}, instruction[31], instruction[19:12], instruction[20], instruction[30:21], 1'b0 };
+
     // wire [6:0] opcode = instruction[6:0];
 
     // source and destination registers
@@ -72,13 +73,23 @@ module processor(
         end
     end
 
-    wire [63:0] aluIn1 = (isOP_32 || isOP_IMM_32) ? {{32{rs1[31]}}, rs1[31:0]} : rs1;
-    wire [63:0] aluIn2 = isOP_32    ? {{32{rs2[31]}}, rs2[31:0]} : 
-                         isOP       ? rs2   : 
-                                    {{32{Iimm[31]}}, Iimm};
+    wire [63:0] aluIn1 = (isOP_32 || isOP_IMM_32)   ? {{32{rs1[31]}}, rs1[31:0]} : rs1;
+    wire [63:0] aluIn2 = isOP_32                    ? {{32{rs2[31]}}, rs2[31:0]} : 
+                         isOP                       ? rs2                        : 
+                                                      {{32{Iimm[31]}}, Iimm};
 
     reg [63:0] aluOut = 0;
-    wire [4:0] shamt = (isOP || isOP_32) ? rs2[4:0] : instruction[24:20]; // shift amount
+    /*
+    SLLI, SRLI, SRAI        => shamt[5:0] of Imm    isOP_IMM
+    SLLIW, SRLIW, SRAIW     => shamt[4:0] of Imm    isOP_IMM_32
+
+    SLL, SRL, SRA           => shamt[5:0] of rs2    isOP
+    SLLW, SRLW, and SRAW    => shamt[4:0] of rs2    isOP_32
+    */
+    wire [5:0] shamt = (isOP)               ? rs2[5:0]          :
+                       (isOP_32)            ? {1'b0, rs2[4:0]}  :
+                       (isOP_IMM)           ? Iimm[5:0]         :
+                                              {1'b0, Iimm[4:0]};
 
     // ADD/SUB/ADDI: 
     // funct7[5] is 1 for SUB and 0 for ADD. We need also to test instr[5]
@@ -143,9 +154,9 @@ module processor(
                 isAUIPC)
                 );
     // next PC
-    wire [63:0] nextPC = (isBRANCH && takeBranch) ? PC+{{32{Bimm[31]}}, Bimm}  :	       
-                        isJAL                     ? PC+{{32{Jimm[31]}}, Jimm}  :
-                        isJALR                    ? rs1+{{32{Iimm[31]}}, Iimm}  :
+    wire [63:0] nextPC = (isBRANCH && takeBranch) ? PC  + {{32{Bimm[31]}}, Bimm}  :	       
+                        isJAL                     ? PC  + {{32{Jimm[31]}}, Jimm}  :
+                        isJALR                    ? rs1 + {{32{Iimm[31]}}, Iimm}  :
                         PC+4;
 
     // The state machine
@@ -196,7 +207,7 @@ module processor(
         if (isLOAD     ) $display("STATE: %0d   PC:%3h %h  LOAD                         ", state, PC, instruction);
         if (isLOAD_FP  ) $display("STATE: %0d   PC:%3h %h  LOAD_FP                      ", state, PC, instruction);
         if (isMISC_MEM ) $display("STATE: %0d   PC:%3h %h  MISC_MEM                     ", state, PC, instruction);
-        if (isOP_IMM   ) $display("STATE: %0d   PC:%3h %h  OP_IMM    %0d %0d %0d  rd:%0d", state, PC, instruction, aluIn1, aluIn2, aluOut, rdId);
+        if (isOP_IMM   ) $display("STATE: %0d   PC:%3h %h  OP_IMM    %0d %0d %0d  shamt:%0d  rd:%0d", state, PC, instruction, aluIn1, aluIn2, aluOut, shamt, rdId);
         if (isAUIPC    ) $display("STATE: %0d   PC:%3h %h  AUIPC                        ", state, PC, instruction);
         if (isOP_IMM_32) $display("STATE: %0d   PC:%3h %h  OP_IMM_32 %0d %0d %0d  rd:%0d", state, PC, instruction, aluIn1, aluIn2, aluOut, rdId);
         if (isSTORE    ) $display("STATE: %0d   PC:%3h %h  STORE                        ", state, PC, instruction);
@@ -210,7 +221,7 @@ module processor(
         if (isNMSUB    ) $display("STATE: %0d   PC:%3h %h  NMSUB                        ", state, PC, instruction);
         if (isNMADD    ) $display("STATE: %0d   PC:%3h %h  NMADD                        ", state, PC, instruction);
         if (isOP_FP    ) $display("STATE: %0d   PC:%3h %h  OP_FP                        ", state, PC, instruction);
-        if (isBRANCH   ) $display("STATE: %0d   PC:%3h %h  BRANCH                       ", state, PC, instruction);
+        if (isBRANCH   ) $display("STATE: %0d   PC:%3h %h  BRANCH    %0d  %0d  Bimm:%0d ", state, PC, instruction, {{32{rs1[31]}}, rs1[31:0]}, {{32{rs2[31]}}, rs2[31:0]}, {{32{Bimm[31]}}, Bimm});
         if (isJALR     ) $display("STATE: %0d   PC:%3h %h  JALR                         ", state, PC, instruction);
         if (isJAL      ) $display("STATE: %0d   PC:%3h %h  JAL                          ", state, PC, instruction);
         if (isSYSTEM   ) $display("STATE: %0d   PC:%3h %h  SYSTEM                       ", state, PC, instruction);
