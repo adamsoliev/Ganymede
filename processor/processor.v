@@ -5,7 +5,7 @@ module processor(
     input wire reset
 );
     reg [31:0] MEM [0:4096];
-    initial $readmemh("/home/adam/dev/computer-stuff/cpu/test_a/rv64ui-p-add", MEM);
+    initial $readmemh("/home/adam/dev/computer-stuff/cpu/test_a/rv64ui-p-bgeu", MEM);
 
     ////////////////////////////////////////////////////////////////////////////////
     // FETCH
@@ -183,6 +183,15 @@ module processor(
     ////////////////////////////////////////////////////////////////////////////////
     // DEBUG
     ////////////////////////////////////////////////////////////////////////////////
+    wire trap;
+    assign trap = (isSYSTEM && !Iimm && RegisterBank[3] > 1);
+    always @(posedge clk) begin
+        if (trap) begin
+            $display("TRAP: %0d", RegisterBank[3][31:0]);
+            $finish();
+        end
+    end
+
     always @(posedge clk) begin
         if (isLOAD     ) $display("STATE: %0d   PC:%3h %h  LOAD                         ", state, PC, instruction);
         if (isLOAD_FP  ) $display("STATE: %0d   PC:%3h %h  LOAD_FP                      ", state, PC, instruction);
