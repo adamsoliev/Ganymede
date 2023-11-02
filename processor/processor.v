@@ -5,7 +5,7 @@ module processor(
     input wire reset
 );
     reg [31:0] MEM [0:4096];
-    initial $readmemh("/home/adam/dev/computer-stuff/cpu/test_a/rv64ui-p-srliw", MEM);
+    initial $readmemh("/home/adam/dev/computer-stuff/cpu/test_a/rv64ui-p-xori", MEM);
 
     ////////////////////////////////////////////////////////////////////////////////
     // FETCH
@@ -127,7 +127,13 @@ module processor(
                     end
                 end
                 else begin
-                    aluOut = funct7[5] ? ($signed(aluIn1) >>> shamt) : ($signed(aluIn1) >> shamt); 
+                    if (isOP_32) begin
+                        aluOutLower = funct7[5] ? ($signed(aluIn1[31:0]) >>> shamt) : ($signed(aluIn1[31:0]) >> shamt); 
+                        aluOut = {{32{aluOutLower[31]}}, aluOutLower[31:0]};
+                    end
+                    else begin
+                        aluOut = funct7[5] ? ($signed(aluIn1) >>> shamt) : ($signed(aluIn1) >> shamt); 
+                    end
                 end
             3'b110: aluOut = (aluIn1 | aluIn2);
             3'b111: aluOut = (aluIn1 & aluIn2);	
