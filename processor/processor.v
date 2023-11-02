@@ -79,6 +79,7 @@ module processor(
                                                       {{32{Iimm[31]}}, Iimm};
 
     reg [63:0] aluOut = 0;
+    reg [31:0] aluOutLower = 0;
     /*
     SLLI, SRLI, SRAI        => shamt[5:0] of Imm    isOP_IMM
     SLLIW, SRLIW, SRAIW     => shamt[4:0] of Imm    isOP_IMM_32
@@ -115,7 +116,19 @@ module processor(
             3'b010: aluOut = {63'b0, ($signed(aluIn1) < $signed(aluIn2))};
             3'b011: aluOut = {63'b0, (aluIn1 < aluIn2)};
             3'b100: aluOut = (aluIn1 ^ aluIn2);
-            3'b101: aluOut = funct7[5] ? ($signed(aluIn1) >>> shamt) : ($signed(aluIn1) >> shamt); 
+            3'b101: 
+                if (isOP_IMM || isOP_IMM_32) begin
+                    if (isOP_IMM_32) begin
+                        aluOutLower = Iimm[10] ? ($signed(aluIn1[31:0]) >>> shamt) : ($signed(aluIn1[31:0]) >> shamt); 
+                        aluOut = {{32{aluOutLower[31]}}, aluOutLower[31:0]};
+                    end
+                    else begin
+                        aluOut = Iimm[10] ? ($signed(aluIn1) >>> shamt) : ($signed(aluIn1) >> shamt); 
+                    end
+                end
+                else begin
+                    aluOut = funct7[5] ? ($signed(aluIn1) >>> shamt) : ($signed(aluIn1) >> shamt); 
+                end
             3'b110: aluOut = (aluIn1 | aluIn2);
             3'b111: aluOut = (aluIn1 & aluIn2);	
         endcase
