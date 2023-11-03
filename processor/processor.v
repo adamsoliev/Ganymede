@@ -5,7 +5,7 @@ module processor(
     input wire reset
 );
     reg [31:0] MEM [0:4096];
-    initial $readmemh("/home/adam/dev/computer-stuff/cpu/test_a/rv64ui-p-xori", MEM);
+    initial $readmemh("/home/adam/dev/computer-stuff/cpu/test_a/rv64ui-p-lb", MEM);
 
     ////////////////////////////////////////////////////////////////////////////////
     // FETCH
@@ -92,13 +92,6 @@ module processor(
                        (isOP_IMM)           ? Iimm[5:0]         :
                                               {1'b0, Iimm[4:0]};
 
-    // ADD/SUB/ADDI: 
-    // funct7[5] is 1 for SUB and 0 for ADD. We need also to test instr[5]
-    // to make the difference with ADDI
-    //
-    // SRLI/SRAI/SRL/SRA: 
-    // funct7[5] is 1 for arithmetic shift (SRA/SRAI) and 
-    // 0 for logical shift (SRL/SRLI)
     always @(*) begin
         case(funct3)
             3'b000: begin
