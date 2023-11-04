@@ -73,6 +73,23 @@ module processor(
         end
     end
 
+    /*
+    op       funct3  
+    -----------------------
+    0000011  011        ld
+    0000011  010        lw
+    0000011  110        lwu
+    0000011  001        lh
+    0000011  101        lhu
+    0000011  000        lb
+    0000011  100        lbu
+
+    0100011  011        sd
+    0100011  010        sw
+    0100011  001        sh
+    0100011  000        sb
+    */
+
     wire [63:0] aluIn1 = (isOP_32 || isOP_IMM_32)   ? {{32{rs1[31]}}, rs1[31:0]} : rs1;
     wire [63:0] aluIn2 = isOP_32                    ? {{32{rs2[31]}}, rs2[31:0]} : 
                          isOP                       ? rs2                        : 
@@ -173,6 +190,10 @@ module processor(
                         isJAL                     ? PC  + {{32{Jimm[31]}}, Jimm}  :
                         isJALR                    ? rs1 + {{32{Iimm[31]}}, Iimm}  :
                         PC+4;
+
+    // LOAD
+    wire [63:0] loadstore_addr = rs1 + Iimm;
+    wire [63:0] LOAD_DATA = 
 
     // The state machine
     localparam FETCH_INSTR = 0;

@@ -1,11 +1,26 @@
++-----------------------------------------------------------+ 
+| Implementation                                            |                                                                                                                   
++-----------------------------------------------------------+ 
+Muntjac         - 64-bit, educational, not too complex
+CVA6            - 64-bit, industrial
+BlackParrot     - 64-bit, industrial
+RVCoreP         - 32-bit, simple, five-stage pipelined     
 
-https://www.eecs.umich.edu/courses/eecs470/lectures/1.pdf                                                                                                                   
++-----------------------------------------------------------+ 
+| https://github.com/jieltan/OpenCompArchCourse             |
++-----------------------------------------------------------+ 
+scripts
 
-era of high performance computng                                                                                                                    
-era of energy-efficient computng                                                                                                                    
++-----------------------------------------------------------+ 
+| https://www.eecs.umich.edu/courses/eecs470/lectures/1.pdf |                                                                                                                   
++-----------------------------------------------------------+ 
+intro to comparch theory
 
-Four decades of Dennard Scaling                                                                                                                 
-    transistor density doubles, power consumption (with twice the number of transistors) stays the same                                                                                                                 
++-----------------------------------------------------------+ 
+| https://www.eecs.umich.edu/courses/eecs470/labs/1.pdf     | 
++-----------------------------------------------------------+ 
+verilog/systemverilog
+
 
 Five key principles to performance                                                                                                                  
     parallelism - go faster by doing many things at once                                                                                                                    
@@ -34,31 +49,7 @@ The “Iron Law” of Processor Performance
         Processor A: CPI = 2, clock = 500 MHz => MIPS = 0.5 * 500 MHz * 10^-6 = 250 MIPS                                                                                                                    
         Processor B: CPI = 1, clock = 300 MHz => MIPS = 1.0 * 300 MHz * 10^-6 = 300 MIPS (faster)                                                                                                                   
 
-Power                                                                                                                   
-    Increasing bottleneck                                                                                                                   
-
-    Power consumpTon in Waws                                                                                                                    
-        - Determines bawery life in hours                                                                                                                   
-        - Sets packaging limits                                                                                                                     
-    Energy efficiency in joules                                                                                                                     
-        - Rate at which energy is consumed over Tme                                                                                                                     
-        - Energy = power * delay (joules = waws * seconds)                                                                                                                  
-        - Lower energy number means less power to perform a computaTon at same frequency                                                                                                                    
-
-CMOS                                                                                                                    
-    NMOS vs PMOS                                                                                                                    
-
-
 Verilog                                                                                                                 
-    +-------------------------------------------------------+
-    | https://www.eecs.umich.edu/courses/eecs470/labs/1.pdf |                                                                                                                 
-    +-------------------------------------------------------+
-    forms                                                                                                                   
-        behavioral - used to do computer architecture at UMich                                                                                                                  
-            describes function of design                                                                                                                    
-            abstractions - arithmetic and logical operations                                                                                                                    
-        structural                                                                                                                  
-
     data types                                                                                                                  
         synthesizable                                                                                                                   
             wires - can't hold state                                                                                                                    
@@ -209,14 +200,6 @@ Verilog
         
     verilog guidelines: https://www.eecs.umich.edu/courses/eecs470/projects/guidelines.pdf
 
-
-    +-------------------------------------------------------+
-    | https://www.eecs.umich.edu/courses/eecs470/labs/2.pdf |
-    +-------------------------------------------------------+
-    The Verilog Preprocessor: Force for `Good and `Evil (https://www.veripool.org/papers/Preproc_Good_Evil_SNUGBos10_paper.pdf)
-    preprocessor directives
-        generic designs | programmable
-    
     verilog macros                                                     parameters                                                             
         syntax: `define <NAME> <value> | `undef <NAME>        VS           constant defined inside a module                                                                       
         `ifdef  - checks if something is defined                           used to set module properties                                                                      
@@ -254,35 +237,3 @@ Verilog
             .PHONY     - dependencies will be built unconditionally
             .PRECIOUS  - dependencies will be kept, intermediate or not
             .SECONDARY - dependencies are automatically treated as intermediates, but not deleted
-    
-
-    +-------------------------------------------------------+
-    | https://www.eecs.umich.edu/courses/eecs470/labs/3.pdf |
-    +-------------------------------------------------------+
-
-    verilog style guide
-        brevity
-        indentation and alignment
-        SystemVerilog features
-            structs
-            enums
-            typedef
-            procedural fsm (finate state machine) design
-
-                                  
-    +-------------------------------------------------------+
-    | https://www.eecs.umich.edu/courses/eecs470/labs/5.pdf |
-    +-------------------------------------------------------+
-
-    SystemVerilog
-        Multidimensional Arrays
-        Unique and Priority
-        Assertions
-        For Loops (KEEP IN MIND: everything runs in parallel)
-        Generate Blocks
-        Assignment
-                              
-                                  
-    
-
-
