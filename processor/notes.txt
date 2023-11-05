@@ -1,10 +1,11 @@
 +-----------------------------------------------------------+ 
 | Implementation                                            |                                                                                                                   
 +-----------------------------------------------------------+ 
-Muntjac         - 64-bit, educational, not too complex
-CVA6            - 64-bit, industrial
-BlackParrot     - 64-bit, industrial
-RVCoreP         - 32-bit, simple, five-stage pipelined     
+Muntjac                 - 64-bit, educational, not too complex
+CVA6                    - 64-bit, industrial
+BlackParrot             - 64-bit, industrial
+RVCoreP                 - 32-bit, simple, five-stage pipelined     
+KCP53000 (Polaris)      - 64-bit, simple
 
 +-----------------------------------------------------------+ 
 | https://github.com/jieltan/OpenCompArchCourse             |
