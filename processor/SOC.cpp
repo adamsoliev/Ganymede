@@ -1,31 +1,29 @@
 #include <fstream>
 #include <vector>
 
-#include "Vprocessor.h"
+#include "VSOC.h"
 #include "verilated.h"
 
-void tick(Vprocessor *tb);
+void tick(VSOC *tb);
 
 int main(int argc, char **argv) {
         std::string srcFilePath = "./tests/rv64ui-p-";
         std::vector<std::string> tests = {
                 // clang-format off
-                "add",  "bge",  "lb",  "ma_data", "slli",  "srai", "subw",
-                "addi",  "bgeu",  "lbu",  "or",  "slliw",  "sraiw",  "sw",
-                "addiw",  "blt",  "ld",  "ori",  "sllw",  "sraw ",  "xor",
-                "addw",  "bltu",  "lh",  "sb",  "slt",  "srl",  "xori"
-                "and",  "bne",  "lhu",  "sd",  "slti",  "srli",
-                "andi",  "fence_i",  "lui",  "sh",  "sltiu",  "srliw",
-                "auipc",  "jal",  "lw",  "simple",  "sltu",  "srlw",
-                "beq",  "jalr",  "lwu",  "sll",  "sra",  "sub",
-                };
-        // clang-format on
+                "add",  "bge",  "slli",  "srai", "subw",
+                "addi",  "bgeu",  "or",  "slliw",  "sraiw",  
+                "addiw",  "blt",  "ori",  "sllw",  "sraw ",  "xor",
+                "addw",  "bltu",  "slt",  "srl",  "xori"
+                "and",  "bne",  "slti",  "srli",
+                "andi",  "lui",  "sltiu",  "srliw",
+                "auipc",  "jal",  "sltu",  "srlw",
+                "beq",  "jalr",  "sll",  "sra",  "sub", 
+                // "ld", "lw", "lwu", "lh",  "lhu", "lb", "lbu",
+                // "sd", "sw", "sh", "sb", "simple", "fence_i", "ma_data", 
+                };  // clang-format on
 
         for (std::string test : tests) {
                 std::string fileName = srcFilePath + test;
-
-                Verilated::commandArgs(argc, argv);
-                Vprocessor *tb = new Vprocessor;
 
                 // copy file
                 std::ifstream src(fileName, std::ios::binary);
@@ -33,6 +31,8 @@ int main(int argc, char **argv) {
                 dst << src.rdbuf();
 
                 // simulate
+                Verilated::commandArgs(argc, argv);
+                VSOC *tb = new VSOC;
                 tb->reset == 0;
                 for (int i = 0; i < 3000; i++) {
                         tick(tb);
@@ -46,7 +46,7 @@ int main(int argc, char **argv) {
         return 0;
 }
 
-void tick(Vprocessor *tb) {
+void tick(VSOC *tb) {
         tb->eval();
         tb->clk = 1;
         tb->eval();

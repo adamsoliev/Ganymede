@@ -1,7 +1,7 @@
 # # Makefile for Verilog project
 
 # # Define the target executable name
-# TARGET = processor
+# TARGET = SOC
 
 # # Source files (Verilog files)
 # SOURCES = uart.v
@@ -27,9 +27,9 @@
 # .PHONY: all run clean
 
 all:
-	verilator -Wall -cc processor.v; cd obj_dir; make -f Vprocessor.mk
-	g++ -I /usr/share/verilator/include -I obj_dir/ /usr/share/verilator/include/verilated.cpp processor.cpp obj_dir/Vprocessor__ALL.a -o processor 
-	./processor 
+	verilator -Wall -cc SOC.v; cd obj_dir; make -f VSOC.mk
+	g++ -I /usr/share/verilator/include -I obj_dir/ /usr/share/verilator/include/verilated.cpp SOC.cpp obj_dir/VSOC__ALL.a -o SOC 
+	./SOC 
 
 clean:
-	rm -rf obj_dir; rm processor
+	rm -rf obj_dir; rm SOC

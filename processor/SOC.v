@@ -1,12 +1,28 @@
 `default_nettype none
 
-module processor(
-    input wire clk,
-    input wire reset
+module Memory (
+    input             clk,
+    input      [63:0] mem_addr,  // address to be read
+    output reg [31:0] mem_rdata, // data read from memory
+    input   	      mem_rstrb  // goes high when processor wants to read
 );
     reg [31:0] MEM [0:4096];
-    // initial $readmemh("/home/adam/dev/computer-stuff/cpu/test_a/rv64ui-p-lb", MEM);
     initial $readmemh("tests/mem_data", MEM);
+
+    always @(posedge clk) begin
+        if(mem_rstrb) begin
+            mem_rdata <= MEM[mem_addr[63:2]];
+        end
+    end
+endmodule
+
+module Processor (
+    input clk,
+    input reset,
+    output [63:0]   mem_addr, 
+    input [31:0]    mem_rdata, 
+    output 	        mem_rstrb
+);
 
     ////////////////////////////////////////////////////////////////////////////////
     // FETCH
@@ -18,36 +34,35 @@ module processor(
     // DECODE
     ////////////////////////////////////////////////////////////////////////////////
     // 10 RISC-V instructions
-    wire isLOAD         = (instruction[6:0] == 7'b0000011); // rd <- mem[rs1+Iimm]
-    wire isLOAD_FP      = (instruction[6:0] == 7'b0000111);
-    wire isMISC_MEM     = (instruction[6:0] == 7'b0001111);
+    // wire isLOAD         = (instruction[6:0] == 7'b0000011); // rd <- mem[rs1+Iimm]
+    // wire isLOAD_FP      = (instruction[6:0] == 7'b0000111);
+    // wire isMISC_MEM     = (instruction[6:0] == 7'b0001111);
     wire isOP_IMM       = (instruction[6:0] == 7'b0010011); // rd <- rs1 OP Iimm
     wire isAUIPC        = (instruction[6:0] == 7'b0010111); // rd <- PC + Uimm
     wire isOP_IMM_32    = (instruction[6:0] == 7'b0011011);
-    wire isSTORE        = (instruction[6:0] == 7'b0100011); // mem[rs1+Simm] <- rs2
-    wire isSTORE_FP     = (instruction[6:0] == 7'b0100111);
-    wire isAMO          = (instruction[6:0] == 7'b0101111);
+    // wire isSTORE        = (instruction[6:0] == 7'b0100011); // mem[rs1+Simm] <- rs2
+    // wire isSTORE_FP     = (instruction[6:0] == 7'b0100111);
+    // wire isAMO          = (instruction[6:0] == 7'b0101111);
     wire isOP           = (instruction[6:0] == 7'b0110011); // rd <- rs1 OP rs2   
     wire isLUI          = (instruction[6:0] == 7'b0110111); // rd <- Uimm   
     wire isOP_32        = (instruction[6:0] == 7'b0111011);
-    wire isMADD         = (instruction[6:0] == 7'b1000011);
-    wire isMSUB         = (instruction[6:0] == 7'b1000111);
-    wire isNMSUB        = (instruction[6:0] == 7'b1001011);
-    wire isNMADD        = (instruction[6:0] == 7'b1001111);
-    wire isOP_FP        = (instruction[6:0] == 7'b1010011);
+    // wire isMADD         = (instruction[6:0] == 7'b1000011);
+    // wire isMSUB         = (instruction[6:0] == 7'b1000111);
+    // wire isNMSUB        = (instruction[6:0] == 7'b1001011);
+    // wire isNMADD        = (instruction[6:0] == 7'b1001111);
+    // wire isOP_FP        = (instruction[6:0] == 7'b1010011);
     wire isBRANCH       = (instruction[6:0] == 7'b1100011); // if(rs1 OP rs2) PC<-PC+Bimm
     wire isJALR         = (instruction[6:0] == 7'b1100111); // rd <- PC+4; PC<-rs1+Iimm
     wire isJAL          = (instruction[6:0] == 7'b1101111); // rd <- PC+4; PC<-PC+Jimm
     wire isSYSTEM       = (instruction[6:0] == 7'b1110011); // special
+    // wire [6:0] opcode = instruction[6:0];
 
     // 5 immediate formats
     wire [31:0] Uimm = { instruction[31:12], 12'b0 };
     wire [31:0] Iimm = { {20{instruction[31]}}, instruction[31:20] };
-    wire [31:0] Simm = { {20{instruction[31]}}, instruction[31:25], instruction[11:7] };
+    // wire [31:0] Simm = { {20{instruction[31]}}, instruction[31:25], instruction[11:7] };
     wire [31:0] Bimm = { {20{instruction[31]}}, instruction[7], instruction[30:25], instruction[11:8], 1'b0 };
     wire [31:0] Jimm = { {11{instruction[31]}}, instruction[31], instruction[19:12], instruction[20], instruction[30:21], 1'b0 };
-
-    // wire [6:0] opcode = instruction[6:0];
 
     // source and destination registers
     wire [4:0] rs1Id = instruction[19:15];
@@ -74,28 +89,10 @@ module processor(
         end
     end
 
-    /*
-    op       funct3  
-    -----------------------
-    0000011  011        ld
-    0000011  010        lw
-    0000011  110        lwu
-    0000011  001        lh
-    0000011  101        lhu
-    0000011  000        lb
-    0000011  100        lbu
-
-    0100011  011        sd
-    0100011  010        sw
-    0100011  001        sh
-    0100011  000        sb
-    */
-
     wire [63:0] aluIn1 = (isOP_32 || isOP_IMM_32)   ? {{32{rs1[31]}}, rs1[31:0]} : rs1;
     wire [63:0] aluIn2 = isOP_32                    ? {{32{rs2[31]}}, rs2[31:0]} : 
                          isOP                       ? rs2                        : 
                                                       {{32{Iimm[31]}}, Iimm};
-
     reg [63:0] aluOut = 0;
     reg [31:0] aluOutLower = 0;
     /*
@@ -172,11 +169,10 @@ module processor(
     ////////////////////////////////////////////////////////////////////////////////
     // WRITE BACK
     ////////////////////////////////////////////////////////////////////////////////
-    // register write back
     assign writeBackData = (isJAL || isJALR) ? (PC + 4) :
-                (isLUI) ? {{32{Uimm[31]}}, Uimm} :
-                (isAUIPC) ? (PC + {{32{Uimm[31]}}, Uimm}) : 
-                aluOut;
+            (isLUI) ? {{32{Uimm[31]}}, Uimm} :
+            (isAUIPC) ? (PC + {{32{Uimm[31]}}, Uimm}) : 
+            aluOut;
     
     assign writeBackEn = (state == EXECUTE && 
                 (isOP || isOP_32 || isOP_IMM_32 ||
@@ -192,15 +188,33 @@ module processor(
                         isJALR                    ? rs1 + {{32{Iimm[31]}}, Iimm}  :
                         PC+4;
 
+    /*
+    op       funct3  
+    -----------------------
+    0000011  011        ld
+    0000011  010        lw
+    0000011  110        lwu
+    0000011  001        lh
+    0000011  101        lhu
+    0000011  000        lb
+    0000011  100        lbu
+
+    0100011  011        sd
+    0100011  010        sw
+    0100011  001        sh
+    0100011  000        sb
+    */
+
     // The state machine
     localparam FETCH_INSTR = 0;
-    localparam FETCH_REGS  = 1;
-    localparam EXECUTE     = 2;
+    localparam WAIT_INSTR  = 1;
+    localparam FETCH_REGS  = 2;
+    localparam EXECUTE     = 3;
     reg [1:0] state = FETCH_INSTR;
 
     always @(posedge clk) begin
         if(!reset) begin
-            PC    <= 64'h80000000;
+            PC    <= 64'h00000000;
             state <= FETCH_INSTR;
         end else begin
             if(writeBackEn && rdId != 0) begin
@@ -208,7 +222,10 @@ module processor(
             end
             case(state)
                 FETCH_INSTR: begin
-                    instruction <= MEM[PC[31:2]];
+                    state <= WAIT_INSTR;
+                end
+                WAIT_INSTR: begin
+                    instruction <= mem_rdata;
                     state <= FETCH_REGS;
                 end
                 FETCH_REGS: begin
@@ -224,11 +241,14 @@ module processor(
         end
     end
 
+    assign mem_addr = PC;
+    assign mem_rstrb = (state == FETCH_INSTR);
+
     ////////////////////////////////////////////////////////////////////////////////
     // DEBUG
     ////////////////////////////////////////////////////////////////////////////////
     wire trap;
-    assign trap = (isSYSTEM && !Iimm && RegisterBank[3] > 1);
+    assign trap = (isSYSTEM && ~(|Iimm) && RegisterBank[3] > 1);
     always @(posedge clk) begin
         if (trap) begin
             $display("TRAP: %0d", RegisterBank[3][31:0]);
@@ -260,4 +280,31 @@ module processor(
 //         if (isSYSTEM   ) $display("STATE: %0d   PC:%3h %h  SYSTEM                       ", state, PC, instruction);
 //    end
 
+endmodule
+
+module SOC (
+    input  clk,        // system clock 
+    input  reset      // reset button
+    // input  RXD,        // UART receive
+    // output TXD         // UART transmit
+);
+
+   wire [63:0] mem_addr;
+   wire [31:0] mem_rdata;
+   wire mem_rstrb;
+   
+   Memory RAM(
+      .clk(clk),
+      .mem_addr(mem_addr),
+      .mem_rdata(mem_rdata),
+      .mem_rstrb(mem_rstrb)
+   );
+
+   Processor CPU(
+      .clk(clk),
+      .reset(reset),		 
+      .mem_addr(mem_addr),
+      .mem_rdata(mem_rdata),
+      .mem_rstrb(mem_rstrb)
+   );
 endmodule
