@@ -13,8 +13,8 @@ module Memory (
     reg [31:0] IMEM [0:4096];
     reg [63:0] DMEM [0:50];
     initial begin 
-        $readmemh("./test_a/mem_instr", IMEM);
-        $readmemh("./test_a/mem_data", DMEM);
+        $readmemh("./test/mem_instr", IMEM);
+        $readmemh("./test/mem_data", DMEM);
     end
 
     always @(posedge clk) begin

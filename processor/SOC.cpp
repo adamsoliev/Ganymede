@@ -7,18 +7,18 @@
 void tick(VSOC *tb);
 
 int main(int argc, char **argv) {
-        std::string isrcFilePath = "./test_a/mem_instr-rv64ui-p-";
-        std::string dsrcFilePath = "./test_a/mem_data-rv64ui-p-";
+        std::string isrcFilePath = "./test/mem_instr-rv64ui-p-";
+        std::string dsrcFilePath = "./test/mem_data-rv64ui-p-";
         std::vector<std::string> tests = {
                 // clang-format off
-                // "add",  "bge",  "slli",  "srai", "subw",
-                // "addi",  "bgeu",  "or",  "slliw",  "sraiw",  
-                // "addiw",  "blt",  "ori",  "sllw",  "sraw ",  "xor",
-                // "addw",  "bltu",  "slt",  "srl",  "xori"
-                // "and",  "bne",  "slti",  "srli",
-                // "andi",  "lui",  "sltiu",  "srliw",
-                // "auipc",  "jal",  "sltu",  "srlw",
-                // "beq",  "jalr",  "sll",  "sra",  "sub", 
+                "add",  "bge",  "slli",  "srai", "subw",
+                "addi",  "bgeu",  "or",  "slliw",  "sraiw",  
+                "addiw",  "blt",  "ori",  "sllw",  "sraw ",  "xor",
+                "addw",  "bltu",  "slt",  "srl",  "xori"
+                "and",  "bne",  "slti",  "srli",
+                "andi",  "lui",  "sltiu",  "srliw",
+                "auipc",  "jal",  "sltu",  "srlw",
+                "beq",  "jalr",  "sll",  "sra",  "sub", 
                 "ld"
                 // "ld", "lw", "lwu", "lh",  "lhu", "lb", "lbu",
                 // "sd", "sw", "sh", "sb", "simple", "fence_i", "ma_data", 
@@ -28,7 +28,7 @@ int main(int argc, char **argv) {
                 // copy files
                 std::string ifileName = isrcFilePath + test;
                 std::ifstream isrc(ifileName, std::ios::binary);
-                std::ofstream idst("./test_a/mem_instr", std::ios::binary);
+                std::ofstream idst("./test/mem_instr", std::ios::binary);
                 idst << isrc.rdbuf();
                 idst << '\n';
                 idst.close();
@@ -36,7 +36,7 @@ int main(int argc, char **argv) {
 
                 std::string dfileName = dsrcFilePath + test;
                 std::ifstream dsrc(dfileName, std::ios::binary);
-                std::ofstream ddst("./test_a/mem_data", std::ios::binary);
+                std::ofstream ddst("./test/mem_data", std::ios::binary);
                 ddst << dsrc.rdbuf();
                 ddst << '\n';
                 ddst.close();
