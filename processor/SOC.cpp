@@ -30,6 +30,7 @@ int main(int argc, char **argv) {
                 std::ifstream isrc(ifileName, std::ios::binary);
                 std::ofstream idst("./test_a/mem_instr", std::ios::binary);
                 idst << isrc.rdbuf();
+                idst << '\n';
                 idst.close();
                 isrc.close();
 
@@ -37,6 +38,7 @@ int main(int argc, char **argv) {
                 std::ifstream dsrc(dfileName, std::ios::binary);
                 std::ofstream ddst("./test_a/mem_data", std::ios::binary);
                 ddst << dsrc.rdbuf();
+                ddst << '\n';
                 ddst.close();
                 dsrc.close();
 

@@ -6,9 +6,9 @@ module Memory (
     output reg [31:0] mem_rdata, // instr read from memory
     input   	      mem_rstrb, // goes high when processor wants to read instr
 
-    input [63:0]      mem_daddr, // data address
+    input [63:0]      mem_daddr,  // data address
     output [63:0]     mem_drdata, // data data
-    input             mem_drstrb // data strobe
+    input             mem_drstrb  // data strobe
 );
     reg [31:0] IMEM [0:4096];
     reg [63:0] DMEM [0:50];
@@ -23,11 +23,6 @@ module Memory (
         end 
         if(mem_drstrb) begin
             mem_drdata <= DMEM[(mem_daddr[63:0] - {{48{1'b0}}, 16'h2000})/8];
-            $display("DATA ADDRESS: %0d", (mem_daddr[63:0] - {{48{1'b0}}, 16'h2000})/8);
-            $display("MEMORY   : %h", DMEM[0]);
-            $display("MEMORY   : %h", DMEM[1]);
-            $display("MEMORY   : %h", DMEM[2]);
-            $display("MEMORY   : %h", DMEM[3]);
         end 
         else begin
             mem_drdata <= 0;
@@ -264,12 +259,6 @@ module Processor (
         end else begin
             if (writeBackEn && rdId != 0) begin
                 RegisterBank[rdId] <= writeBackData;
-                // $display("state: %d", state);
-                // $display("LOAD_data: %h", LOAD_data);
-                // $display("writeBackData: %h", writeBackData);
-                // $display("mem_byteAccess    : %h", mem_byteAccess    );
-                // $display("mem_halfwordAccess: %h", mem_halfwordAccess);
-                // $display("mem_wordAccess    : %h", mem_wordAccess    );
             end
             case(state)
                 FETCH_INSTR: begin
@@ -292,7 +281,6 @@ module Processor (
                     state <= WAIT_DATA;
                 end
                 WAIT_DATA: begin
-                    // LOAD_data <= mem_drdata;
                     state <= FETCH_INSTR;
                 end
             endcase 
@@ -319,29 +307,29 @@ module Processor (
         end
     end
 
-    always @(posedge clk) begin
-        if (isLOAD     ) $display("STATE: %0d   PC:%3h %h  LOAD      mem_drdata:%3h  mem_drstrb:%3h  mem_daddr:%3h  writeBackEn:%h  LOAD_data:%3h  writeBackData:%3h", state, PC, instruction, mem_drdata, mem_drstrb, mem_daddr, writeBackEn, LOAD_data, writeBackData);
-        if (isLOAD_FP  ) $display("STATE: %0d   PC:%3h %h  LOAD_FP                      ", state, PC, instruction);
-        if (isMISC_MEM ) $display("STATE: %0d   PC:%3h %h  MISC_MEM                     ", state, PC, instruction);
-        if (isOP_IMM   ) $display("STATE: %0d   PC:%3h %h  OP_IMM    %0d %0d %0d  shamt:%0d  rd:%0d", state, PC, instruction, aluIn1, aluIn2, aluOut, shamt, rdId);
-        if (isAUIPC    ) $display("STATE: %0d   PC:%3h %h  AUIPC                        ", state, PC, instruction);
-        if (isOP_IMM_32) $display("STATE: %0d   PC:%3h %h  OP_IMM_32 %0d %0d %0d  rd:%0d", state, PC, instruction, aluIn1, aluIn2, aluOut, rdId);
-        if (isSTORE    ) $display("STATE: %0d   PC:%3h %h  STORE                        ", state, PC, instruction);
-        if (isSTORE_FP ) $display("STATE: %0d   PC:%3h %h  STORE_FP                     ", state, PC, instruction);
-        if (isAMO      ) $display("STATE: %0d   PC:%3h %h  AMO                          ", state, PC, instruction);
-        if (isOP       ) $display("STATE: %0d   PC:%3h %h  OP        %0d %0d %0d  rd:%0d", state, PC, instruction, aluIn1, aluIn2, aluOut, rdId);
-        if (isLUI      ) $display("STATE: %0d   PC:%3h %h  LUI       rd:%0d    Uimm:%0h", state, PC, instruction, rdId, Uimm);
-        if (isOP_32    ) $display("STATE: %0d   PC:%3h %h  OP_32     %0d %0d %0d  rd:%0d", state, PC, instruction, aluIn1, aluIn2, aluOut, rdId);
-        if (isMADD     ) $display("STATE: %0d   PC:%3h %h  MADD                         ", state, PC, instruction);
-        if (isMSUB     ) $display("STATE: %0d   PC:%3h %h  MSUB                         ", state, PC, instruction);
-        if (isNMSUB    ) $display("STATE: %0d   PC:%3h %h  NMSUB                        ", state, PC, instruction);
-        if (isNMADD    ) $display("STATE: %0d   PC:%3h %h  NMADD                        ", state, PC, instruction);
-        if (isOP_FP    ) $display("STATE: %0d   PC:%3h %h  OP_FP                        ", state, PC, instruction);
-        if (isBRANCH   ) $display("STATE: %0d   PC:%3h %h  BRANCH    %0d  %0d %0d %0d  Bimm:%0d ", state, PC, instruction, {{32{rs1[31]}}, rs1[31:0]}, {{32{rs2[31]}}, rs2[31:0]}, rs1, rs2, {{32{Bimm[31]}}, Bimm});
-        if (isJALR     ) $display("STATE: %0d   PC:%3h %h  JALR                         ", state, PC, instruction);
-        if (isJAL      ) $display("STATE: %0d   PC:%3h %h  JAL                          ", state, PC, instruction);
-        if (isSYSTEM   ) $display("STATE: %0d   PC:%3h %h  SYSTEM                       ", state, PC, instruction);
-   end
+    // always @(posedge clk) begin
+        // if (isLOAD     ) $display("STATE: %0d   PC:%3h %h  LOAD      mem_drdata:%3h  mem_drstrb:%3h  mem_daddr:%3h  writeBackEn:%h  LOAD_data:%3h  writeBackData:%3h", state, PC, instruction, mem_drdata, mem_drstrb, mem_daddr, writeBackEn, LOAD_data, writeBackData);
+        // if (isLOAD_FP  ) $display("STATE: %0d   PC:%3h %h  LOAD_FP                      ", state, PC, instruction);
+        // if (isMISC_MEM ) $display("STATE: %0d   PC:%3h %h  MISC_MEM                     ", state, PC, instruction);
+        // if (isOP_IMM   ) $display("STATE: %0d   PC:%3h %h  OP_IMM    %0d %0d %0d  shamt:%0d  rd:%0d", state, PC, instruction, aluIn1, aluIn2, aluOut, shamt, rdId);
+        // if (isAUIPC    ) $display("STATE: %0d   PC:%3h %h  AUIPC                        ", state, PC, instruction);
+        // if (isOP_IMM_32) $display("STATE: %0d   PC:%3h %h  OP_IMM_32 %0d %0d %0d  rd:%0d", state, PC, instruction, aluIn1, aluIn2, aluOut, rdId);
+        // if (isSTORE    ) $display("STATE: %0d   PC:%3h %h  STORE                        ", state, PC, instruction);
+        // if (isSTORE_FP ) $display("STATE: %0d   PC:%3h %h  STORE_FP                     ", state, PC, instruction);
+        // if (isAMO      ) $display("STATE: %0d   PC:%3h %h  AMO                          ", state, PC, instruction);
+        // if (isOP       ) $display("STATE: %0d   PC:%3h %h  OP        %0d %0d %0d  rd:%0d", state, PC, instruction, aluIn1, aluIn2, aluOut, rdId);
+        // if (isLUI      ) $display("STATE: %0d   PC:%3h %h  LUI       rd:%0d    Uimm:%0h", state, PC, instruction, rdId, Uimm);
+        // if (isOP_32    ) $display("STATE: %0d   PC:%3h %h  OP_32     %0d %0d %0d  rd:%0d", state, PC, instruction, aluIn1, aluIn2, aluOut, rdId);
+        // if (isMADD     ) $display("STATE: %0d   PC:%3h %h  MADD                         ", state, PC, instruction);
+        // if (isMSUB     ) $display("STATE: %0d   PC:%3h %h  MSUB                         ", state, PC, instruction);
+        // if (isNMSUB    ) $display("STATE: %0d   PC:%3h %h  NMSUB                        ", state, PC, instruction);
+        // if (isNMADD    ) $display("STATE: %0d   PC:%3h %h  NMADD                        ", state, PC, instruction);
+        // if (isOP_FP    ) $display("STATE: %0d   PC:%3h %h  OP_FP                        ", state, PC, instruction);
+        // if (isBRANCH   ) $display("STATE: %0d   PC:%3h %h  BRANCH    %0d  %0d %0d %0d  Bimm:%0d ", state, PC, instruction, {{32{rs1[31]}}, rs1[31:0]}, {{32{rs2[31]}}, rs2[31:0]}, rs1, rs2, {{32{Bimm[31]}}, Bimm});
+        // if (isJALR     ) $display("STATE: %0d   PC:%3h %h  JALR                         ", state, PC, instruction);
+        // if (isJAL      ) $display("STATE: %0d   PC:%3h %h  JAL                          ", state, PC, instruction);
+        // if (isSYSTEM   ) $display("STATE: %0d   PC:%3h %h  SYSTEM                       ", state, PC, instruction);
+//    end
 
 endmodule
 
