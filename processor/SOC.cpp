@@ -7,28 +7,38 @@
 void tick(VSOC *tb);
 
 int main(int argc, char **argv) {
-        std::string srcFilePath = "./tests/rv64ui-p-";
+        std::string isrcFilePath = "./test_a/mem_instr-rv64ui-p-";
+        std::string dsrcFilePath = "./test_a/mem_data-rv64ui-p-";
         std::vector<std::string> tests = {
                 // clang-format off
-                "add",  "bge",  "slli",  "srai", "subw",
-                "addi",  "bgeu",  "or",  "slliw",  "sraiw",  
-                "addiw",  "blt",  "ori",  "sllw",  "sraw ",  "xor",
-                "addw",  "bltu",  "slt",  "srl",  "xori"
-                "and",  "bne",  "slti",  "srli",
-                "andi",  "lui",  "sltiu",  "srliw",
-                "auipc",  "jal",  "sltu",  "srlw",
-                "beq",  "jalr",  "sll",  "sra",  "sub", 
+                // "add",  "bge",  "slli",  "srai", "subw",
+                // "addi",  "bgeu",  "or",  "slliw",  "sraiw",  
+                // "addiw",  "blt",  "ori",  "sllw",  "sraw ",  "xor",
+                // "addw",  "bltu",  "slt",  "srl",  "xori"
+                // "and",  "bne",  "slti",  "srli",
+                // "andi",  "lui",  "sltiu",  "srliw",
+                // "auipc",  "jal",  "sltu",  "srlw",
+                // "beq",  "jalr",  "sll",  "sra",  "sub", 
+                "ld"
                 // "ld", "lw", "lwu", "lh",  "lhu", "lb", "lbu",
                 // "sd", "sw", "sh", "sb", "simple", "fence_i", "ma_data", 
                 };  // clang-format on
 
         for (std::string test : tests) {
-                std::string fileName = srcFilePath + test;
+                // copy files
+                std::string ifileName = isrcFilePath + test;
+                std::ifstream isrc(ifileName, std::ios::binary);
+                std::ofstream idst("./test_a/mem_instr", std::ios::binary);
+                idst << isrc.rdbuf();
+                idst.close();
+                isrc.close();
 
-                // copy file
-                std::ifstream src(fileName, std::ios::binary);
-                std::ofstream dst("./tests/mem_data", std::ios::binary);
-                dst << src.rdbuf();
+                std::string dfileName = dsrcFilePath + test;
+                std::ifstream dsrc(dfileName, std::ios::binary);
+                std::ofstream ddst("./test_a/mem_data", std::ios::binary);
+                ddst << dsrc.rdbuf();
+                ddst.close();
+                dsrc.close();
 
                 // simulate
                 Verilated::commandArgs(argc, argv);
@@ -41,7 +51,7 @@ int main(int argc, char **argv) {
                 delete tb;
 
                 // report
-                printf("%-*s pass\n", 25, fileName.c_str());
+                // printf("%-*s pass\n", 25, fileName.c_str());
         }
         return 0;
 }
