@@ -19,8 +19,7 @@ int main(int argc, char **argv) {
                 "andi",  "lui",  "sltiu",  "srliw",
                 "auipc",  "jal",  "sltu",  "srlw",
                 "beq",  "jalr",  "sll",  "sra",  "sub", 
-                "ld"
-                // "ld", "lw", "lwu", "lh",  "lhu", "lb", "lbu",
+                "ld", "lw", "lwu", "lh", "lhu", "lb", "lbu",
                 // "sd", "sw", "sh", "sb", "simple", "fence_i", "ma_data", 
                 };  // clang-format on
 

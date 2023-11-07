@@ -2,12 +2,12 @@
 
 module Memory (
     input             clk,
-    input      [63:0] mem_addr,  // instr address to be read
-    output reg [31:0] mem_rdata, // instr read from memory
-    input   	      mem_rstrb, // goes high when processor wants to read instr
+    input      [63:0] mem_addr,  // instr address
+    output reg [31:0] mem_rdata, // instr 
+    input   	      mem_rstrb, // instr strobe
 
     input [63:0]      mem_daddr,  // data address
-    output [63:0]     mem_drdata, // data data
+    output [63:0]     mem_drdata, // data 
     input             mem_drstrb  // data strobe
 );
     reg [31:0] IMEM [0:4096];
@@ -38,9 +38,9 @@ module Processor (
     input [31:0]    mem_rdata, // instr 
     output 	        mem_rstrb, // instr strobe
 
-    output [63:0]   mem_daddr, // data address
-    input [63:0]    mem_drdata, // data data
-    output          mem_drstrb // data strobe
+    output [63:0]   mem_daddr,  // data address
+    input [63:0]    mem_drdata, // data 
+    output          mem_drstrb  // data strobe
 );
 
     ////////////////////////////////////////////////////////////////////////////////
