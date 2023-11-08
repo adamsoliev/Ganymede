@@ -1,5 +1,49 @@
 `default_nettype none
 
+module SOC (
+    input  clk,       // system clock 
+    input  reset      // reset button
+    // input  RXD,        // UART receive
+    // output TXD         // UART transmit
+);
+
+    wire [63:0]      mem_addr;
+    wire [31:0]      mem_rdata;
+    wire             mem_rstrb;
+
+    wire  [63:0]     mem_daddr;  // data address
+    wire [63:0]      mem_drdata; // data data
+    wire             mem_drstrb; // data strobe
+
+    wire      [63:0] mem_wdata;
+    wire      [7:0]  mem_wmask;
+
+    Memory RAM(
+        .clk(clk),
+        .mem_addr(mem_addr), /* I MEM */
+        .mem_rdata(mem_rdata),
+        .mem_rstrb(mem_rstrb),
+        .mem_daddr(mem_daddr), /* D MEM */
+        .mem_drdata(mem_drdata),
+        .mem_drstrb(mem_drstrb),
+        .mem_wdata(mem_wdata),
+        .mem_wmask(mem_wmask)
+    );
+
+    Processor CPU(
+        .clk(clk),
+        .reset(reset),		 
+        .mem_addr(mem_addr), /* I MEM */
+        .mem_rdata(mem_rdata),
+        .mem_rstrb(mem_rstrb),
+        .mem_daddr(mem_daddr), /* D MEM */
+        .mem_drdata(mem_drdata),
+        .mem_drstrb(mem_drstrb),
+        .mem_wdata(mem_wdata),
+        .mem_wmask(mem_wmask)
+    );
+endmodule
+
 module Memory (
     input             clk,
     input      [63:0] mem_addr,  // instr address
@@ -8,7 +52,10 @@ module Memory (
 
     input [63:0]      mem_daddr,  // data address
     output [63:0]     mem_drdata, // data 
-    input             mem_drstrb  // data strobe
+    input             mem_drstrb, // data strobe
+
+    input      [63:0] mem_wdata, 
+    input      [7:0]  mem_wmask	
 );
     reg [31:0] IMEM [0:4096];
     reg [63:0] DMEM [0:50];
@@ -27,6 +74,14 @@ module Memory (
         else begin
             mem_drdata <= 0;
         end
+        if(mem_wmask[0]) DMEM[(mem_daddr[63:0] - {{48{1'b0}}, 16'h2000})/8][ 7:0 ] <= mem_wdata[ 7:0 ];
+        if(mem_wmask[1]) DMEM[(mem_daddr[63:0] - {{48{1'b0}}, 16'h2000})/8][15:8 ] <= mem_wdata[15:8 ];
+        if(mem_wmask[2]) DMEM[(mem_daddr[63:0] - {{48{1'b0}}, 16'h2000})/8][23:16] <= mem_wdata[23:16];
+        if(mem_wmask[3]) DMEM[(mem_daddr[63:0] - {{48{1'b0}}, 16'h2000})/8][31:24] <= mem_wdata[31:24];
+        if(mem_wmask[4]) DMEM[(mem_daddr[63:0] - {{48{1'b0}}, 16'h2000})/8][39:32] <= mem_wdata[39:32];
+        if(mem_wmask[5]) DMEM[(mem_daddr[63:0] - {{48{1'b0}}, 16'h2000})/8][47:40] <= mem_wdata[47:40];
+        if(mem_wmask[6]) DMEM[(mem_daddr[63:0] - {{48{1'b0}}, 16'h2000})/8][55:48] <= mem_wdata[55:48];
+        if(mem_wmask[7]) DMEM[(mem_daddr[63:0] - {{48{1'b0}}, 16'h2000})/8][63:56] <= mem_wdata[63:56];
     end
 endmodule
 
@@ -40,7 +95,10 @@ module Processor (
 
     output [63:0]   mem_daddr,  // data address
     input [63:0]    mem_drdata, // data 
-    output          mem_drstrb  // data strobe
+    output          mem_drstrb, // data strobe
+
+    output      [63:0] mem_wdata, 
+    output      [7:0]  mem_wmask	
 );
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -79,7 +137,7 @@ module Processor (
     // 5 immediate formats
     wire [31:0] Uimm = { instruction[31:12], 12'b0 };
     wire [31:0] Iimm = { {20{instruction[31]}}, instruction[31:20] };
-    // wire [31:0] Simm = { {20{instruction[31]}}, instruction[31:25], instruction[11:7] };
+    wire [31:0] Simm = { {20{instruction[31]}}, instruction[31:25], instruction[11:7] };
     wire [31:0] Bimm = { {20{instruction[31]}}, instruction[7], instruction[30:25], instruction[11:8], 1'b0 };
     wire [31:0] Jimm = { {11{instruction[31]}}, instruction[31], instruction[19:12], instruction[20], instruction[30:21], 1'b0 };
 
@@ -194,14 +252,18 @@ module Processor (
                                 isLOAD       ? LOAD_data :
                                                aluOut;
     
-    assign writeBackEn = (state == EXECUTE && 
-                (isOP || isOP_32 || isOP_IMM_32 ||
-                isOP_IMM || 
-                isJAL    || 
-                isJALR   ||
-                isLUI    ||
-                isAUIPC)
-                ) || (state == WAIT_DATA);
+    // assign writeBackEn = (state == EXECUTE && 
+    //             (isOP || isOP_32 || isOP_IMM_32 ||
+    //             isOP_IMM || 
+    //             isJAL    || 
+    //             isJALR   ||
+    //             isLUI    ||
+    //             isAUIPC)
+    //             ) || (state == WAIT_DATA);
+
+    assign writeBackEn = (state==EXECUTE && !isBRANCH && !isSTORE && !isLOAD) ||
+			(state==WAIT_DATA) ;
+
     // next PC
     wire [63:0] nextPC = (isBRANCH && takeBranch) ? PC  + {{32{Bimm[31]}}, Bimm}  :	       
                         isJAL                     ? PC  + {{32{Jimm[31]}}, Jimm}  :
@@ -225,7 +287,7 @@ module Processor (
     0100011  000        sb
     */
     // LOAD
-    wire [63:0] loadstore_addr = rs1 + {{32{Iimm[31]}}, Iimm};
+    wire [63:0] loadstore_addr = rs1 + (isSTORE ? {{32{Simm[31]}}, Simm} : {{32{Iimm[31]}}, Iimm});
     wire [31:0] LOAD_word = loadstore_addr[2] ? mem_drdata[63:32] : mem_drdata[31:0];
     wire [15:0] LOAD_halfword = loadstore_addr[1] ? LOAD_word[31:16] : LOAD_word[15:0];
     wire [7:0] LOAD_byte = loadstore_addr[0] ? LOAD_halfword[15:8] : LOAD_halfword[7:0];
@@ -242,6 +304,17 @@ module Processor (
                            mem_halfwordAccess  ? {{48{LOAD_sign}}, LOAD_halfword} :
                            mem_wordAccess      ? {{32{LOAD_sign}}, LOAD_word}     :
                                                  mem_drdata;
+    
+    // STORE
+    assign mem_wdata =  mem_byteAccess      ? {{56{1'b0}}, rs2[7:0]} :
+                        mem_halfwordAccess  ? {{48{1'b0}}, rs2[15:0]} :
+                        mem_wordAccess      ? {{32{1'b0}}, rs2[31:0]} :
+                                              rs2;
+
+    wire [7:0] STORE_wmask =  mem_byteAccess      ? 8'b00000001 :
+                              mem_halfwordAccess  ? 8'b00000011 :
+                              mem_wordAccess      ? 8'b00001111 :
+                                                    8'b11111111;
 
     // The state machine
     localparam FETCH_INSTR = 0;
@@ -250,6 +323,7 @@ module Processor (
     localparam EXECUTE     = 3;
     localparam LOAD        = 4;
     localparam WAIT_DATA   = 5;
+    localparam STORE       = 6;
     reg [2:0] state = FETCH_INSTR;
 
     always @(posedge clk) begin
@@ -275,12 +349,17 @@ module Processor (
                 end
                 EXECUTE: begin
                     PC <= nextPC;
-                    state <= isLOAD ? LOAD : FETCH_INSTR;	      
+                    state <= isLOAD  ? LOAD : 
+                             isSTORE ? STORE :
+                             FETCH_INSTR;	      
                 end
                 LOAD: begin
                     state <= WAIT_DATA;
                 end
                 WAIT_DATA: begin
+                    state <= FETCH_INSTR;
+                end
+                STORE: begin
                     state <= FETCH_INSTR;
                 end
             endcase 
@@ -295,6 +374,8 @@ module Processor (
     assign mem_daddr = loadstore_addr;
     assign mem_drstrb = (state == LOAD);
 
+    assign mem_wmask = {8{(state == STORE)}} & STORE_wmask;
+
     ////////////////////////////////////////////////////////////////////////////////
     // DEBUG
     ////////////////////////////////////////////////////////////////////////////////
@@ -307,65 +388,29 @@ module Processor (
         end
     end
 
-    // always @(posedge clk) begin
-        // if (isLOAD     ) $display("STATE: %0d   PC:%3h %h  LOAD      mem_drdata:%3h  mem_drstrb:%3h  mem_daddr:%3h  writeBackEn:%h  LOAD_data:%3h  writeBackData:%3h", state, PC, instruction, mem_drdata, mem_drstrb, mem_daddr, writeBackEn, LOAD_data, writeBackData);
-        // if (isLOAD_FP  ) $display("STATE: %0d   PC:%3h %h  LOAD_FP                      ", state, PC, instruction);
-        // if (isMISC_MEM ) $display("STATE: %0d   PC:%3h %h  MISC_MEM                     ", state, PC, instruction);
-        // if (isOP_IMM   ) $display("STATE: %0d   PC:%3h %h  OP_IMM    %0d %0d %0d  shamt:%0d  rd:%0d", state, PC, instruction, aluIn1, aluIn2, aluOut, shamt, rdId);
-        // if (isAUIPC    ) $display("STATE: %0d   PC:%3h %h  AUIPC                        ", state, PC, instruction);
-        // if (isOP_IMM_32) $display("STATE: %0d   PC:%3h %h  OP_IMM_32 %0d %0d %0d  rd:%0d", state, PC, instruction, aluIn1, aluIn2, aluOut, rdId);
-        // if (isSTORE    ) $display("STATE: %0d   PC:%3h %h  STORE                        ", state, PC, instruction);
-        // if (isSTORE_FP ) $display("STATE: %0d   PC:%3h %h  STORE_FP                     ", state, PC, instruction);
-        // if (isAMO      ) $display("STATE: %0d   PC:%3h %h  AMO                          ", state, PC, instruction);
-        // if (isOP       ) $display("STATE: %0d   PC:%3h %h  OP        %0d %0d %0d  rd:%0d", state, PC, instruction, aluIn1, aluIn2, aluOut, rdId);
-        // if (isLUI      ) $display("STATE: %0d   PC:%3h %h  LUI       rd:%0d    Uimm:%0h", state, PC, instruction, rdId, Uimm);
-        // if (isOP_32    ) $display("STATE: %0d   PC:%3h %h  OP_32     %0d %0d %0d  rd:%0d", state, PC, instruction, aluIn1, aluIn2, aluOut, rdId);
-        // if (isMADD     ) $display("STATE: %0d   PC:%3h %h  MADD                         ", state, PC, instruction);
-        // if (isMSUB     ) $display("STATE: %0d   PC:%3h %h  MSUB                         ", state, PC, instruction);
-        // if (isNMSUB    ) $display("STATE: %0d   PC:%3h %h  NMSUB                        ", state, PC, instruction);
-        // if (isNMADD    ) $display("STATE: %0d   PC:%3h %h  NMADD                        ", state, PC, instruction);
-        // if (isOP_FP    ) $display("STATE: %0d   PC:%3h %h  OP_FP                        ", state, PC, instruction);
-        // if (isBRANCH   ) $display("STATE: %0d   PC:%3h %h  BRANCH    %0d  %0d %0d %0d  Bimm:%0d ", state, PC, instruction, {{32{rs1[31]}}, rs1[31:0]}, {{32{rs2[31]}}, rs2[31:0]}, rs1, rs2, {{32{Bimm[31]}}, Bimm});
-        // if (isJALR     ) $display("STATE: %0d   PC:%3h %h  JALR                         ", state, PC, instruction);
-        // if (isJAL      ) $display("STATE: %0d   PC:%3h %h  JAL                          ", state, PC, instruction);
-        // if (isSYSTEM   ) $display("STATE: %0d   PC:%3h %h  SYSTEM                       ", state, PC, instruction);
-//    end
+    always @(posedge clk) begin
+        if (isLOAD     ) $display("STATE: %0d   PC:%3h 0x%h  LOAD      mem_drdata:0x%3h  mem_drstrb:0x%3h  mem_daddr:0x%3h  writeBackEn:0x%h  LOAD_data:0x%3h  writeBackData:0x%3h", state, PC, instruction, mem_drdata, mem_drstrb, mem_daddr, writeBackEn, LOAD_data, writeBackData);
+        if (isLOAD_FP  ) $display("STATE: %0d   PC:%3h 0x%h  LOAD_FP                      ", state, PC, instruction);
+        if (isMISC_MEM ) $display("STATE: %0d   PC:%3h 0x%h  MISC_MEM                     ", state, PC, instruction);
+        if (isOP_IMM   ) $display("STATE: %0d   PC:%3h 0x%h  OP_IMM    0x%0h  0x%0h  0x%0h  shamt:%0d  rd:%0d", state, PC, instruction, aluIn1, aluIn2, aluOut, shamt, rdId);
+        if (isAUIPC    ) $display("STATE: %0d   PC:%3h 0x%h  AUIPC     writeBack:%3h                  ", state, PC, instruction, writeBackData);
+        if (isOP_IMM_32) $display("STATE: %0d   PC:%3h 0x%h  OP_IMM_32 0x%0h  0x%0h  0x%0h  rd:%0d", state, PC, instruction, aluIn1, aluIn2, aluOut, rdId);
+        if (isSTORE    ) $display("STATE: %0d   PC:%3h 0x%h  STORE     mem_wdata:0x%3h  mem_wmask:%b  mem_daddr:0x%3h", state, PC, instruction, mem_wdata, mem_wmask, mem_daddr);
+        if (isSTORE_FP ) $display("STATE: %0d   PC:%3h 0x%h  STORE_FP                     ", state, PC, instruction);
+        if (isAMO      ) $display("STATE: %0d   PC:%3h 0x%h  AMO                          ", state, PC, instruction);
+        if (isOP       ) $display("STATE: %0d   PC:%3h 0x%h  OP        0x%0h  0x%0h  0x%0h  rd:%0d", state, PC, instruction, aluIn1, aluIn2, aluOut, rdId);
+        if (isLUI      ) $display("STATE: %0d   PC:%3h 0x%h  LUI       rd:%0d    Uimm:0x%0h", state, PC, instruction, rdId, Uimm);
+        if (isOP_32    ) $display("STATE: %0d   PC:%3h 0x%h  OP_32     0x%0h  0x%0h  0x%0h  rd:%0d", state, PC, instruction, aluIn1, aluIn2, aluOut, rdId);
+        if (isMADD     ) $display("STATE: %0d   PC:%3h 0x%h  MADD                         ", state, PC, instruction);
+        if (isMSUB     ) $display("STATE: %0d   PC:%3h 0x%h  MSUB                         ", state, PC, instruction);
+        if (isNMSUB    ) $display("STATE: %0d   PC:%3h 0x%h  NMSUB                        ", state, PC, instruction);
+        if (isNMADD    ) $display("STATE: %0d   PC:%3h 0x%h  NMADD                        ", state, PC, instruction);
+        if (isOP_FP    ) $display("STATE: %0d   PC:%3h 0x%h  OP_FP                        ", state, PC, instruction);
+        if (isBRANCH   ) $display("STATE: %0d   PC:%3h 0x%h  BRANCH    0x%0h  0x%0h  0x%0h  0x%0h  Bimm:%0d ", state, PC, instruction, {{32{rs1[31]}}, rs1[31:0]}, {{32{rs2[31]}}, rs2[31:0]}, rs1, rs2, {{32{Bimm[31]}}, Bimm});
+        if (isJALR     ) $display("STATE: %0d   PC:%3h 0x%h  JALR                         ", state, PC, instruction);
+        if (isJAL      ) $display("STATE: %0d   PC:%3h 0x%h  JAL                          ", state, PC, instruction);
+        if (isSYSTEM   ) $display("STATE: %0d   PC:%3h 0x%h  SYSTEM                       ", state, PC, instruction);
+   end
 
 endmodule
 
-module SOC (
-    input  clk,       // system clock 
-    input  reset      // reset button
-    // input  RXD,        // UART receive
-    // output TXD         // UART transmit
-);
-
-    wire [63:0]      mem_addr;
-    wire [31:0]      mem_rdata;
-    wire             mem_rstrb;
-
-    wire  [63:0]     mem_daddr;  // data address
-    wire [63:0]      mem_drdata; // data data
-    wire             mem_drstrb; // data strobe
-
-    Memory RAM(
-        .clk(clk),
-        .mem_addr(mem_addr), /* I MEM */
-        .mem_rdata(mem_rdata),
-        .mem_rstrb(mem_rstrb),
-        .mem_daddr(mem_daddr), /* D MEM */
-        .mem_drdata(mem_drdata),
-        .mem_drstrb(mem_drstrb)
-    );
-
-    Processor CPU(
-        .clk(clk),
-        .reset(reset),		 
-        .mem_addr(mem_addr), /* I MEM */
-        .mem_rdata(mem_rdata),
-        .mem_rstrb(mem_rstrb),
-        .mem_daddr(mem_daddr), /* D MEM */
-        .mem_drdata(mem_drdata),
-        .mem_drstrb(mem_drstrb)
-    );
-endmodule
