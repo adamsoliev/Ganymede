@@ -20,7 +20,7 @@ int main(int argc, char **argv) {
                 // "auipc",  "jal",  "sltu",  "srlw",
                 // "beq",  "jalr",  "sll",  "sra",  "sub", 
                 // "ld", "lw", "lwu", "lh", "lhu", "lb", "lbu", 
-                "sd"
+                "sd", "sw" 
                 // "sd", "sw", "sh", "sb", "simple", "fence_i", "ma_data", 
                 };  // clang-format on
 

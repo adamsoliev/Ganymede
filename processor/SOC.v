@@ -64,24 +64,25 @@ module Memory (
         $readmemh("./test/mem_data", DMEM);
     end
 
+    wire [63:0] dword_addr = ({mem_daddr[63:3], 3'b000} - {{48{1'b0}}, 16'h2000})/8;
     always @(posedge clk) begin
         if(mem_rstrb) begin
             mem_rdata <= IMEM[mem_addr[63:2]];
         end 
         if(mem_drstrb) begin
-            mem_drdata <= DMEM[(mem_daddr[63:0] - {{48{1'b0}}, 16'h2000})/8];
+            mem_drdata <= DMEM[dword_addr];
         end 
         else begin
             mem_drdata <= 0;
         end
-        if(mem_wmask[0]) DMEM[(mem_daddr[63:0] - {{48{1'b0}}, 16'h2000})/8][ 7:0 ] <= mem_wdata[ 7:0 ];
-        if(mem_wmask[1]) DMEM[(mem_daddr[63:0] - {{48{1'b0}}, 16'h2000})/8][15:8 ] <= mem_wdata[15:8 ];
-        if(mem_wmask[2]) DMEM[(mem_daddr[63:0] - {{48{1'b0}}, 16'h2000})/8][23:16] <= mem_wdata[23:16];
-        if(mem_wmask[3]) DMEM[(mem_daddr[63:0] - {{48{1'b0}}, 16'h2000})/8][31:24] <= mem_wdata[31:24];
-        if(mem_wmask[4]) DMEM[(mem_daddr[63:0] - {{48{1'b0}}, 16'h2000})/8][39:32] <= mem_wdata[39:32];
-        if(mem_wmask[5]) DMEM[(mem_daddr[63:0] - {{48{1'b0}}, 16'h2000})/8][47:40] <= mem_wdata[47:40];
-        if(mem_wmask[6]) DMEM[(mem_daddr[63:0] - {{48{1'b0}}, 16'h2000})/8][55:48] <= mem_wdata[55:48];
-        if(mem_wmask[7]) DMEM[(mem_daddr[63:0] - {{48{1'b0}}, 16'h2000})/8][63:56] <= mem_wdata[63:56];
+        if(mem_wmask[0]) DMEM[dword_addr][ 7:0 ] <= mem_wdata[ 7:0 ];
+        if(mem_wmask[1]) DMEM[dword_addr][15:8 ] <= mem_wdata[15:8 ];
+        if(mem_wmask[2]) DMEM[dword_addr][23:16] <= mem_wdata[23:16];
+        if(mem_wmask[3]) DMEM[dword_addr][31:24] <= mem_wdata[31:24];
+        if(mem_wmask[4]) DMEM[dword_addr][39:32] <= mem_wdata[39:32];
+        if(mem_wmask[5]) DMEM[dword_addr][47:40] <= mem_wdata[47:40];
+        if(mem_wmask[6]) DMEM[dword_addr][55:48] <= mem_wdata[55:48];
+        if(mem_wmask[7]) DMEM[dword_addr][63:56] <= mem_wdata[63:56];
     end
 endmodule
 
@@ -305,16 +306,67 @@ module Processor (
                            mem_wordAccess      ? {{32{LOAD_sign}}, LOAD_word}     :
                                                  mem_drdata;
     
-    // STORE
-    assign mem_wdata =  mem_byteAccess      ? {{56{1'b0}}, rs2[7:0]} :
-                        mem_halfwordAccess  ? {{48{1'b0}}, rs2[15:0]} :
-                        mem_wordAccess      ? {{32{1'b0}}, rs2[31:0]} :
-                                              rs2;
+    // STORE - TODO: fix alignment
+    assign mem_wdata =  mem_byteAccess      ? 
+                                (
+                                    loadstore_addr[2:0] == 3'b000 ? {{56{1'b0}}, rs2[7:0]} :
+                                    loadstore_addr[2:0] == 3'b001 ? {{48{1'b0}}, rs2[7:0], {8{1'b0}}} :
+                                    loadstore_addr[2:0] == 3'b010 ? {{40{1'b0}}, rs2[7:0], {16{1'b0}}} :
+                                    loadstore_addr[2:0] == 3'b011 ? {{32{1'b0}}, rs2[7:0], {24{1'b0}}} :
+                                    loadstore_addr[2:0] == 3'b100 ? {{24{1'b0}}, rs2[7:0], {32{1'b0}}} :
+                                    loadstore_addr[2:0] == 3'b101 ? {{16{1'b0}}, rs2[7:0], {40{1'b0}}} :
+                                    loadstore_addr[2:0] == 3'b110 ? {{8{1'b0}},  rs2[7:0], {48{1'b0}}} :
+                                    loadstore_addr[2:0] == 3'b111 ? {rs2[7:0], {56{1'b0}}} :
+                                                                    {64{1'b0}}    // ERROR
+                                ) :
+                        mem_halfwordAccess  ? 
+                                (
+                                    loadstore_addr[2:0] == 3'b000 ? {{48{1'b0}}, rs2[15:0]} :
+                                    loadstore_addr[2:0] == 3'b010 ? {{32{1'b0}}, rs2[15:0], {16{1'b0}}} :
+                                    loadstore_addr[2:0] == 3'b010 ? {{16{1'b0}}, rs2[15:0], {32{1'b0}}} :
+                                    loadstore_addr[2:0] == 3'b000 ? {rs2[15:0], {48{1'b0}}} :
+                                                                    {64{1'b0}}    // ERROR
+                                ) :
+                        mem_wordAccess      ? 
+                                (
+                                    loadstore_addr[2:0] == 3'b000 ? {{32{1'b0}}, rs2[31:0]} :
+                                    loadstore_addr[2:0] == 3'b100 ? {rs2[31:0], {32{1'b0}}} :
+                                                                    {64{1'b0}}    // ERROR
+                                ) :
+                                    rs2;
 
-    wire [7:0] STORE_wmask =  mem_byteAccess      ? 8'b00000001 :
-                              mem_halfwordAccess  ? 8'b00000011 :
-                              mem_wordAccess      ? 8'b00001111 :
-                                                    8'b11111111;
+    // wire [7:0] STORE_wmask =  mem_byteAccess      ? 8'b00000001 :
+    //                           mem_halfwordAccess  ? 8'b00000011 :
+    //                           mem_wordAccess      ? 8'b00001111 :
+    //                                                 8'b11111111;
+
+    wire [7:0] STORE_wmask =  mem_byteAccess      ? 
+                                (
+                                    loadstore_addr[2:0] == 3'b000 ? 8'b00000001 :
+                                    loadstore_addr[2:0] == 3'b001 ? 8'b00000010 :
+                                    loadstore_addr[2:0] == 3'b010 ? 8'b00000100 :
+                                    loadstore_addr[2:0] == 3'b011 ? 8'b00001000 :
+                                    loadstore_addr[2:0] == 3'b100 ? 8'b00010000 :
+                                    loadstore_addr[2:0] == 3'b101 ? 8'b00100000 :
+                                    loadstore_addr[2:0] == 3'b110 ? 8'b01000000 :
+                                    loadstore_addr[2:0] == 3'b111 ? 8'b10000000 :
+                                                                    8'b00000000    // ERROR
+                                ) :
+                        mem_halfwordAccess  ? 
+                                (
+                                    loadstore_addr[2:0] == 3'b000 ? 8'b00000011:
+                                    loadstore_addr[2:0] == 3'b010 ? 8'b00001100:
+                                    loadstore_addr[2:0] == 3'b010 ? 8'b00110000:
+                                    loadstore_addr[2:0] == 3'b000 ? 8'b11000000:
+                                                                    8'b00000000    // ERROR
+                                ) :
+                        mem_wordAccess      ? 
+                                (
+                                    loadstore_addr[2:0] == 3'b000 ? 8'b00001111 :
+                                    loadstore_addr[2:0] == 3'b100 ? 8'b11110000 :
+                                                                    8'b00000000    // ERROR
+                                ) :
+                                    8'b11111111;
 
     // The state machine
     localparam FETCH_INSTR = 0;
@@ -388,29 +440,29 @@ module Processor (
         end
     end
 
-    always @(posedge clk) begin
-        if (isLOAD     ) $display("STATE: %0d   PC:%3h 0x%h  LOAD      mem_drdata:0x%3h  mem_drstrb:0x%3h  mem_daddr:0x%3h  writeBackEn:0x%h  LOAD_data:0x%3h  writeBackData:0x%3h", state, PC, instruction, mem_drdata, mem_drstrb, mem_daddr, writeBackEn, LOAD_data, writeBackData);
-        if (isLOAD_FP  ) $display("STATE: %0d   PC:%3h 0x%h  LOAD_FP                      ", state, PC, instruction);
-        if (isMISC_MEM ) $display("STATE: %0d   PC:%3h 0x%h  MISC_MEM                     ", state, PC, instruction);
-        if (isOP_IMM   ) $display("STATE: %0d   PC:%3h 0x%h  OP_IMM    0x%0h  0x%0h  0x%0h  shamt:%0d  rd:%0d", state, PC, instruction, aluIn1, aluIn2, aluOut, shamt, rdId);
-        if (isAUIPC    ) $display("STATE: %0d   PC:%3h 0x%h  AUIPC     writeBack:%3h                  ", state, PC, instruction, writeBackData);
-        if (isOP_IMM_32) $display("STATE: %0d   PC:%3h 0x%h  OP_IMM_32 0x%0h  0x%0h  0x%0h  rd:%0d", state, PC, instruction, aluIn1, aluIn2, aluOut, rdId);
-        if (isSTORE    ) $display("STATE: %0d   PC:%3h 0x%h  STORE     mem_wdata:0x%3h  mem_wmask:%b  mem_daddr:0x%3h", state, PC, instruction, mem_wdata, mem_wmask, mem_daddr);
-        if (isSTORE_FP ) $display("STATE: %0d   PC:%3h 0x%h  STORE_FP                     ", state, PC, instruction);
-        if (isAMO      ) $display("STATE: %0d   PC:%3h 0x%h  AMO                          ", state, PC, instruction);
-        if (isOP       ) $display("STATE: %0d   PC:%3h 0x%h  OP        0x%0h  0x%0h  0x%0h  rd:%0d", state, PC, instruction, aluIn1, aluIn2, aluOut, rdId);
-        if (isLUI      ) $display("STATE: %0d   PC:%3h 0x%h  LUI       rd:%0d    Uimm:0x%0h", state, PC, instruction, rdId, Uimm);
-        if (isOP_32    ) $display("STATE: %0d   PC:%3h 0x%h  OP_32     0x%0h  0x%0h  0x%0h  rd:%0d", state, PC, instruction, aluIn1, aluIn2, aluOut, rdId);
-        if (isMADD     ) $display("STATE: %0d   PC:%3h 0x%h  MADD                         ", state, PC, instruction);
-        if (isMSUB     ) $display("STATE: %0d   PC:%3h 0x%h  MSUB                         ", state, PC, instruction);
-        if (isNMSUB    ) $display("STATE: %0d   PC:%3h 0x%h  NMSUB                        ", state, PC, instruction);
-        if (isNMADD    ) $display("STATE: %0d   PC:%3h 0x%h  NMADD                        ", state, PC, instruction);
-        if (isOP_FP    ) $display("STATE: %0d   PC:%3h 0x%h  OP_FP                        ", state, PC, instruction);
-        if (isBRANCH   ) $display("STATE: %0d   PC:%3h 0x%h  BRANCH    0x%0h  0x%0h  0x%0h  0x%0h  Bimm:%0d ", state, PC, instruction, {{32{rs1[31]}}, rs1[31:0]}, {{32{rs2[31]}}, rs2[31:0]}, rs1, rs2, {{32{Bimm[31]}}, Bimm});
-        if (isJALR     ) $display("STATE: %0d   PC:%3h 0x%h  JALR                         ", state, PC, instruction);
-        if (isJAL      ) $display("STATE: %0d   PC:%3h 0x%h  JAL                          ", state, PC, instruction);
-        if (isSYSTEM   ) $display("STATE: %0d   PC:%3h 0x%h  SYSTEM                       ", state, PC, instruction);
-   end
+//     always @(posedge clk) begin
+//         if (isLOAD     ) $display("STATE: %0d   PC:%3h 0x%h  LOAD      mem_drdata:0x%3h  mem_drstrb:0x%3h  mem_daddr:0x%3h  writeBackEn:0x%h  LOAD_data:0x%3h  writeBackData:0x%3h", state, PC, instruction, mem_drdata, mem_drstrb, mem_daddr, writeBackEn, LOAD_data, writeBackData);
+//         if (isLOAD_FP  ) $display("STATE: %0d   PC:%3h 0x%h  LOAD_FP                      ", state, PC, instruction);
+//         if (isMISC_MEM ) $display("STATE: %0d   PC:%3h 0x%h  MISC_MEM                     ", state, PC, instruction);
+//         if (isOP_IMM   ) $display("STATE: %0d   PC:%3h 0x%h  OP_IMM    0x%0h  0x%0h  0x%0h  shamt:%0d  rd:%0d", state, PC, instruction, aluIn1, aluIn2, aluOut, shamt, rdId);
+//         if (isAUIPC    ) $display("STATE: %0d   PC:%3h 0x%h  AUIPC     writeBack:%3h                  ", state, PC, instruction, writeBackData);
+//         if (isOP_IMM_32) $display("STATE: %0d   PC:%3h 0x%h  OP_IMM_32 0x%0h  0x%0h  0x%0h  rd:%0d", state, PC, instruction, aluIn1, aluIn2, aluOut, rdId);
+//         if (isSTORE    ) $display("STATE: %0d   PC:%3h 0x%h  STORE     mem_wdata:0x%3h  mem_wmask:%b  mem_daddr:0x%3h", state, PC, instruction, mem_wdata, mem_wmask, mem_daddr);
+//         if (isSTORE_FP ) $display("STATE: %0d   PC:%3h 0x%h  STORE_FP                     ", state, PC, instruction);
+//         if (isAMO      ) $display("STATE: %0d   PC:%3h 0x%h  AMO                          ", state, PC, instruction);
+//         if (isOP       ) $display("STATE: %0d   PC:%3h 0x%h  OP        0x%0h  0x%0h  0x%0h  rd:%0d", state, PC, instruction, aluIn1, aluIn2, aluOut, rdId);
+//         if (isLUI      ) $display("STATE: %0d   PC:%3h 0x%h  LUI       rd:%0d    Uimm:0x%0h", state, PC, instruction, rdId, Uimm);
+//         if (isOP_32    ) $display("STATE: %0d   PC:%3h 0x%h  OP_32     0x%0h  0x%0h  0x%0h  rd:%0d", state, PC, instruction, aluIn1, aluIn2, aluOut, rdId);
+//         if (isMADD     ) $display("STATE: %0d   PC:%3h 0x%h  MADD                         ", state, PC, instruction);
+//         if (isMSUB     ) $display("STATE: %0d   PC:%3h 0x%h  MSUB                         ", state, PC, instruction);
+//         if (isNMSUB    ) $display("STATE: %0d   PC:%3h 0x%h  NMSUB                        ", state, PC, instruction);
+//         if (isNMADD    ) $display("STATE: %0d   PC:%3h 0x%h  NMADD                        ", state, PC, instruction);
+//         if (isOP_FP    ) $display("STATE: %0d   PC:%3h 0x%h  OP_FP                        ", state, PC, instruction);
+//         if (isBRANCH   ) $display("STATE: %0d   PC:%3h 0x%h  BRANCH    0x%0h  0x%0h  0x%0h  0x%0h  Bimm:%0d ", state, PC, instruction, {{32{rs1[31]}}, rs1[31:0]}, {{32{rs2[31]}}, rs2[31:0]}, rs1, rs2, {{32{Bimm[31]}}, Bimm});
+//         if (isJALR     ) $display("STATE: %0d   PC:%3h 0x%h  JALR                         ", state, PC, instruction);
+//         if (isJAL      ) $display("STATE: %0d   PC:%3h 0x%h  JAL                          ", state, PC, instruction);
+//         if (isSYSTEM   ) $display("STATE: %0d   PC:%3h 0x%h  SYSTEM                       ", state, PC, instruction);
+//    end
 
 endmodule
 
