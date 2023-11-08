@@ -3,5 +3,7 @@
 .vscode
 **/*.o
 compiler/playground/build
+processor/test/mem_data
+processor/test/mem_instr
 
 

@@ -252,15 +252,6 @@ module Processor (
                                 (isAUIPC)    ? (PC + {{32{Uimm[31]}}, Uimm}) : 
                                 isLOAD       ? LOAD_data :
                                                aluOut;
-    
-    // assign writeBackEn = (state == EXECUTE && 
-    //             (isOP || isOP_32 || isOP_IMM_32 ||
-    //             isOP_IMM || 
-    //             isJAL    || 
-    //             isJALR   ||
-    //             isLUI    ||
-    //             isAUIPC)
-    //             ) || (state == WAIT_DATA);
 
     assign writeBackEn = (state==EXECUTE && !isBRANCH && !isSTORE && !isLOAD) ||
 			(state==WAIT_DATA) ;
@@ -306,7 +297,7 @@ module Processor (
                            mem_wordAccess      ? {{32{LOAD_sign}}, LOAD_word}     :
                                                  mem_drdata;
     
-    // STORE - TODO: fix alignment
+    // STORE 
     assign mem_wdata =  mem_byteAccess      ? 
                                 (
                                     loadstore_addr[2:0] == 3'b000 ? {{56{1'b0}}, rs2[7:0]} :
@@ -323,8 +314,8 @@ module Processor (
                                 (
                                     loadstore_addr[2:0] == 3'b000 ? {{48{1'b0}}, rs2[15:0]} :
                                     loadstore_addr[2:0] == 3'b010 ? {{32{1'b0}}, rs2[15:0], {16{1'b0}}} :
-                                    loadstore_addr[2:0] == 3'b010 ? {{16{1'b0}}, rs2[15:0], {32{1'b0}}} :
-                                    loadstore_addr[2:0] == 3'b000 ? {rs2[15:0], {48{1'b0}}} :
+                                    loadstore_addr[2:0] == 3'b100 ? {{16{1'b0}}, rs2[15:0], {32{1'b0}}} :
+                                    loadstore_addr[2:0] == 3'b110 ? {rs2[15:0], {48{1'b0}}} :
                                                                     {64{1'b0}}    // ERROR
                                 ) :
                         mem_wordAccess      ? 
@@ -334,11 +325,6 @@ module Processor (
                                                                     {64{1'b0}}    // ERROR
                                 ) :
                                     rs2;
-
-    // wire [7:0] STORE_wmask =  mem_byteAccess      ? 8'b00000001 :
-    //                           mem_halfwordAccess  ? 8'b00000011 :
-    //                           mem_wordAccess      ? 8'b00001111 :
-    //                                                 8'b11111111;
 
     wire [7:0] STORE_wmask =  mem_byteAccess      ? 
                                 (
@@ -356,8 +342,8 @@ module Processor (
                                 (
                                     loadstore_addr[2:0] == 3'b000 ? 8'b00000011:
                                     loadstore_addr[2:0] == 3'b010 ? 8'b00001100:
-                                    loadstore_addr[2:0] == 3'b010 ? 8'b00110000:
-                                    loadstore_addr[2:0] == 3'b000 ? 8'b11000000:
+                                    loadstore_addr[2:0] == 3'b100 ? 8'b00110000:
+                                    loadstore_addr[2:0] == 3'b110 ? 8'b11000000:
                                                                     8'b00000000    // ERROR
                                 ) :
                         mem_wordAccess      ? 

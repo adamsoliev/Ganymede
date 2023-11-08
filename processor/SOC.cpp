@@ -11,16 +11,16 @@ int main(int argc, char **argv) {
         std::string dsrcFilePath = "./test/mem_data-rv64ui-p-";
         std::vector<std::string> tests = {
                 // clang-format off
-                // "add",  "bge",  "slli",  "srai", "subw",
-                // "addi",  "bgeu",  "or",  "slliw",  "sraiw",  
-                // "addiw",  "blt",  "ori",  "sllw",  "sraw ",  "xor",
-                // "addw",  "bltu",  "slt",  "srl",  "xori"
-                // "and",  "bne",  "slti",  "srli",
-                // "andi",  "lui",  "sltiu",  "srliw",
-                // "auipc",  "jal",  "sltu",  "srlw",
-                // "beq",  "jalr",  "sll",  "sra",  "sub", 
-                // "ld", "lw", "lwu", "lh", "lhu", "lb", "lbu", 
-                "sd", "sw" 
+                "add",  "bge",  "slli",  "srai", "subw",
+                "addi",  "bgeu",  "or",  "slliw",  "sraiw",  
+                "addiw",  "blt",  "ori",  "sllw",  "sraw ",  "xor",
+                "addw",  "bltu",  "slt",  "srl",  "xori"
+                "and",  "bne",  "slti",  "srli",
+                "andi",  "lui",  "sltiu",  "srliw",
+                "auipc",  "jal",  "sltu",  "srlw",
+                "beq",  "jalr",  "sll",  "sra",  "sub", 
+                "ld", "lw", "lwu", "lh", "lhu", "lb", "lbu", 
+                "sd", "sw", "sh", "sb"
                 // "sd", "sw", "sh", "sb", "simple", "fence_i", "ma_data", 
                 };  // clang-format on
 
