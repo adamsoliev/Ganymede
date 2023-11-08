@@ -21,7 +21,7 @@ int main(int argc, char **argv) {
                 "beq",  "jalr",  "sll",  "sra",  "sub", 
                 "ld", "lw", "lwu", "lh", "lhu", "lb", "lbu", 
                 "sd", "sw", "sh", "sb"
-                // "sd", "sw", "sh", "sb", "simple", "fence_i", "ma_data", 
+                // "simple", "fence_i", "ma_data", 
                 };  // clang-format on
 
         for (std::string test : tests) {
