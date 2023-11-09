@@ -2,9 +2,12 @@
 
 module SOC (
     input  clk,       // system clock 
-    input  reset      // reset button
+    input  reset,      // reset button
     // input  RXD,        // UART receive
     // output TXD         // UART transmit
+
+    output [63:0] cycles,
+    output [63:0] instructions
 );
 
     wire [63:0]      mem_addr;
@@ -39,8 +42,11 @@ module SOC (
         .mem_daddr(mem_daddr), /* D MEM */
         .mem_drdata(mem_drdata),
         .mem_drstrb(mem_drstrb),
-        .mem_wdata(mem_wdata),
-        .mem_wmask(mem_wmask)
+        .mem_wdata(mem_wdata),  /* STORE */
+        .mem_wmask(mem_wmask),
+
+        .cycles(cycles),
+        .instructions(instructions)
     );
 endmodule
 
@@ -99,8 +105,23 @@ module Processor (
     output          mem_drstrb, // data strobe
 
     output      [63:0] mem_wdata, 
-    output      [7:0]  mem_wmask	
+    output      [7:0]  mem_wmask,
+
+    output      [63:0] cycles,      /* STATS */
+    output      [63:0] instructions
 );
+    ////////////////////////////////////////////////////////////////////////////////
+    // STATS
+    ////////////////////////////////////////////////////////////////////////////////
+    reg [63:0] cyclesR;
+    reg [63:0] instructionsR;
+
+    always @(posedge clk) begin
+        cyclesR <= cyclesR + 1;
+    end
+
+    assign cycles = cyclesR;
+    assign instructions = instructionsR;
 
     ////////////////////////////////////////////////////////////////////////////////
     // FETCH
@@ -379,6 +400,8 @@ module Processor (
                 WAIT_INSTR: begin
                     instruction <= mem_rdata;
                     state <= FETCH_REGS;
+
+                    instructionsR <= instructionsR + 1; /* STATS */
                 end
                 FETCH_REGS: begin
                     rs1 <= RegisterBank[rs1Id];

@@ -50,6 +50,9 @@ int main(int argc, char **argv) {
                         tick(tb);
                         tb->reset = 1;
                 }
+                double cycles = (double)tb->cycles;
+                double instructions = (double)tb->instructions;
+                printf("%-*s run at %.2f CPI\n", 10, test.c_str(), cycles / instructions);
                 delete tb;
 
                 // report
