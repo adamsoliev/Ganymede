@@ -4,7 +4,7 @@
 
 1. [C Compiler targeted at RISC-V](compiler/README.md)
 
-2. [RISC-V processor](processor/README.md)
+2. [RISC-V processor](processor/)
 
 3. RISC-V OS
 
