@@ -16,16 +16,16 @@ module CPU import pkg::*; (
 // IF
 ////////////////////////////////////////////
 
-    logic [63:0] pc;
+    logic [63:0] if_pc;
     logic [31:0] instr;
     wire [63:0] pc_next = pc + 4;
     always_ff @(posedge clk or negedge rst) begin
         if (!rst) begin
-            pc <= 0;
+            if_pc <= 0;
             instr <= 0;
         end else begin
             instr <= IMEM[pc];
-            pc <= pc_next;
+            if_pc <= pc_next;
         end
     end
 
@@ -57,6 +57,7 @@ module CPU import pkg::*; (
     logic               id_adder_use_imm;
     logic               id_use_imm;
     logic [31:0]        id_immediate;
+    logic [63:0]        id_pc;
 
     always_comb begin
         id_optype = OP_ALU;
@@ -65,6 +66,10 @@ module CPU import pkg::*; (
         id_alu_op = alu_op_e'('x);
         id_shift_op = shift_op_e'('x);
         id_condition = condition_code_e'('x);
+
+        // Forward
+        id_pc = if_pc;
+
         unique case (opcode)
             OPCODE_JAL: begin
                 id_optype = OP_JUMP;
@@ -281,32 +286,55 @@ module CPU import pkg::*; (
 ////////////////////////////////////////////
     logic [63:0]        ex_rs1v;
     logic [63:0]        ex_rs2v;
-    op_type_e           ex_optype;
-    logic [1:0]         ex_wordsized;
 
     assign ex_rs1v = REGISTERS[id_rs1];
     assign ex_rs2v = REGISTERS[id_rs2];
 
-    logic [63:0] alu_result;
+    logic [63:0]    ex_sum;
+    logic           ex_compare_result;
+    logic [63:0]    ex_alu_result;
     ALU alu (
-        .wsize_i(),
+        .size_i(id_size),
+        .immediate_i(id_immediate),
+        .adder_use_pc_i(id_adder_use_pc),
+        .adder_use_imm_i(id_adder_use_imm),
+        .use_imm_i(id_use_imm),
+        .pc_i(id_pc),
+        .shift_op_i(id_shift_op),
+        .alu_op_i(id_alu_op),
+        .condition_i(id_condition),
         .rs1_i(ex_rs1v),
-        .rs2_i(ex_rs1v),
-        .result_o(alu_result)
+        .rs2_i(ex_rs2v),
+        .sum_o(ex_sum),
+        .compare_result_o(ex_compare_result),
+        .result_o(ex_alu_result)
     );
 
-    always_comb begin 
-        unique case (opcode)
-            // LOAD
-            OPCODE_LOAD: begin
-            end
-            // STORE
-            OPCODE_STORE: begin
-            end
-            // ALU
-            default: ;
-        endcase
-    end
+    // logic [63:0]    ex_alu_data_q;
+    // logic [63:0]    ex_expected_pc_q;
+
+    // logic [63:0]    ex_alu_data_d;
+    // logic [63:0]    ex_expected_pc_d;
+    // always_comb begin 
+    //     ex_alu_data_d = ex_alu_data_q;
+    //     ex_expected_pc_d = ex_alu_data_q;
+    //     unique case (id_optype)
+    //         OP_ALU: begin
+    //             ex_alu_data = ex_alu_result;
+    //         end
+    //         OP_JUMP: begin
+    //             ex_alu_data = 64'(signed'(pc_next));
+    //             ex_expected_pc_d = {sum[63:1], 1'b0};
+    //         end
+    //         OP_BRANCH: begin
+    //             ex_alu_data = 64'(signed'(pc_next));
+    //             ex_expected_pc_d = ex_compare_result ? {sum[63:1], 1'b0} : 64'(signed'(pc_next));
+    //         end
+    //         OP_MEM: begin
+    //         end
+    //         default: ;
+    //     endcase
+    // end
 
 ////////////////////////////////////////////
 // MEM
@@ -315,37 +343,177 @@ module CPU import pkg::*; (
 ////////////////////////////////////////////
 // WB
 ////////////////////////////////////////////
+    always_comb begin
+        if ()
+    end
 
 endmodule
 
 
-module ALU (
-    input  logic           wsize_i, // For ALU op, it is word(10) or dword(11)
-    input  [63:0]          rs1_i,
-    input  [63:0]          rs2_i,
-    output logic [63:0]    result_o
+module comparator import pkg::*; (
+    input  logic [63:0]     operand_a_i,
+    input  logic [63:0]     operand_b_i,
+    input  condition_code_e condition_i,
+    input  logic [63:0]     difference_i,
+    output logic            result_o
 );
-    assign sum_o = rs1_i + rs2_i;
 
+  logic eq_flag;
+  logic lt_flag;
+  logic ltu_flag;
+  logic result_pre_neg;
+
+  always_comb begin
+    // We don't check for difference_i == 0 because it will make the critical path longer.
+    eq_flag = operand_a_i == operand_b_i;
+
+    // If MSBs are the same, look at the sign of the result is sufficient.
+    // Otherwise the one with MSB 0 is larger.
+    lt_flag = operand_a_i[63] == operand_b_i[63] ? difference_i[63] : operand_a_i[63];
+
+    // If MSBs are the same, look at the sign of the result is sufficient.
+    // Otherwise the one with MSB 1 is larger.
+    ltu_flag = operand_a_i[63] == operand_b_i[63] ? difference_i[63] : operand_b_i[63];
+
+    unique case ({condition_i[2:1], 1'b0})
+      CC_EQ: result_pre_neg = eq_flag;
+      CC_LT: result_pre_neg = lt_flag;
+      CC_LTU: result_pre_neg = ltu_flag;
+      default: result_pre_neg = 'x;
+    endcase
+
+    result_o = condition_i[0] ? !result_pre_neg : result_pre_neg;
+  end
+endmodule
+
+module shifter import pkg::*; (
+    input  logic [63:0] operand_a_i,
+    input  logic [63:0] operand_b_i,
+    input  shift_op_e   shift_op_i,
+    // If set, this is a word op (32-bit)
+    input  logic        word_i,
+    output logic [63:0] result_o
+);
+
+  // Determine the operand to be fed into the right shifter.
+  logic [63:0] shift_operand;
+  logic shift_fill_bit;
+  logic [5:0] shamt;
+  logic [64:0] shift_operand_ext;
+  logic [63:0] shift_result;
+
+  always_comb begin
+    shift_operand = 'x;
+    unique casez ({word_i, shift_op_i[0]})
+      2'b?0: begin
+        // For left shift, we reverse the contents and perform a right shift
+        for (int i = 0; i < 64; i++) shift_operand[i] = operand_a_i[63 - i];
+      end
+      2'b01: begin
+        shift_operand = operand_a_i;
+      end
+      2'b11: begin
+        // For 32-bit shift, pad 32-bit dummy bits on the right
+        shift_operand = {operand_a_i[31:0], 32'dx};
+      end
+      default:;
+    endcase
+
+    shift_fill_bit = shift_op_i[1] && shift_operand[63];
+    shamt = word_i ? {1'b0, operand_b_i[4:0]} : operand_b_i[5:0];
+
+    shift_operand_ext = {shift_fill_bit, shift_operand};
+    shift_result = signed'(shift_operand_ext) >>> shamt;
+
+    result_o = 'x;
+    unique casez ({word_i, shift_op_i[0]})
+      2'b?0: begin
+        // For left shift, reverse the shifted result back.
+        for (int i = 0; i < 64; i++) result_o[i] = shift_result[63 - i];
+      end
+      2'b01: begin
+        result_o = shift_result;
+      end
+      2'b11: begin
+        // For 32-bit shift, remove the 32-bit padded dummy bits.
+        // MSBs will be fixed by the ALU unit.
+        result_o = {32'dx, shift_result[63:32]};
+      end
+      default:;
+    endcase
+  end
+endmodule
+
+
+module alu import pkg::*; (
+    input logic [1:0]      size_i,              
+    input logic [31:0]     immediate_i,             
+    input logic            adder_use_pc_i,              
+    input logic            adder_use_imm_i,             
+    input logic            use_imm_i,               
+    input logic [63:0]     pc_i,                
+    input shift_op_e       shift_op_i,              
+    input alu_op_e         alu_op_i,                
+    input condition_code_e condition_i;             
+    input [63:0]           rs1_i,               
+    input [63:0]           rs2_i,               
+    output logic [63:0]    sum_o,               
+    output logic           compare_result_o,                
+    output logic [63:0]    result_o             
+);
+
+    // Determine if op is word-sized.
+    // For ALU op this can only be word(10) or dword (11), so just check LSB.
+    wire word = size_i[0] == 1'b0;
+
+    wire [63:0] imm_sext = { {32{immediate_i[31]}}, immediate_i };
+
+    // Adder. Used for ADD, LOAD, STORE, AUIPC, JAL, JALR, BRANCH
+    // This is the core component of the ALU.
+    // Because the adder is also used for address (load/store and branch/jump) calculation, it uses
+    //   adder_use_pc and adder_use_imm to mux inputs rather than use_imm.
+    assign sum_o =
+        (adder_use_pc_i ? pc_i : rs1_i) +
+        (adder_use_imm_i ? imm_sext : rs2_i);
+
+    wire [63:0] operand_b = use_imm_i ? imm_sext : rs2_i;
+
+    // Subtractor. Used for SUB, BRANCH, SLT, SLTU
     logic [63:0] difference;
-    assign difference = rs1_i - rs2_i;
+    assign difference = rs1_i - operand_b;
+
+    // Comparator. Used for BRANCH, SLT, and SLTU
+    comparator comparator (
+        .operand_a_i  (rs1_i),
+        .operand_b_i  (operand_b),
+        .condition_i  (condition_i),
+        .difference_i (difference),
+        .result_o     (compare_result_o)
+    );
+
+    logic [63:0] shift_result;
+    shifter shifter(
+        .operand_a_i (rs1_i),
+        .operand_b_i (operand_b),
+        .shift_op_i  (shift_op_i),
+        .word_i      (word),
+        .result_o    (shift_result)
+    );
 
     /* Result Multiplexer */
     logic [63:0] alu_result;
     always_comb begin
-        unique case (decoded_op_i.alu_op)
-        ALU_ADD:   alu_result = sum_o;
-        ALU_SUB:   alu_result = difference;
-        //   ALU_AND:   alu_result = rs1_i & operand_b;
-        //   ALU_OR:    alu_result = rs1_i | operand_b;
-        //   ALU_XOR:   alu_result = rs1_i ^ operand_b;
-        //   ALU_SHIFT: alu_result = shift_result;
-        //   ALU_SCC:   alu_result = {63'b0, compare_result_o};
-        default:   alu_result = 'x;
+        unique case (alu_op_i)
+            ALU_ADD:   alu_result = sum_o;
+            ALU_SUB:   alu_result = difference;
+            ALU_AND:   alu_result = rs1_i & operand_b;
+            ALU_OR:    alu_result = rs1_i | operand_b;
+            ALU_XOR:   alu_result = rs1_i ^ operand_b;
+            ALU_SHIFT: alu_result = shift_result;
+            ALU_SCC:   alu_result = {63'b0, compare_result_o};
+            default:   alu_result = 'x;
         endcase
-
-        result_o = wsize ? {{32{alu_result[31]}}, alu_result[31:0]} : alu_result;
+        result_o = word ? {{32{alu_result[31]}}, alu_result[31:0]} : alu_result;
     end
 endmodule
-
 
