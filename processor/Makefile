@@ -37,9 +37,10 @@
 
 
 all:
-	verilator -Wall -cc CPU.sv; cd obj_dir; make -f VCPU.mk
-	g++ -I /usr/share/verilator/include -I obj_dir/ /usr/share/verilator/include/verilated.cpp CPU.cpp obj_dir/VCPU__ALL.a -o CPU 
+	verilator -Wall -cc pkg.sv CPU.sv; cd obj_dir; make -f Vpkg.mk 
+	g++ -I /usr/share/verilator/include -I obj_dir/ /usr/share/verilator/include/verilated.cpp CPU.cpp obj_dir/Vpkg__ALL.a -o CPU 
 	./CPU 
 
 clean:
 	rm -rf obj_dir; rm CPU
+

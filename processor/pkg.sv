@@ -1,4 +1,4 @@
-package pkg
+package pkg;
 /////////////
 // Opcodes //
 /////////////
@@ -32,7 +32,8 @@ typedef enum logic [3:0] {
     OP_ALU,
     OP_JUMP,
     OP_BRANCH,
-    OP_MEM,
+    OP_STORE,
+    OP_LOAD,
     OP_MUL,
     OP_DIV,
     OP_FP,

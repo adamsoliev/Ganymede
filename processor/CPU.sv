@@ -18,13 +18,13 @@ module CPU import pkg::*; (
 
     logic [63:0] if_pc;
     logic [31:0] instr;
-    wire [63:0] pc_next = pc + 4;
+    wire [63:0] pc_next = if_pc + 4;
     always_ff @(posedge clk or negedge rst) begin
         if (!rst) begin
             if_pc <= 0;
             instr <= 0;
         end else begin
-            instr <= IMEM[pc];
+            instr <= IMEM[if_pc];
             if_pc <= pc_next;
         end
     end
@@ -52,7 +52,6 @@ module CPU import pkg::*; (
     alu_op_e            id_alu_op;
     shift_op_e          id_shift_op;
     condition_code_e    id_condition;
-    mem_op_e            id_mem_op;
     logic               id_adder_use_pc;
     logic               id_adder_use_imm;
     logic               id_use_imm;
@@ -70,7 +69,7 @@ module CPU import pkg::*; (
         // Forward
         id_pc = if_pc;
 
-        unique case (opcode)
+        unique case (id_opcode)
             OPCODE_JAL: begin
                 id_optype = OP_JUMP;
             end
@@ -79,26 +78,24 @@ module CPU import pkg::*; (
             end
             OPCODE_BRANCH: begin
                 id_optype = OP_BRANCH;
-                unique case (funct3)
+                unique case (id_funct3)
                     3'b000,
                     3'b001,
                     3'b100,
                     3'b101,
                     3'b110,
-                    3'b111: id_condition = condition_code_e'(funct3);
+                    3'b111: id_condition = condition_code_e'(id_funct3);
                     default: ;
                 endcase
             end
             OPCODE_STORE: begin
-                id_optype = OP_MEM;
-                id_size = funct3[1:0];
-                id_mem_op = MEM_STORE;
+                id_optype = OP_STORE;
+                id_size = id_funct3[1:0];
             end
             OPCODE_LOAD: begin
-                id_optype = OP_MEM;
-                id_size = funct3[1:0];
-                id_size_ext = funct3[2] ? SizeExtZero : SizeExtSigned;
-                id_mem_op = MEM_STORE;
+                id_optype = OP_LOAD;
+                id_size = id_funct3[1:0];
+                id_size_ext = id_funct3[2] ? SizeExtZero : SizeExtSigned;
             end
             OPCODE_LUI: begin
                 id_optype = OP_ALU;
@@ -109,7 +106,7 @@ module CPU import pkg::*; (
                 id_alu_op = ALU_ADD;
             end
             OPCODE_OP_IMM: begin
-                unique case (funct3)
+                unique case (id_funct3)
                     3'b000: begin
                         id_alu_op = ALU_ADD;
                     end
@@ -130,8 +127,8 @@ module CPU import pkg::*; (
                     end
                     3'b101: begin
                         id_alu_op = ALU_SHIFT;
-                        if (funct7[6:1] == 6'b0) id_shift_op = SHIFT_OP_SRL;
-                        else if (funct7[6:1] == 6'b010000) id_shift_op = SHIFT_OP_SRA;
+                        if (id_funct7[6:1] == 6'b0) id_shift_op = SHIFT_OP_SRL;
+                        else if (id_funct7[6:1] == 6'b010000) id_shift_op = SHIFT_OP_SRA;
                         else ;
                     end
                     default:;
@@ -139,7 +136,7 @@ module CPU import pkg::*; (
             end
             OPCODE_OP_IMM_32: begin
                 id_size = 2'b10;
-                unique case (funct3)
+                unique case (id_funct3)
                     3'b000: begin
                         id_alu_op = ALU_ADD;
                     end
@@ -149,15 +146,15 @@ module CPU import pkg::*; (
                     end
                     3'b101: begin
                         id_alu_op = ALU_SHIFT;
-                        if (funct7 == 7'b0) id_shift_op = SHIFT_OP_SRL;
-                        else if (funct7 == 7'b0100000) id_shift_op = SHIFT_OP_SRA;
+                        if (id_funct7 == 7'b0) id_shift_op = SHIFT_OP_SRL;
+                        else if (id_funct7 == 7'b0100000) id_shift_op = SHIFT_OP_SRA;
                         else ; 
                     end
                     default: ; 
                 endcase
             end
             OPCODE_OP: begin
-                unique casez ({funct7, funct3})
+                unique casez ({id_funct7, id_funct3})
                     {7'b0000000, 3'b000}: begin
                         id_alu_op = ALU_ADD;
                     end
@@ -192,7 +189,7 @@ module CPU import pkg::*; (
             end
             OPCODE_OP_32: begin
                 id_size = 2'b10;
-                unique casez ({funct7, funct3})
+                unique casez ({id_funct7, id_funct3})
                     {7'b0000000, 3'b000}: begin
                         id_alu_op = ALU_ADD;
                     end
@@ -217,6 +214,7 @@ module CPU import pkg::*; (
             OPCODE_SYSTEM: begin
                 id_optype = OP_SYSTEM;
             end
+            default: ;
         endcase
 
         /////////////////////////////////////
@@ -225,7 +223,7 @@ module CPU import pkg::*; (
         id_adder_use_pc = 1'bx;
         id_adder_use_imm = 1'bx;
         id_use_imm = 1'bx;
-        unique case (opcode)
+        unique case (id_opcode)
             OPCODE_LOAD, OPCODE_LOAD_FP, OPCODE_STORE, OPCODE_STORE_FP, OPCODE_AMO, OPCODE_LUI, OPCODE_JALR: begin
                 id_adder_use_pc = 1'b0;
                 id_adder_use_imm = 1'b1;
@@ -256,26 +254,26 @@ module CPU import pkg::*; (
         // Immediate select
         /////////////////////////////////////
         id_immediate = 'x;
-        unique case (opcode)
+        unique case (id_opcode)
             // I-type
             OPCODE_LOAD, OPCODE_OP_IMM, OPCODE_OP_IMM_32, OPCODE_JALR: begin
-                id_immediate = i_imm;
+                id_immediate = id_iimm;
             end
             // U-Type
             OPCODE_AUIPC, OPCODE_LUI: begin
-                id_immediate = u_imm;
+                id_immediate = id_uimm;
             end
             // S-Type
             OPCODE_STORE: begin
-                id_immediate = s_imm;
+                id_immediate = id_simm;
             end
             // B-Type
             OPCODE_BRANCH: begin
-                id_immediate = b_imm;
+                id_immediate = id_bimm;
             end
             // J-Type
             OPCODE_JAL: begin
-                id_immediate = j_imm;
+                id_immediate = id_jimm;
             end
             default:;
         endcase
@@ -286,9 +284,11 @@ module CPU import pkg::*; (
 ////////////////////////////////////////////
     logic [63:0]        ex_rs1v;
     logic [63:0]        ex_rs2v;
+    logic [63:0]        ex_rd;
 
     assign ex_rs1v = REGISTERS[id_rs1];
     assign ex_rs2v = REGISTERS[id_rs2];
+    assign ex_rd = id_rd;
 
     logic [63:0]    ex_sum;
     logic           ex_compare_result;
@@ -310,41 +310,79 @@ module CPU import pkg::*; (
         .result_o(ex_alu_result)
     );
 
-    // logic [63:0]    ex_alu_data_q;
-    // logic [63:0]    ex_expected_pc_q;
-
-    // logic [63:0]    ex_alu_data_d;
-    // logic [63:0]    ex_expected_pc_d;
-    // always_comb begin 
-    //     ex_alu_data_d = ex_alu_data_q;
-    //     ex_expected_pc_d = ex_alu_data_q;
-    //     unique case (id_optype)
-    //         OP_ALU: begin
-    //             ex_alu_data = ex_alu_result;
-    //         end
-    //         OP_JUMP: begin
-    //             ex_alu_data = 64'(signed'(pc_next));
-    //             ex_expected_pc_d = {sum[63:1], 1'b0};
-    //         end
-    //         OP_BRANCH: begin
-    //             ex_alu_data = 64'(signed'(pc_next));
-    //             ex_expected_pc_d = ex_compare_result ? {sum[63:1], 1'b0} : 64'(signed'(pc_next));
-    //         end
-    //         OP_MEM: begin
-    //         end
-    //         default: ;
-    //     endcase
-    // end
-
 ////////////////////////////////////////////
 // MEM
 ////////////////////////////////////////////
+    op_type_e           mem_optype;
+    logic [63:0]        mem_sum;
+    logic [63:0]        mem_rs2v;
+    logic [63:0]        mem_expected_pc;
+    logic [63:0]        mem_rd;
+
+    assign mem_optype = id_optype;
+    assign mem_sum = ex_sum;
+    assign mem_rs2v = ex_rs2v;
+    assign mem_rd = ex_rd;
+
+    logic [63:0]        mem_result;
+    always_comb begin
+        unique case (mem_optype)
+            OP_ALU: begin
+                mem_result = ex_alu_result;
+            end
+            OP_LOAD: begin
+                mem_result = DMEM[mem_sum];
+            end
+            OP_STORE: begin
+                DMEM[mem_sum] = mem_rs2v;
+            end
+            OP_JUMP: begin
+                mem_result = 64'(signed'(pc_next));
+                mem_expected_pc = {mem_sum[63:1], 1'b0};
+            end
+            OP_BRANCH: begin
+                mem_result = 64'(signed'(pc_next));
+                mem_expected_pc = ex_compare_result ? {mem_sum[63:1], 1'b0} : 64'(signed'(pc_next));
+            end
+            default: ;
+        endcase
+    end
 
 ////////////////////////////////////////////
 // WB
 ////////////////////////////////////////////
+    op_type_e           wb_optype;
+    logic [63:0]        wb_rd;
+    logic [63:0]        wb_result;
+
+    assign wb_optype = mem_optype;
+    assign wb_rd = mem_rd;
+    assign wb_result = mem_result;
+
     always_comb begin
-        if ()
+        if (((wb_optype == OP_LOAD) || (wb_optype == OP_ALU)) && (wb_rd != 0)) REGISTERS[wb_rd] = wb_result;
+    end
+
+////////////////////////////////////////////
+// DEBUG
+////////////////////////////////////////////
+    logic [10:0] cycle;
+    always_ff @(posedge clk or negedge rst) begin
+        if (!rst) begin
+            cycle = 0;
+        end else begin
+            cycle = cycle + 1;
+            $display("cycle: %d", cycle);
+            $display(" x0:     %h     x1(ra): %h        x2(sp): %h        x3(gp): %h", REGISTERS[ 0], REGISTERS[ 1], REGISTERS[ 2], REGISTERS[ 3]);
+            $display(" x4(tp): %h     x5(t0): %h        x6(t1): %h        x7(t2): %h", REGISTERS[ 4], REGISTERS[ 5], REGISTERS[ 6], REGISTERS[ 7]);
+            $display(" x8(fp): %h     x9(s1): %h       x10(a0): %h       x11(a1): %h", REGISTERS[ 8], REGISTERS[ 9], REGISTERS[10], REGISTERS[11]);
+            $display("x12(a2): %h    x13(a3): %h       x14(a4): %h       x15(a5): %h", REGISTERS[12], REGISTERS[13], REGISTERS[14], REGISTERS[15]);
+            $display("x16(a6): %h    x17(a7): %h       x18(s2): %h       x19(s3): %h", REGISTERS[16], REGISTERS[17], REGISTERS[18], REGISTERS[19]);
+            $display("x20(s4): %h    x21(s5): %h       x22(s6): %h       x23(s7): %h", REGISTERS[20], REGISTERS[21], REGISTERS[22], REGISTERS[23]);
+            $display("x24(s8): %h    x25(s9): %h      x26(s10): %h      x27(s11): %h", REGISTERS[24], REGISTERS[25], REGISTERS[26], REGISTERS[27]);
+            $display("x28(t3): %h    x29(t4): %h       x30(t5): %h       x31(t6): %h", REGISTERS[28], REGISTERS[29], REGISTERS[30], REGISTERS[31]);
+            $display("\n");
+        end
     end
 
 endmodule
@@ -444,8 +482,7 @@ module shifter import pkg::*; (
   end
 endmodule
 
-
-module alu import pkg::*; (
+module ALU import pkg::*; (
     input logic [1:0]      size_i,              
     input logic [31:0]     immediate_i,             
     input logic            adder_use_pc_i,              
@@ -454,7 +491,7 @@ module alu import pkg::*; (
     input logic [63:0]     pc_i,                
     input shift_op_e       shift_op_i,              
     input alu_op_e         alu_op_i,                
-    input condition_code_e condition_i;             
+    input condition_code_e condition_i,             
     input [63:0]           rs1_i,               
     input [63:0]           rs2_i,               
     output logic [63:0]    sum_o,               
