@@ -1,14 +1,14 @@
 #include <fstream>
 #include <vector>
 
-#include "Vpkg.h"
+#include "VCPU.h"
 #include "verilated.h"
 
-void tick(Vpkg *tb);
+void tick(VCPU *tb);
 
 int main(int argc, char **argv) {
         Verilated::commandArgs(argc, argv);
-        Vpkg *tb = new Vpkg;
+        VCPU *tb = new VCPU;
         tb->rst == 0;
         for (int i = 0; i < 10; i++) {
                 tick(tb);
@@ -22,7 +22,7 @@ int main(int argc, char **argv) {
         return 0;
 }
 
-void tick(Vpkg *tb) {
+void tick(VCPU *tb) {
         tb->eval();
         tb->clk = 1;
         tb->eval();

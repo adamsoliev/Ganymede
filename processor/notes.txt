@@ -133,7 +133,7 @@ Verilog
     remember – behavioral verilog implies no specific hardware design; but, it has to be synthesizable                                                                                                                  
 
     keys to synthesizability                                                                                                                    
-        combinational logic                                                                                                                 
+        combinational logic (input -> output)                                                                                                                  
             avoid feedback (combinatorial loops)                                                                                                                    
             always blocks should                                                                                                                    
                 be always_comb blocks                                                                                                                   
@@ -142,7 +142,7 @@ Verilog
                 default values                                                                                                                  
                 if(...) paired with an else                                                                                                                 
 
-        sequential logic                                                                                                                    
+        sequential logic (input + state -> output)                                                                                                                     
             avoid clock- and reset-gating                                                                                                                   
             always blocks should                                                                                                                    
                 be always_ff @(posedge clock) blocks                                                                                                                    
