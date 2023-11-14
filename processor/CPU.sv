@@ -1,10 +1,9 @@
-module riscvsingle(input    logic        clk, reset,
-                   output   logic [31:0] PC,
-                   input    logic [31:0] Instr,
-                   output   logic        MemWrite,
-                   output   logic [31:0] ALUResult, WriteData,
-                   input    logic [31:0] ReadData);
-
+module CPU(input  logic        clk, reset,
+           output logic [31:0] PC,
+           input  logic [31:0] Instr,
+           output logic        MemWrite,
+           output logic [31:0] ALUResult, WriteData,
+           input  logic [31:0] ReadData);
 
     logic       ALUSrc, RegWrite, Jump, Zero;
     logic [1:0] ResultSrc, ImmSrc;
@@ -21,7 +20,6 @@ module riscvsingle(input    logic        clk, reset,
                 Zero, PC, Instr,
                 ALUResult, WriteData, ReadData);
 endmodule
-
 
 module controller(input  logic [6:0] op,
                   input  logic [2:0] funct3,
@@ -43,7 +41,6 @@ module controller(input  logic [6:0] op,
 
     assign PCSrc = Branch & Zero | Jump;
 endmodule
-
 
 module maindec(input  logic [6:0] op,
                output logic [1:0] ResultSrc,
@@ -69,7 +66,6 @@ module maindec(input  logic [6:0] op,
         endcase
 endmodule
 
-
 module aludec(input  logic       opb5,
               input  logic [2:0] funct3,
               input  logic       funct7b5,
@@ -94,8 +90,6 @@ module aludec(input  logic       opb5,
                 endcase
         endcase
 endmodule
-
-
 
 module datapath(input   logic        clk, reset,
                 input   logic [1:0]  ResultSrc,
@@ -132,12 +126,10 @@ module datapath(input   logic        clk, reset,
                         ResultSrc, Result);
 endmodule
 
-
-module adder(input  [31:0] a, b
+module adder(input  [31:0] a, b,
              output [31:0] y);
     assign y = a + b;
 endmodule
-
 
 module extend(input  logic [31:7] instr,
               input  logic [1:0]  immsrc,
@@ -150,13 +142,12 @@ module extend(input  logic [31:7] instr,
             // S−type (stores)
             2'b01: immext = {{20{instr[31]}}, instr[31:25], instr[11:7]};
             // B−type (branches)
-            2'b10: immext = {{20{instr[31]}}, instr[7], instr[30:25], instr[11:8], 1’b0};
+            2'b10: immext = {{20{instr[31]}}, instr[7], instr[30:25], instr[11:8], 1'b0};
             // J−type (jal)
-            2'b11: immext = {{12{instr[31]}}, instr[19:12], instr[20], instr[30:21], 1’b0};
+            2'b11: immext = {{12{instr[31]}}, instr[19:12], instr[20], instr[30:21], 1'b0};
             default: immext = 32'bx; // undefined
         endcase
 endmodule
-
 
 module flopr #(parameter WIDTH = 8)
               (input  logic clk, reset,
@@ -169,7 +160,6 @@ module flopr #(parameter WIDTH = 8)
 
 endmodule
 
-
 module flopenr #(parameter WIDTH = 8)
                 (input  logic clk, reset, en,
                  input  logic [WIDTH-1:0] d,
@@ -180,7 +170,6 @@ module flopenr #(parameter WIDTH = 8)
         else if (en) q <= d;
 
 endmodule
-
 
 module mux2 #(parameter WIDTH = 8)
              (input  logic [WIDTH-1:0] d0, d1,
@@ -197,5 +186,24 @@ module mux3 #(parameter WIDTH = 8)
               output logic [WIDTH-1:0] y);
 
     assign y = s[1] ? d2 : (s[0] ? d1 : d0);
+
+endmodule
+
+module regfile(input  logic	clk,
+               input  logic	we3,
+               input  logic [5:0] a1, a2, a3,
+               input  logic [31:0] wd3,
+               output logic [31:0] rd1, rd2);
+
+    logic [31:0] rf[31:0];
+    // three ported register file
+    // read two ports combinationally (A1/RD1, A2/RD2)
+    // write third port on rising edge of clock (A3/WD3/WE3)
+    // register 0 hardwired to 0
+    always_ff @(posedge clk)
+        if (we3) rf[a3] <= wd3;
+
+    assign rd1 = (a1 != 0) ? rf[a1] : 0;
+    assign rd2 = (a2 != 0) ? rf[a2] : 0;
 
 endmodule
