@@ -238,3 +238,49 @@ Verilog
             .PHONY     - dependencies will be built unconditionally
             .PRECIOUS  - dependencies will be kept, intermediate or not
             .SECONDARY - dependencies are automatically treated as intermediates, but not deleted
+    
+
+Yale Patt
+    Moore's Law
+        A law of physics
+        A law of microarchitecture
+        A law of psychology
+
+        Smaller transistors -> higher frequencies
+        More transistors -> more functions to go faster
+
+        New needs/problems
+        New paradigms
+
+        Pipelining
+        Branch prediction
+        Speculative execution (and recovery)
+        Special execution units (FP, Graphics, MMX)
+        Out-of-order execution (and in-order retirement)
+        Wide issue
+        Trace cache
+        SMT, SSMT
+        Soft errors
+        Handling LLC misses
+
+    The VonNeumann Paradigm
+        Fetch, Decode, Evaluate address, Fetch data, ...
+
+    The Transformation Hierarchy
+        Problem
+        Algorithm
+        Program
+        ISA
+        Microarchitecture
+        Circuits
+        Electrons
+
+    Case 1: Accelerators
+        ASICs, FPGAs, EMT instructions
+
+    Case 2: Many cores
+        Issue: how do you program these?
+
+    Case 3: Spatial computing
+    
+    What we need to do, moving forward
