@@ -7,34 +7,37 @@ module CPU(input    logic   clk,
     ////////////////////
     // IF
     ////////////////////
-    logic [63:0] PC, PCNext, PCPlus4;
+    logic [63:0] if_PC, PCNext, PCPlus4;
     logic [31:0] if_instr;
     always_ff @(posedge clk or negedge rst) begin
         if (!rst) begin
-            PC <= 0;
+            if_PC <= 0;
         end
         else begin
-            PC <= PCNext;
+            if_PC <= PCNext;
         end
     end
 
-    assign PCPlus4 = PC + 1;
-    assign PCNext = PCPlus4;
+    assign PCPlus4 = if_PC + 1;
+    assign PCNext = ex_PCSrc ? ex_PCTarget : PCPlus4;
 
     icache ic(
-        .address_i(PC[31:0]), .rd_o(if_instr)
+        .address_i(if_PC[31:0]), .rd_o(if_instr)
     );
 
     ////////////////////
     // DE
     ////////////////////
     logic [31:0] id_instr;
+    logic [63:0] id_PC;
     always_ff @(posedge clk or negedge rst) begin
         if (!rst) begin
             id_instr <= 0;
+            id_PC <= 0;
         end
         else begin
             id_instr <= if_instr;
+            id_PC <= if_PC;
         end
     end
 
@@ -51,12 +54,37 @@ module CPU(input    logic   clk,
     logic [31:0] id_uimm = { id_instr[31:12], 12'b0 };
     logic [31:0] id_jimm = { {11{id_instr[31]}}, id_instr[31], id_instr[19:12], id_instr[20], id_instr[30:21], 1'b0 };
 
+    // ImmSrc mux
+    logic [31:0] id_immext;
+    always_comb begin
+        id_immext = {32{1'bx}};
+        unique case (ImmSrc)
+            3'b000: id_immext = id_iimm;
+            3'b001: id_immext = id_uimm;
+            3'b010: id_immext = id_bimm;
+            3'b011: id_immext = id_jimm;
+            3'b100: id_immext = id_simm;
+            default: ;
+        endcase
+    end
+
     // TODO: MemWrite, ResultSrc
     // AluControl, RegWrite, AluSrcB, ImmSrc
+    /*
+    Imm-type    ImmSrc      AluSrcB
+    R-type      xxx         0
+    I-type      000         1
+    U-type      001         1
+    B-type      010         0
+    J-type      011         1
+    S-type      100         1
+    */
+
     logic       RegWrite;
     logic [2:0] ImmSrc;
     logic       AluSrcB;
     logic [3:0] AluControl;
+    logic       Branch;
     // logic       MemWrite;
     // logic [1:0] ResultSrc;
     always_comb begin
@@ -64,6 +92,7 @@ module CPU(input    logic   clk,
         RegWrite = 1'bx;
         AluSrcB = 1'bx; 
         ImmSrc = 3'bxxx;
+        Branch = 1'bx;
         unique case (id_opcode)
             7'b0000011, 7'b0010011: begin // I-type
                 unique case (id_funct3)
@@ -73,12 +102,14 @@ module CPU(input    logic   clk,
                 RegWrite = 1'b1;
                 AluSrcB = 1'b1; 
                 ImmSrc = 3'b000;
+                Branch = 1'b0;
             end
             7'b0010111: begin // U-type
                 AluControl = 4'b0000;
                 RegWrite = 1'b1;
                 AluSrcB = 1'b1; 
                 ImmSrc = 3'b001;
+                Branch = 1'b0;
             end
             7'b0110011: begin // R-type
                 unique case ({id_funct3, id_funct7[5]})
@@ -97,12 +128,21 @@ module CPU(input    logic   clk,
                 RegWrite = 1'b1;
                 AluSrcB = 1'b0; 
                 ImmSrc = 3'bxxx;
+                Branch = 1'b0;
+            end
+            7'b1100011: begin // B-type
+                AluControl = 4'b0001;
+                RegWrite = 1'b0;
+                AluSrcB = 1'b0; 
+                ImmSrc = 3'b010;
+                Branch = 1'b1;
             end
             default: begin
                 AluControl = 4'bxxxx; // error
                 RegWrite = 1'bx;
                 AluSrcB = 1'bx; 
                 ImmSrc = 3'bxxx;
+                Branch = 1'bx;
             end
         endcase
     end
@@ -110,14 +150,18 @@ module CPU(input    logic   clk,
     ////////////////////
     // EX
     ////////////////////
+    logic [63:0] ex_PC, ex_PCTarget;
     logic [4:0]  ex_rd, ex_rs1, ex_rs2;
     logic [31:0] ex_imm;
     logic        ex_RegWrite;
     logic [2:0]  ex_ImmSrc;
     logic        ex_AluSrcB;
     logic [3:0]  ex_AluControl;
+    logic        ex_Branch;
+    logic        ex_PCSrc;
     always_ff @(posedge clk or negedge rst) begin
         if (!rst) begin
+            ex_PC <= 0;
             ex_rd <= 0;
             ex_rs1 <= 0;
             ex_rs2 <= 0;
@@ -126,18 +170,27 @@ module CPU(input    logic   clk,
             ex_ImmSrc <= 3'bxxx;
             ex_AluSrcB <= 1'bx;
             ex_AluControl <= 4'bxxxx;
+            ex_Branch <= 1'bx;
         end
         else begin
             ex_rd <= id_rd;
             ex_rs1 <= id_rs1;
             ex_rs2 <= id_rs2;
-            ex_imm <= id_iimm; // TODO: ImmSrc mux
+            ex_imm <= id_immext; 
             ex_RegWrite <= RegWrite;
             ex_ImmSrc <= ImmSrc;
             ex_AluSrcB <= AluSrcB;
             ex_AluControl <= AluControl;
+            ex_PC <= id_PC;
+            ex_Branch <= Branch;
         end
     end
+
+    // PC
+    assign ex_PCSrc = ex_Branch & ex_alu_ne;
+
+    // Branch
+    assign ex_PCTarget = ex_PC + {{32{ex_imm[31]}}, ex_imm};
 
     logic [63:0] ex_rs1V, ex_rs2V;
     registerfile rf(
@@ -155,10 +208,12 @@ module CPU(input    logic   clk,
     assign ex_SrcB = !ex_AluSrcB ? ex_rs2V : {{32{ex_imm[31]}}, ex_imm};
 
     logic [63:0] ex_alu_result;
+    logic        ex_alu_ne;
     alu alu(
         .SrcA_i(ex_SrcA),
         .SrcB_i(ex_SrcB),
         .AluControl_i(ex_AluControl),
+        .ne_o(ex_alu_ne),
         .result_o(ex_alu_result)
     );
 
@@ -207,11 +262,11 @@ module CPU(input    logic   clk,
     always_ff @(posedge clk or negedge rst) begin
         if (!rst) begin
             cycle <= 1;
-            $display("rst   PC:%h", PC);
+            $display("rst   PC:%h   ex_PCSrc:%h     ex_alu_ne:%h", if_PC, ex_Branch, ex_alu_ne);
         end
         else begin
             cycle <= cycle + 1;
-            $display("%d clk   PC:%h   instr:%h", cycle, PC, if_instr);
+            $display("%d clk   PC:%h   instr:%h     ex_PCSrc:%h     ex_alu_ne:%h", cycle, if_PC, if_instr, ex_Branch, ex_alu_ne);
         end
     end
 
@@ -283,16 +338,16 @@ endmodule
 module alu(input    logic [63:0]   SrcA_i,
            input    logic [63:0]   SrcB_i,
            input    logic [3:0]    AluControl_i,
+           output   logic          ne_o,
            output   logic [63:0]   result_o
 );
     always_comb begin
         unique case (AluControl_i)
             4'b0000: result_o = SrcA_i + SrcB_i; // add
             4'b0001: result_o = SrcA_i - SrcB_i; // sub
-            // 4'b0010; // sll
+            4'b0010: result_o = SrcA_i << SrcB_i; // sll
             // 4'b0011; // slt
             // 4'b0100; // sltu
-            // 4'b0101; // xor
             4'b0101: result_o = SrcA_i ^ SrcB_i; // xor
             // 4'b0110; // srl
             // 4'b0111; // sra
@@ -301,6 +356,7 @@ module alu(input    logic [63:0]   SrcA_i,
             default: result_o = {64{1'bx}};
         endcase
     end
+    assign ne_o = SrcA_i != SrcB_i;
 
 endmodule
 
