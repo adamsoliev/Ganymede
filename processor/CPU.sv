@@ -288,15 +288,16 @@ module alu(input    logic [63:0]   SrcA_i,
     always_comb begin
         unique case (AluControl_i)
             4'b0000: result_o = SrcA_i + SrcB_i; // add
-            // 4'b0001; // sub
+            4'b0001: result_o = SrcA_i - SrcB_i; // sub
             // 4'b0010; // sll
             // 4'b0011; // slt
             // 4'b0100; // sltu
             // 4'b0101; // xor
+            4'b0101: result_o = SrcA_i ^ SrcB_i; // xor
             // 4'b0110; // srl
             // 4'b0111; // sra
-            // 4'b1000; // or
-            // 4'b1001; // and
+            4'b1000: result_o = SrcA_i | SrcB_i; // or
+            4'b1001: result_o = SrcA_i & SrcB_i; // and
             default: result_o = {64{1'bx}};
         endcase
     end
