@@ -142,9 +142,9 @@ module CPU(input    logic   clk,
     logic [63:0] ex_rs1V, ex_rs2V;
     registerfile rf(
                 .clk_i(clk),
-                .a1_i(ex_rs1), .a2_i(ex_rs2), .a3_i(ex_rd),
+                .a1_i(ex_rs1), .a2_i(ex_rs2), .a3_i(wb_rd),
                 .we3_i(wb_RegWrite),
-                .wd3_i(wb_WriteBackData), 
+                .wd3_i(wb_alu_result), 
                 .rd1_o(ex_rs1V),
                 .rd2_o(ex_rs2V)
     );
@@ -165,32 +165,53 @@ module CPU(input    logic   clk,
     ////////////////////
     // MEM
     ////////////////////
+    logic [4:0]  mem_rd;
+    logic        mem_RegWrite;
+    logic [63:0] mem_alu_result;
+    always_ff @(posedge clk or negedge rst) begin
+        if (!rst) begin
+            mem_RegWrite <= 0;
+            mem_alu_result <= 0;
+            mem_rd <= 0;
+        end
+        else begin
+            mem_RegWrite <= ex_RegWrite;
+            mem_alu_result <= ex_alu_result;
+            mem_rd <= ex_rd;
+        end
+    end
 
     ////////////////////
     // WB
     ////////////////////
+    logic [4:0]  wb_rd;
     logic        wb_RegWrite;
-    logic [63:0] wb_WriteBackData;
+    logic [63:0] wb_alu_result;
     always_ff @(posedge clk or negedge rst) begin
         if (!rst) begin
             wb_RegWrite <= 0;
-            wb_WriteBackData <= 0;
+            wb_alu_result <= 0;
+            wb_rd <= 0;
         end
         else begin
-            wb_RegWrite <= ex_RegWrite;
-            wb_WriteBackData <= ex_alu_result;
+            wb_RegWrite <= mem_RegWrite;
+            wb_alu_result <= mem_alu_result;
+            wb_rd <= mem_rd;
         end
     end
 
     ////////////////////
     // DEBUG
     ////////////////////
+    logic [5:0] cycle;
     always_ff @(posedge clk or negedge rst) begin
         if (!rst) begin
+            cycle <= 1;
             $display("rst   PC:%h", PC);
         end
         else begin
-            $display("clk   PC:%h   instr:%h", PC, if_instr);
+            cycle <= cycle + 1;
+            $display("%d clk   PC:%h   instr:%h", cycle, PC, if_instr);
         end
     end
 
@@ -242,7 +263,9 @@ module registerfile(input   logic           clk_i,
 
     always_ff @(posedge clk_i) begin
         if (we3_i) REGS[a3_i] <= wd3_i;
+    end
 
+    always_ff @(negedge clk_i) begin
         // DEBUG
         $display(" x0:     %h     x1(ra): %h        x2(sp): %h        x3(gp): %h", REGS[ 0], REGS[ 1], REGS[ 2], REGS[ 3]);
         $display(" x4(tp): %h     x5(t0): %h        x6(t1): %h        x7(t2): %h", REGS[ 4], REGS[ 5], REGS[ 6], REGS[ 7]);
