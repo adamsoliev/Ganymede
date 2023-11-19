@@ -54,19 +54,6 @@ module CPU(input    logic   clk,
     logic [31:0] id_uimm = { id_instr[31:12], 12'b0 };
     logic [31:0] id_jimm = { {11{id_instr[31]}}, id_instr[31], id_instr[19:12], id_instr[20], id_instr[30:21], 1'b0 };
 
-    // ImmSrc mux
-    logic [31:0] id_immext;
-    always_comb begin
-        id_immext = {32{1'bx}};
-        unique case (ImmSrc)
-            3'b000: id_immext = id_iimm;
-            3'b001: id_immext = id_uimm;
-            3'b010: id_immext = id_bimm;
-            3'b011: id_immext = id_jimm;
-            3'b100: id_immext = id_simm;
-            default: ;
-        endcase
-    end
 
     // TODO: MemWrite, ResultSrc
     // AluControl, RegWrite, AluSrcB, ImmSrc
@@ -146,15 +133,28 @@ module CPU(input    logic   clk,
             end
         endcase
     end
+
+    // ImmSrc mux
+    logic [63:0] id_immext;
+    always_comb begin
+        id_immext = {64{1'bx}};
+        unique case (ImmSrc)
+            3'b000: id_immext = {{32{1'b0}}, id_iimm};
+            3'b001: id_immext = {{32{1'b0}}, id_uimm};
+            3'b010: id_immext = {{32{1'b0}}, id_bimm};
+            3'b011: id_immext = {{32{1'b0}}, id_jimm};
+            3'b100: id_immext = {{32{1'b0}}, id_simm};
+            default: ;
+        endcase
+    end
     
     ////////////////////
     // EX
     ////////////////////
     logic [63:0] ex_PC, ex_PCTarget;
     logic [4:0]  ex_rd, ex_rs1, ex_rs2;
-    logic [31:0] ex_imm;
+    logic [63:0] ex_imm;
     logic        ex_RegWrite;
-    logic [2:0]  ex_ImmSrc;
     logic        ex_AluSrcB;
     logic [3:0]  ex_AluControl;
     logic        ex_Branch;
@@ -167,7 +167,6 @@ module CPU(input    logic   clk,
             ex_rs2 <= 0;
             ex_imm <= 0;
             ex_RegWrite <= 1'bx;
-            ex_ImmSrc <= 3'bxxx;
             ex_AluSrcB <= 1'bx;
             ex_AluControl <= 4'bxxxx;
             ex_Branch <= 1'bx;
@@ -178,7 +177,6 @@ module CPU(input    logic   clk,
             ex_rs2 <= id_rs2;
             ex_imm <= id_immext; 
             ex_RegWrite <= RegWrite;
-            ex_ImmSrc <= ImmSrc;
             ex_AluSrcB <= AluSrcB;
             ex_AluControl <= AluControl;
             ex_PC <= id_PC;
@@ -190,7 +188,7 @@ module CPU(input    logic   clk,
     assign ex_PCSrc = ex_Branch & ex_alu_ne;
 
     // Branch
-    assign ex_PCTarget = ex_PC + {{32{ex_imm[31]}}, ex_imm};
+    assign ex_PCTarget = ex_PC + ex_imm;
 
     logic [63:0] ex_rs1V, ex_rs2V;
     registerfile rf(
@@ -205,7 +203,7 @@ module CPU(input    logic   clk,
     // AluSrc mux
     logic [63:0] ex_SrcA, ex_SrcB;
     assign ex_SrcA = ex_rs1V;
-    assign ex_SrcB = !ex_AluSrcB ? ex_rs2V : {{32{ex_imm[31]}}, ex_imm};
+    assign ex_SrcB = !ex_AluSrcB ? ex_rs2V : ex_imm;
 
     logic [63:0] ex_alu_result;
     logic        ex_alu_ne;
@@ -262,11 +260,11 @@ module CPU(input    logic   clk,
     always_ff @(posedge clk or negedge rst) begin
         if (!rst) begin
             cycle <= 1;
-            $display("rst   PC:%h   ex_PCSrc:%h     ex_alu_ne:%h", if_PC, ex_Branch, ex_alu_ne);
+            $display("rst   PC:%h", if_PC);
         end
         else begin
             cycle <= cycle + 1;
-            $display("%d clk   PC:%h   instr:%h     ex_PCSrc:%h     ex_alu_ne:%h", cycle, if_PC, if_instr, ex_Branch, ex_alu_ne);
+            $display("%d clk   PC:%h   instr:%h", cycle, if_PC, if_instr);
         end
     end
 
