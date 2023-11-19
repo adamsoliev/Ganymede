@@ -5,7 +5,7 @@ VERILATOR=verilator
 VINC := /usr/share/verilator/include
 
 obj_dir/VCPU.cpp: CPU.sv
-	$(VERILATOR) --trace -Wall -cc CPU.sv
+	$(VERILATOR) --trace -Wall -cc CPU.sv --top-module CPU
 
 obj_dir/VCPU__ALL.a: obj_dir/VCPU.cpp
 	make --no-print-directory -C obj_dir -f VCPU.mk

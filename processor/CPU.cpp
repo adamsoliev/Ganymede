@@ -35,6 +35,8 @@ int main(int argc, char **argv) {
         tfp->open("CPUtrace.vcd");
 
         for (int k = 0; k < 200; k++) {
+                if (k == 0) tb->rst_i = 0;
+                tb->rst_i = 1;
                 tick(++tickcount, tb, tfp);
         }
 }
