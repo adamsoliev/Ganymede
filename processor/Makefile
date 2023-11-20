@@ -1,5 +1,5 @@
 .PHONY: all
-all: CPU
+all: CPU run
 
 VERILATOR=verilator
 VINC := /usr/share/verilator/include
@@ -16,6 +16,10 @@ CPU: CPU.cpp obj_dir/VCPU__ALL.a
 			$(VINC)/verilated_vcd_c.cpp \
 			CPU.cpp obj_dir/VCPU__ALL.a \
 			-o CPU 
+
+run:
+	./CPU
+	gtkwave CPUtrace.vcd
 
 .PHONY: clean
 clean:

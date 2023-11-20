@@ -6,19 +6,62 @@ module CPU(input    logic   clk_i,
     ////////////////////
     // IF
     ////////////////////
-    logic [63:0] if_PC;
+
+    // IF STATE MANAGEMENT
+    logic [63:0] if_pc;
     logic [31:0] if_instr;
     always_ff @(posedge clk_i) begin
-        if (rst_i) if_PC <= 0;
-        else if_PC <= if_PC + 1;
+        if (rst_i) if_pc <= 0;
+        else if_pc <= if_pc + 1;
     end
 
+    // INSTRUCTION CACHE LOGIC
     icache ic(
-        .address_i(if_PC[31:0]), .rd_o(if_instr)
+        .address_i(if_pc[31:0]), .rd_o(if_instr)
     );
 
-endmodule
+    ////////////////////
+    // DE
+    ////////////////////
 
+    // DE STATE MANAGEMENT
+    logic [31:0] id_instr;
+    logic [63:0] id_pc;
+    always_ff @(posedge clk_i) begin
+        if (rst_i) begin
+            id_instr <= 0;
+            id_pc <= 0;
+        end
+        else begin
+            id_instr <= if_instr;
+            id_pc <= if_pc;
+        end
+    end
+
+    // REGISTER FILE LOGIC
+    logic [63:0] id_rs1v, id_rs2v;
+    logic [4:0] temp_rd;
+    logic       temp_regwrite;
+    logic [63:0] temp_wdata;
+    assign temp_rd = 2;
+    assign temp_regwrite = 0;
+    assign temp_wdata = 32;
+    registerfile rf(
+                .clk_i(clk_i),
+                .a1_i(id_instr[19:15]), .a2_i(id_instr[24:20]), .a3_i(temp_rd),
+                .we_i(temp_regwrite),
+                .wd_i(temp_wdata), 
+                .rd1_o(id_rs1v),
+                .rd2_o(id_rs2v)
+    );
+
+    // CONTROL SIGNAL GENERATION 
+    logic [6:0] id_opcode = id_instr[6:0];
+    logic [4:0] id_rd = id_instr[11:7];
+    logic [2:0] id_funct3 = id_instr[14:12];
+    logic [6:0] id_funct7 = id_instr[31:25];
+
+endmodule
 
 module icache(input     logic [31:0] address_i, 
               output    logic [31:0] rd_o
@@ -48,8 +91,8 @@ endmodule
 
 module registerfile(input   logic           clk_i,
                     input   logic [4:0]     a1_i, a2_i, a3_i,
-                    input   logic           we3_i,
-                    input   logic [63:0]    wd3_i,
+                    input   logic           we_i,
+                    input   logic [63:0]    wd_i,
                     output  logic [63:0]    rd1_o,
                     output  logic [63:0]    rd2_o
 );
@@ -59,7 +102,7 @@ module registerfile(input   logic           clk_i,
     assign rd2_o = (a2_i != 0) ? REGS[a2_i] : 0;
 
     always_ff @(posedge clk_i) begin
-        if (we3_i) REGS[a3_i] <= wd3_i;
+        if (we_i) REGS[a3_i] <= wd_i;
     end
 
     always_ff @(negedge clk_i) begin
