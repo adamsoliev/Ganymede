@@ -94,8 +94,9 @@ module CPU(input    logic   clk_i,
                 ImmSrc = 3'b000;
                 Branch = 1'b0;
             end
-            7'b0010111: begin // U-type
-                AluControl = 4'b0000;
+            7'b0010111, 7'b0110111: begin // auipc, lui U-type
+                if (id_opcode == 7'b0010111) AluControl = 4'b0000; // auipc
+                else AluControl = 4'b1010;                         // lui
                 RegWrite = 1'b1;
                 AluSrcB = 1'b1; 
                 ImmSrc = 3'b001;
@@ -320,11 +321,11 @@ module alu(input    logic [63:0]   SrcA_i,
             // 4'b0111; // sra
             4'b1000: result_o = SrcA_i | SrcB_i; // or
             4'b1001: result_o = SrcA_i & SrcB_i; // and
+            4'b1010: result_o = SrcB_i;          // lui
             default: result_o = {64{1'bx}};
         endcase
     end
     assign ne_o = SrcA_i != SrcB_i;
-
 endmodule
 
 /* verilator lint_on UNUSED */

@@ -17,7 +17,7 @@ int main(int argc, char **argv) {
 
         tb->rst_i = 1;
 
-        for (int time = 0; time < 20; time++) {
+        for (int time = 0; time < 50; time++) {
                 tb->rst_i = 0;
                 tb->clk_i ^= 1;
                 tb->eval();
