@@ -7,7 +7,7 @@ module CPU(input    logic   clk_i,
     // IF
     ////////////////////
 
-    // IF STATE MANAGEMENT
+    // IF STATE 
     logic [63:0] if_pc, pcnext, pcplus4;
     logic [31:0] if_instr;
     always_ff @(posedge clk_i) begin
@@ -27,7 +27,7 @@ module CPU(input    logic   clk_i,
     // DE
     ////////////////////
 
-    // DE STATE MANAGEMENT
+    // DE STATE 
     logic [31:0] id_instr;
     logic [63:0] id_pc;
     always_ff @(posedge clk_i) begin
@@ -157,15 +157,17 @@ module CPU(input    logic   clk_i,
     ////////////////////
     // EX
     ////////////////////
-    logic [63:0]    ex_pc, ex_pctarget;
-    logic [63:0]    ex_rs1v, ex_rs2v;
-    logic [4:0]     ex_rd;
-    logic [63:0]    ex_imm;
-    logic [3:0]     ex_AluControl;
-    logic           ex_RegWrite;
-    logic           ex_AluSrcB;
-    logic           ex_Branch;
-    logic           ex_pcsrc;
+
+    // EX STATE 
+    logic [63:0]  ex_pc, ex_pctarget;
+    logic [63:0]  ex_rs1v, ex_rs2v;
+    logic [4:0]   ex_rd;
+    logic [63:0]  ex_imm;
+    logic [3:0]   ex_AluControl;
+    logic         ex_RegWrite;
+    logic         ex_AluSrcB;
+    logic         ex_Branch;
+    logic         ex_pcsrc;
     always_ff @(posedge clk_i) begin
         if (rst_i) begin
             ex_pc <= 0;
@@ -194,14 +196,15 @@ module CPU(input    logic   clk_i,
     // PC
     assign ex_pcsrc = ex_Branch & ex_alu_ne;
 
-    // Branch
+    // Branch address
     assign ex_pctarget = ex_pc + ex_imm;
 
-    // AluSrc mux
+    // AluSrc MUX
     logic [63:0] ex_SrcA, ex_SrcB;
     assign ex_SrcA = ex_rs1v;
     assign ex_SrcB = ex_AluSrcB ? ex_imm : ex_rs2v;
 
+    // ALU
     logic [63:0] ex_alu_result;
     logic        ex_alu_ne;
     alu alu(
@@ -212,9 +215,11 @@ module CPU(input    logic   clk_i,
         .result_o(ex_alu_result)
     );
 
-        ////////////////////
+    ////////////////////
     // MEM
     ////////////////////
+
+    // MEM STATE 
     logic [4:0]  mem_rd;
     logic        mem_RegWrite;
     logic [63:0] mem_alu_result;
@@ -234,6 +239,8 @@ module CPU(input    logic   clk_i,
     ////////////////////
     // WB
     ////////////////////
+
+    // WB STATE 
     logic [4:0]  wb_rd;
     logic        wb_RegWrite;
     logic [63:0] wb_alu_result;
@@ -320,4 +327,5 @@ module alu(input    logic [63:0]   SrcA_i,
 
 endmodule
 
-/* verilator lint_off DECLFILENAME */
+/* verilator lint_on UNUSED */
+/* verilator lint_on DECLFILENAME */
