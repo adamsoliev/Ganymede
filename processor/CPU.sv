@@ -8,13 +8,9 @@ module CPU(input    logic   clk_i,
     ////////////////////
     logic [63:0] if_PC;
     logic [31:0] if_instr;
-    always_ff @(posedge clk_i or negedge rst_i) begin
-        if (!rst_i) begin
-            if_PC <= 0;
-        end
-        else begin
-            if_PC <= if_PC + 1;
-        end
+    always_ff @(posedge clk_i) begin
+        if (rst_i) if_PC <= 0;
+        else if_PC <= if_PC + 1;
     end
 
     icache ic(
