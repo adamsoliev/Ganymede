@@ -8,12 +8,15 @@ module CPU(input    logic   clk_i,
     ////////////////////
 
     // IF STATE MANAGEMENT
-    logic [63:0] if_pc;
+    logic [63:0] if_pc, pcnext, pcplus4;
     logic [31:0] if_instr;
     always_ff @(posedge clk_i) begin
         if (rst_i) if_pc <= 0;
-        else if_pc <= if_pc + 1;
+        else if_pc <= pcnext;
     end
+
+    assign pcplus4 = if_pc + 1;
+    assign pcnext = ex_pcsrc ? ex_pctarget : pcplus4;
 
     // INSTRUCTION CACHE LOGIC
     icache ic(
@@ -40,26 +43,212 @@ module CPU(input    logic   clk_i,
 
     // REGISTER FILE LOGIC
     logic [63:0] id_rs1v, id_rs2v;
-    logic [4:0] temp_rd;
-    logic       temp_regwrite;
-    logic [63:0] temp_wdata;
-    assign temp_rd = 2;
-    assign temp_regwrite = 0;
-    assign temp_wdata = 32;
     registerfile rf(
                 .clk_i(clk_i),
-                .a1_i(id_instr[19:15]), .a2_i(id_instr[24:20]), .a3_i(temp_rd),
-                .we_i(temp_regwrite),
-                .wd_i(temp_wdata), 
+                .a1_i(id_rs1), .a2_i(id_rs2), .a3_i(wb_rd),
+                .we_i(wb_RegWrite),
+                .wd_i(wb_alu_result), 
                 .rd1_o(id_rs1v),
                 .rd2_o(id_rs2v)
     );
 
     // CONTROL SIGNAL GENERATION 
-    logic [6:0] id_opcode = id_instr[6:0];
-    logic [4:0] id_rd = id_instr[11:7];
-    logic [2:0] id_funct3 = id_instr[14:12];
-    logic [6:0] id_funct7 = id_instr[31:25];
+    logic [6:0] id_opcode, id_funct7;
+    logic [4:0] id_rd, id_rs1, id_rs2;
+    logic [2:0] id_funct3;
+    assign id_opcode = id_instr[6:0];
+    assign id_rd = id_instr[11:7];
+    assign id_rs1 = id_instr[19:15];
+    assign id_rs2 = id_instr[24:20];
+    assign id_funct3 = id_instr[14:12];
+    assign id_funct7 = id_instr[31:25];
+
+    logic [31:0] id_iimm, id_simm, id_bimm, id_uimm, id_jimm;
+    assign id_iimm = { {20{id_instr[31]}}, id_instr[31:20] };
+    assign id_simm = { {20{id_instr[31]}}, id_instr[31:25], id_instr[11:7] };
+    assign id_bimm = { {20{id_instr[31]}}, id_instr[7], id_instr[30:25], id_instr[11:8], 1'b0 };
+    assign id_uimm = { id_instr[31:12], 12'b0 };
+    assign id_jimm = { {11{id_instr[31]}}, id_instr[31], id_instr[19:12], id_instr[20], id_instr[30:21], 1'b0 };
+
+    logic [3:0] AluControl;
+    logic       RegWrite;
+    logic       AluSrcB;
+    logic [2:0] ImmSrc;
+    logic       Branch;
+    // logic       MemWrite;
+    // logic [1:0] ResultSrc;
+    always_comb begin
+        AluControl = 4'bxxxx;
+        RegWrite = 1'bx;
+        AluSrcB = 1'bx; 
+        ImmSrc = 3'bxxx;
+        Branch = 1'bx;
+        unique case (id_opcode)
+            7'b0000011, 7'b0010011: begin // I-type
+                unique case (id_funct3)
+                    3'b000: AluControl = 4'b0000; // addi
+                    default: AluControl = 4'bxxxx; // error
+                endcase 
+                RegWrite = 1'b1;
+                AluSrcB = 1'b1; 
+                ImmSrc = 3'b000;
+                Branch = 1'b0;
+            end
+            7'b0010111: begin // U-type
+                AluControl = 4'b0000;
+                RegWrite = 1'b1;
+                AluSrcB = 1'b1; 
+                ImmSrc = 3'b001;
+                Branch = 1'b0;
+            end
+            7'b0110011: begin // R-type
+                unique case ({id_funct3, id_funct7[5]})
+                    4'b0000: AluControl = 4'b0000; // add
+                    4'b0001: AluControl = 4'b0001; // sub
+                    4'b0010: AluControl = 4'b0010; // sll
+                    4'b0100: AluControl = 4'b0011; // slt
+                    4'b0110: AluControl = 4'b0100; // sltu
+                    4'b1000: AluControl = 4'b0101; // xor
+                    4'b1010: AluControl = 4'b0110; // srl
+                    4'b1011: AluControl = 4'b0111; // sra
+                    4'b1100: AluControl = 4'b1000; // or
+                    4'b1110: AluControl = 4'b1001; // and
+                    default: AluControl = 4'bxxxx; // error
+                endcase
+                RegWrite = 1'b1;
+                AluSrcB = 1'b0; 
+                ImmSrc = 3'bxxx;
+                Branch = 1'b0;
+            end
+            7'b1100011: begin // B-type
+                AluControl = 4'b0001;
+                RegWrite = 1'b0;
+                AluSrcB = 1'b0; 
+                ImmSrc = 3'b010;
+                Branch = 1'b1;
+            end
+            default: begin
+                AluControl = 4'bxxxx; // error
+                RegWrite = 1'bx;
+                AluSrcB = 1'bx; 
+                ImmSrc = 3'bxxx;
+                Branch = 1'bx;
+            end
+        endcase
+    end
+
+    // ImmSrc mux
+    logic [63:0] id_immext;
+    always_comb begin
+        id_immext = {64{1'b0}};
+        unique case (ImmSrc)
+            3'b000: id_immext = {{32{id_iimm[31]}}, id_iimm};
+            3'b001: id_immext = {{32{id_uimm[31]}}, id_uimm};
+            3'b010: id_immext = {{32{id_bimm[31]}}, id_bimm};
+            3'b011: id_immext = {{32{id_jimm[31]}}, id_jimm};
+            3'b100: id_immext = {{32{id_simm[31]}}, id_simm};
+            3'b101: id_immext = {64{1'b0}};
+            3'b110: id_immext = {64{1'b0}};
+            3'b111: id_immext = {64{1'b0}};
+            default: id_immext = {64{1'b0}};
+        endcase
+    end
+
+    ////////////////////
+    // EX
+    ////////////////////
+    logic [63:0]    ex_pc, ex_pctarget;
+    logic [63:0]    ex_rs1v, ex_rs2v;
+    logic [4:0]     ex_rd;
+    logic [63:0]    ex_imm;
+    logic [3:0]     ex_AluControl;
+    logic           ex_RegWrite;
+    logic           ex_AluSrcB;
+    logic           ex_Branch;
+    logic           ex_pcsrc;
+    always_ff @(posedge clk_i) begin
+        if (rst_i) begin
+            ex_pc <= 0;
+            ex_rs1v <= 0;
+            ex_rs2v <= 0;
+            ex_rd <= 0;
+            ex_imm <= 0;
+            ex_AluControl <= 0;
+            ex_RegWrite <= 0;
+            ex_AluSrcB <= 0;
+            ex_Branch <= 0;
+        end
+        else begin
+            ex_pc <= id_pc;
+            ex_rs1v <= id_rs1v;
+            ex_rs2v <= id_rs2v;
+            ex_rd <= id_rd;
+            ex_imm <= id_immext;
+            ex_AluControl <= AluControl;
+            ex_RegWrite <= RegWrite;
+            ex_AluSrcB <= AluSrcB;
+            ex_Branch <= Branch;
+        end
+    end
+
+    // PC
+    assign ex_pcsrc = ex_Branch & ex_alu_ne;
+
+    // Branch
+    assign ex_pctarget = ex_pc + ex_imm;
+
+    // AluSrc mux
+    logic [63:0] ex_SrcA, ex_SrcB;
+    assign ex_SrcA = ex_rs1v;
+    assign ex_SrcB = ex_AluSrcB ? ex_imm : ex_rs2v;
+
+    logic [63:0] ex_alu_result;
+    logic        ex_alu_ne;
+    alu alu(
+        .SrcA_i(ex_SrcA),
+        .SrcB_i(ex_SrcB),
+        .AluControl_i(ex_AluControl),
+        .ne_o(ex_alu_ne),
+        .result_o(ex_alu_result)
+    );
+
+        ////////////////////
+    // MEM
+    ////////////////////
+    logic [4:0]  mem_rd;
+    logic        mem_RegWrite;
+    logic [63:0] mem_alu_result;
+    always_ff @(posedge clk_i) begin
+        if (rst_i) begin
+            mem_rd <= 0;
+            mem_RegWrite <= 0;
+            mem_alu_result <= 0;
+        end
+        else begin
+            mem_rd <= ex_rd;
+            mem_RegWrite <= ex_RegWrite;
+            mem_alu_result <= ex_alu_result;
+        end
+    end
+
+    ////////////////////
+    // WB
+    ////////////////////
+    logic [4:0]  wb_rd;
+    logic        wb_RegWrite;
+    logic [63:0] wb_alu_result;
+    always_ff @(posedge clk_i) begin
+        if (rst_i) begin
+            wb_rd <= 0;
+            wb_RegWrite <= 0;
+            wb_alu_result <= 0;
+        end
+        else begin
+            wb_rd <= mem_rd;
+            wb_RegWrite <= mem_RegWrite;
+            wb_alu_result <= mem_alu_result;
+        end
+    end
 
 endmodule
 
@@ -104,20 +293,31 @@ module registerfile(input   logic           clk_i,
     always_ff @(posedge clk_i) begin
         if (we_i) REGS[a3_i] <= wd_i;
     end
+endmodule
 
-    always_ff @(negedge clk_i) begin
-        // DEBUG
-        $display(" x0:     %h     x1(ra): %h        x2(sp): %h        x3(gp): %h", REGS[ 0], REGS[ 1], REGS[ 2], REGS[ 3]);
-        $display(" x4(tp): %h     x5(t0): %h        x6(t1): %h        x7(t2): %h", REGS[ 4], REGS[ 5], REGS[ 6], REGS[ 7]);
-        $display(" x8(fp): %h     x9(s1): %h       x10(a0): %h       x11(a1): %h", REGS[ 8], REGS[ 9], REGS[10], REGS[11]);
-        $display("x12(a2): %h    x13(a3): %h       x14(a4): %h       x15(a5): %h", REGS[12], REGS[13], REGS[14], REGS[15]);
-        $display("x16(a6): %h    x17(a7): %h       x18(s2): %h       x19(s3): %h", REGS[16], REGS[17], REGS[18], REGS[19]);
-        $display("x20(s4): %h    x21(s5): %h       x22(s6): %h       x23(s7): %h", REGS[20], REGS[21], REGS[22], REGS[23]);
-        $display("x24(s8): %h    x25(s9): %h      x26(s10): %h      x27(s11): %h", REGS[24], REGS[25], REGS[26], REGS[27]);
-        $display("x28(t3): %h    x29(t4): %h       x30(t5): %h       x31(t6): %h", REGS[28], REGS[29], REGS[30], REGS[31]);
-        $display("\n");
+module alu(input    logic [63:0]   SrcA_i,
+           input    logic [63:0]   SrcB_i,
+           input    logic [3:0]    AluControl_i,
+           output   logic          ne_o,
+           output   logic [63:0]   result_o
+);
+    always_comb begin
+        unique case (AluControl_i)
+            4'b0000: result_o = SrcA_i + SrcB_i; // add
+            4'b0001: result_o = SrcA_i - SrcB_i; // sub
+            4'b0010: result_o = SrcA_i << SrcB_i; // sll
+            // 4'b0011; // slt
+            // 4'b0100; // sltu
+            4'b0101: result_o = SrcA_i ^ SrcB_i; // xor
+            // 4'b0110; // srl
+            // 4'b0111; // sra
+            4'b1000: result_o = SrcA_i | SrcB_i; // or
+            4'b1001: result_o = SrcA_i & SrcB_i; // and
+            default: result_o = {64{1'bx}};
+        endcase
     end
+    assign ne_o = SrcA_i != SrcB_i;
+
 endmodule
 
 /* verilator lint_off DECLFILENAME */
-/* verilator lint_off UNUSED */
