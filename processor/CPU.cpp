@@ -10,7 +10,8 @@
 
 int main(int argc, char **argv) {
         std::string isrcFilePath = "./test/no_hazard-";
-        std::vector<std::string> tests = {"add"};
+        std::vector<std::string> tests = {// "add", "sub",
+                                          "bne"};
 
         for (std::string test : tests) {
                 std::string ifileName = isrcFilePath + test;
@@ -34,7 +35,7 @@ int main(int argc, char **argv) {
 
                 for (int time = 0; time < 50; time++) {
                         if (Verilated::gotFinish()) {
-                                printf("FAILED TEST");
+                                printf("%s FAILED TEST", test.c_str());
                                 exit(EXIT_FAILURE);
                         }
                         tb->rst_i = 0;
