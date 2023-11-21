@@ -258,6 +258,17 @@ module CPU(input    logic   clk_i,
         end
     end
 
+    ////////////////////
+    // TEST
+    ////////////////////
+    logic [63:0] if_pc_copy;
+    assign if_pc_copy = if_pc;
+    always_comb begin
+        if (if_pc_copy > 1000) begin
+            $finish();
+        end
+    end
+
 endmodule
 
 module icache(input     logic [31:0] address_i, 

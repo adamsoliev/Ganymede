@@ -19,7 +19,7 @@ CPU: CPU.cpp obj_dir/VCPU__ALL.a
 
 run:
 	./CPU
-	gtkwave CPUtrace.vcd
+	# gtkwave CPUtrace.vcd
 
 .PHONY: clean
 clean:
