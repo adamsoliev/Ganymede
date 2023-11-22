@@ -81,7 +81,7 @@ module CPU(input    logic   clk_i,
     logic [1:0] AluResultSrc;
     logic       Jump;
     logic       WriteBackSrc; // others vs load
-    // logic       MemWrite;
+    logic       MemWrite;
     always_comb begin
         AluControl = 4'bxxxx;
         RegWrite = 1'bx;
@@ -91,6 +91,7 @@ module CPU(input    logic   clk_i,
         AluResultSrc = 2'bxx;
         Jump = 1'bx;
         WriteBackSrc = 1'bx;
+        MemWrite = 1'bx;
         unique case (id_opcode)
             7'b0010011: begin // I-type
                 unique case (id_funct3)
@@ -104,6 +105,7 @@ module CPU(input    logic   clk_i,
                 AluResultSrc = 2'b00;
                 Jump = 1'b0;
                 WriteBackSrc = 1'b0;
+                MemWrite = 1'b0;
             end
             7'b0010111, 7'b0110111: begin // auipc, lui U-type
                 if (id_opcode == 7'b0010111) begin 
@@ -120,6 +122,7 @@ module CPU(input    logic   clk_i,
                 Branch = 1'b0;
                 Jump = 1'b0;
                 WriteBackSrc = 1'b0;
+                MemWrite = 1'b0;
             end
             7'b0110011: begin // R-type
                 unique case ({id_funct3, id_funct7[5]})
@@ -142,6 +145,7 @@ module CPU(input    logic   clk_i,
                 AluResultSrc = 2'b00;
                 Jump = 1'b0;
                 WriteBackSrc = 1'b0;
+                MemWrite = 1'b0;
             end
             7'b1100011: begin // B-type
                 AluControl = 4'b0001;
@@ -152,6 +156,7 @@ module CPU(input    logic   clk_i,
                 AluResultSrc = 2'b00;
                 Jump = 1'b0;
                 WriteBackSrc = 1'b0;
+                MemWrite = 1'b0;
             end
             7'b1101111: begin // J-type (jal)
                 AluControl = 4'bxxxx;
@@ -162,6 +167,7 @@ module CPU(input    logic   clk_i,
                 AluResultSrc = 2'b11;
                 Jump = 1'b1;
                 WriteBackSrc = 1'b0;
+                MemWrite = 1'b0;
             end
             7'b0000011: begin // I-type (ld)
                 AluControl = 4'b0000;
@@ -172,6 +178,18 @@ module CPU(input    logic   clk_i,
                 AluResultSrc = 2'b00;
                 Jump = 1'b0;
                 WriteBackSrc = 1'b1;
+                MemWrite = 1'b0;
+            end
+            7'b0100011: begin // S-type (sd)
+                AluControl = 4'b0000;
+                RegWrite = 1'b0;
+                AluSrcB = 1'b1; 
+                ImmSrc = 3'b100;
+                Branch = 1'b0;
+                AluResultSrc = 2'b00;
+                Jump = 1'b0;
+                WriteBackSrc = 1'b0;
+                MemWrite = 1'b1;
             end
             default: begin
                 AluControl = 4'bxxxx; // error
@@ -182,6 +200,7 @@ module CPU(input    logic   clk_i,
                 AluResultSrc = 2'bxx;
                 Jump = 1'bx;
                 WriteBackSrc = 1'bx;
+                MemWrite = 1'bx;
             end
         endcase
     end
@@ -219,6 +238,7 @@ module CPU(input    logic   clk_i,
     logic         ex_Jump;
     logic [1:0]   ex_AluResultSrc;
     logic         ex_WriteBackSrc;
+    logic         ex_MemWrite;
     logic         ex_pcsrc;
     always_ff @(posedge clk_i) begin
         if (rst_i) begin
@@ -235,6 +255,7 @@ module CPU(input    logic   clk_i,
             ex_Jump <= 0;
             ex_AluResultSrc <= 0;
             ex_WriteBackSrc <= 0;
+            ex_MemWrite <= 0;
         end
         else begin
             ex_pc <= id_pc;
@@ -250,6 +271,7 @@ module CPU(input    logic   clk_i,
             ex_Jump <= Jump;
             ex_AluResultSrc <= AluResultSrc;
             ex_WriteBackSrc <= WriteBackSrc;
+            ex_MemWrite <= MemWrite;
         end
     end
 
@@ -292,34 +314,34 @@ module CPU(input    logic   clk_i,
 
     // MEM STATE 
     logic [4:0]  mem_rd;
-    logic        mem_RegWrite, mem_WriteBackSrc;
-    logic [63:0] mem_result;
+    logic        mem_RegWrite, mem_WriteBackSrc, mem_MemWrite;
+    logic [63:0] mem_result, mem_rs2v;
     always_ff @(posedge clk_i) begin
         if (rst_i) begin
             mem_rd <= 0;
             mem_RegWrite <= 0;
             mem_result <= 0;
             mem_WriteBackSrc <= 0;
+            mem_MemWrite <= 0;
+            mem_rs2v <= 0;
         end
         else begin
             mem_rd <= ex_rd;
             mem_RegWrite <= ex_RegWrite;
             mem_result <= ex_result;
             mem_WriteBackSrc <= ex_WriteBackSrc;
+            mem_MemWrite <= ex_MemWrite;
+            mem_rs2v <= ex_rs2v;
         end
     end
 
     // DATA CACHE LOGIC
     logic [63:0] mem_load_result;
-    logic [63:0] mem_wd_temp;
-    logic        mem_we_temp;
-    assign mem_wd_temp = 0;
-    assign mem_we_temp = 0;
     dcache dc(
         .clk(clk_i), 
         .address(mem_result),
-        .wd(mem_wd_temp),
-        .we(mem_we_temp),
+        .wd(mem_rs2v),
+        .we(mem_MemWrite),
         .rd(mem_load_result)
     );
 
