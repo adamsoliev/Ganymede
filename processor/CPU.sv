@@ -75,6 +75,7 @@ module CPU(input    logic   clk_i,
     logic       AluSrcB;
     logic [2:0] ImmSrc;
     logic       Branch;
+    logic       AluResultSrc;
     // logic       MemWrite;
     // logic [1:0] ResultSrc;
     always_comb begin
@@ -83,6 +84,7 @@ module CPU(input    logic   clk_i,
         AluSrcB = 1'bx; 
         ImmSrc = 3'bxxx;
         Branch = 1'bx;
+        AluResultSrc = 1'bx;
         unique case (id_opcode)
             7'b0000011, 7'b0010011: begin // I-type
                 unique case (id_funct3)
@@ -93,10 +95,17 @@ module CPU(input    logic   clk_i,
                 AluSrcB = 1'b1; 
                 ImmSrc = 3'b000;
                 Branch = 1'b0;
+                AluResultSrc = 1'b0;
             end
             7'b0010111, 7'b0110111: begin // auipc, lui U-type
-                if (id_opcode == 7'b0010111) AluControl = 4'b0000; // auipc
-                else AluControl = 4'b1010;                         // lui
+                if (id_opcode == 7'b0010111) begin 
+                    AluControl = 4'b0000; // auipc
+                    AluResultSrc = 1'b1;
+                end
+                else begin 
+                    AluControl = 4'b1010;                         // lui
+                    AluResultSrc = 1'b0;
+                end
                 RegWrite = 1'b1;
                 AluSrcB = 1'b1; 
                 ImmSrc = 3'b001;
@@ -120,6 +129,7 @@ module CPU(input    logic   clk_i,
                 AluSrcB = 1'b0; 
                 ImmSrc = 3'bxxx;
                 Branch = 1'b0;
+                AluResultSrc = 1'b0;
             end
             7'b1100011: begin // B-type
                 AluControl = 4'b0001;
@@ -127,6 +137,7 @@ module CPU(input    logic   clk_i,
                 AluSrcB = 1'b0; 
                 ImmSrc = 3'b010;
                 Branch = 1'b1;
+                AluResultSrc = 1'b0;
             end
             default: begin
                 AluControl = 4'bxxxx; // error
@@ -134,6 +145,7 @@ module CPU(input    logic   clk_i,
                 AluSrcB = 1'bx; 
                 ImmSrc = 3'bxxx;
                 Branch = 1'bx;
+                AluResultSrc = 1'bx;
             end
         endcase
     end
@@ -168,6 +180,7 @@ module CPU(input    logic   clk_i,
     logic         ex_RegWrite;
     logic         ex_AluSrcB;
     logic         ex_Branch;
+    logic         ex_AluResultSrc;
     logic         ex_pcsrc;
     always_ff @(posedge clk_i) begin
         if (rst_i) begin
@@ -180,6 +193,7 @@ module CPU(input    logic   clk_i,
             ex_RegWrite <= 0;
             ex_AluSrcB <= 0;
             ex_Branch <= 0;
+            ex_AluResultSrc <= 0;
         end
         else begin
             ex_pc <= id_pc;
@@ -191,6 +205,7 @@ module CPU(input    logic   clk_i,
             ex_RegWrite <= RegWrite;
             ex_AluSrcB <= AluSrcB;
             ex_Branch <= Branch;
+            ex_AluResultSrc <= AluResultSrc;
         end
     end
 
@@ -206,15 +221,19 @@ module CPU(input    logic   clk_i,
     assign ex_SrcB = ex_AluSrcB ? ex_imm : ex_rs2v;
 
     // ALU
-    logic [63:0] ex_alu_result;
+    logic [63:0] ex_alu_rs1_result;
     logic        ex_alu_ne;
     alu alu(
         .SrcA_i(ex_SrcA),
         .SrcB_i(ex_SrcB),
         .AluControl_i(ex_AluControl),
         .ne_o(ex_alu_ne),
-        .result_o(ex_alu_result)
+        .result_o(ex_alu_rs1_result)
     );
+
+    // ALU result mux
+    logic [63:0] ex_alu_result;
+    assign ex_alu_result = ex_AluResultSrc ? ex_pctarget : ex_alu_rs1_result;
 
     ////////////////////
     // MEM
@@ -258,16 +277,16 @@ module CPU(input    logic   clk_i,
         end
     end
 
-    // ////////////////////
-    // // TEST
-    // ////////////////////
-    // logic [63:0] if_pc_copy;
-    // assign if_pc_copy = if_pc;
-    // always_comb begin
-    //     if (if_pc_copy > 1000) begin
-    //         $finish();
-    //     end
-    // end
+    ////////////////////
+    // TEST
+    ////////////////////
+    logic [63:0] if_pc_copy;
+    assign if_pc_copy = if_pc;
+    always_comb begin
+        if (if_pc_copy > 1000) begin
+            $finish();
+        end
+    end
 
 endmodule
 

@@ -1,3 +1,18 @@
+Truth table
+
+            AluControl  RegWrite  AluSrcB  ImmSrc  Branch  AluResultSrc
+add             
+sub
+lui
+auipc
+bne
+
+
+
+
+
+
+
 +-----------------------------------------------------------+ 
 | Implementation                                            |                                                                                                                   
 +-----------------------------------------------------------+ 
