@@ -10,8 +10,7 @@
 
 int main(int argc, char **argv) {
         std::string isrcFilePath = "./test/no_hazard-";
-        std::vector<std::string> tests = {// "add", "sub",
-                                          "bne"};
+        std::vector<std::string> tests = {"add", "sub", "bne", "auipc"};
 
         for (std::string test : tests) {
                 std::string ifileName = isrcFilePath + test;
