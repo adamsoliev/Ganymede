@@ -47,7 +47,7 @@ module CPU(input    logic   clk_i,
                 .clk_i(clk_i),
                 .a1_i(id_rs1), .a2_i(id_rs2), .a3_i(wb_rd),
                 .we_i(wb_RegWrite),
-                .wd_i(wb_alu_result), 
+                .wd_i(wb_result), 
                 .rd1_o(id_rs1v),
                 .rd2_o(id_rs2v)
     );
@@ -232,8 +232,8 @@ module CPU(input    logic   clk_i,
     );
 
     // ALU result mux
-    logic [63:0] ex_alu_result;
-    assign ex_alu_result = ex_AluResultSrc ? ex_pctarget : ex_alu_rs1_result;
+    logic [63:0] ex_result;
+    assign ex_result = ex_AluResultSrc ? ex_pctarget : ex_alu_rs1_result;
 
     ////////////////////
     // MEM
@@ -242,17 +242,17 @@ module CPU(input    logic   clk_i,
     // MEM STATE 
     logic [4:0]  mem_rd;
     logic        mem_RegWrite;
-    logic [63:0] mem_alu_result;
+    logic [63:0] mem_result;
     always_ff @(posedge clk_i) begin
         if (rst_i) begin
             mem_rd <= 0;
             mem_RegWrite <= 0;
-            mem_alu_result <= 0;
+            mem_result <= 0;
         end
         else begin
             mem_rd <= ex_rd;
             mem_RegWrite <= ex_RegWrite;
-            mem_alu_result <= ex_alu_result;
+            mem_result <= ex_result;
         end
     end
 
@@ -263,17 +263,17 @@ module CPU(input    logic   clk_i,
     // WB STATE 
     logic [4:0]  wb_rd;
     logic        wb_RegWrite;
-    logic [63:0] wb_alu_result;
+    logic [63:0] wb_result;
     always_ff @(posedge clk_i) begin
         if (rst_i) begin
             wb_rd <= 0;
             wb_RegWrite <= 0;
-            wb_alu_result <= 0;
+            wb_result <= 0;
         end
         else begin
             wb_rd <= mem_rd;
             wb_RegWrite <= mem_RegWrite;
-            wb_alu_result <= mem_alu_result;
+            wb_result <= mem_result;
         end
     end
 
