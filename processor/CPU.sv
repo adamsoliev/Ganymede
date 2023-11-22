@@ -8,15 +8,15 @@ module CPU(input    logic   clk_i,
     ////////////////////
 
     // IF STATE 
-    logic [63:0] if_pc, pcnext, pcplus4;
+    logic [63:0] if_pc, pcnext, if_pcplus4;
     logic [31:0] if_instr;
     always_ff @(posedge clk_i) begin
         if (rst_i) if_pc <= 0;
         else if_pc <= pcnext;
     end
 
-    assign pcplus4 = if_pc + 1;
-    assign pcnext = ex_pcsrc ? ex_pctarget : pcplus4;
+    assign if_pcplus4 = if_pc + 1;
+    assign pcnext = ex_pcsrc ? ex_pctarget : if_pcplus4;
 
     // INSTRUCTION CACHE LOGIC
     icache ic(
@@ -29,15 +29,17 @@ module CPU(input    logic   clk_i,
 
     // DE STATE 
     logic [31:0] id_instr;
-    logic [63:0] id_pc;
+    logic [63:0] id_pc, id_pcplus4;
     always_ff @(posedge clk_i) begin
         if (rst_i) begin
             id_instr <= 0;
             id_pc <= 0;
+            id_pcplus4 <= 0;
         end
         else begin
             id_instr <= if_instr;
             id_pc <= if_pc;
+            id_pcplus4 <= if_pcplus4;
         end
     end
 
@@ -75,7 +77,8 @@ module CPU(input    logic   clk_i,
     logic       AluSrcB;
     logic [2:0] ImmSrc;
     logic       Branch;
-    logic       AluResultSrc;
+    logic [1:0] AluResultSrc;
+    logic       Jump;
     // logic       MemWrite;
     // logic [1:0] ResultSrc;
     always_comb begin
@@ -84,7 +87,8 @@ module CPU(input    logic   clk_i,
         AluSrcB = 1'bx; 
         ImmSrc = 3'bxxx;
         Branch = 1'bx;
-        AluResultSrc = 1'bx;
+        AluResultSrc = 2'bxx;
+        Jump = 1'bx;
         unique case (id_opcode)
             7'b0000011, 7'b0010011: begin // I-type
                 unique case (id_funct3)
@@ -95,21 +99,23 @@ module CPU(input    logic   clk_i,
                 AluSrcB = 1'b1; 
                 ImmSrc = 3'b000;
                 Branch = 1'b0;
-                AluResultSrc = 1'b0;
+                AluResultSrc = 2'b00;
+                Jump = 1'b0;
             end
             7'b0010111, 7'b0110111: begin // auipc, lui U-type
                 if (id_opcode == 7'b0010111) begin 
                     AluControl = 4'b0000; // auipc
-                    AluResultSrc = 1'b1;
+                    AluResultSrc = 2'b01;
                 end
                 else begin 
                     AluControl = 4'b1010;                         // lui
-                    AluResultSrc = 1'b0;
+                    AluResultSrc = 2'b00;
                 end
                 RegWrite = 1'b1;
                 AluSrcB = 1'b1; 
                 ImmSrc = 3'b001;
                 Branch = 1'b0;
+                Jump = 1'b0;
             end
             7'b0110011: begin // R-type
                 unique case ({id_funct3, id_funct7[5]})
@@ -129,7 +135,8 @@ module CPU(input    logic   clk_i,
                 AluSrcB = 1'b0; 
                 ImmSrc = 3'bxxx;
                 Branch = 1'b0;
-                AluResultSrc = 1'b0;
+                AluResultSrc = 2'b00;
+                Jump = 1'b0;
             end
             7'b1100011: begin // B-type
                 AluControl = 4'b0001;
@@ -137,7 +144,17 @@ module CPU(input    logic   clk_i,
                 AluSrcB = 1'b0; 
                 ImmSrc = 3'b010;
                 Branch = 1'b1;
-                AluResultSrc = 1'b0;
+                AluResultSrc = 2'b00;
+                Jump = 1'b0;
+            end
+            7'b1101111: begin // J-type (jal)
+                AluControl = 4'bxxxx;
+                RegWrite = 1'b1;
+                AluSrcB = 1'b0; 
+                ImmSrc = 3'b011;
+                Branch = 1'b0;
+                AluResultSrc = 2'b11;
+                Jump = 1'b1;
             end
             default: begin
                 AluControl = 4'bxxxx; // error
@@ -145,7 +162,8 @@ module CPU(input    logic   clk_i,
                 AluSrcB = 1'bx; 
                 ImmSrc = 3'bxxx;
                 Branch = 1'bx;
-                AluResultSrc = 1'bx;
+                AluResultSrc = 2'bxx;
+                Jump = 1'bx;
             end
         endcase
     end
@@ -172,7 +190,7 @@ module CPU(input    logic   clk_i,
     ////////////////////
 
     // EX STATE 
-    logic [63:0]  ex_pc, ex_pctarget;
+    logic [63:0]  ex_pc, ex_pctarget, ex_pcplus4;
     logic [63:0]  ex_rs1v, ex_rs2v;
     logic [4:0]   ex_rd;
     logic [63:0]  ex_imm;
@@ -180,11 +198,13 @@ module CPU(input    logic   clk_i,
     logic         ex_RegWrite;
     logic         ex_AluSrcB;
     logic         ex_Branch;
-    logic         ex_AluResultSrc;
+    logic         ex_Jump;
+    logic [1:0]   ex_AluResultSrc;
     logic         ex_pcsrc;
     always_ff @(posedge clk_i) begin
         if (rst_i) begin
             ex_pc <= 0;
+            ex_pcplus4 <= 0;
             ex_rs1v <= 0;
             ex_rs2v <= 0;
             ex_rd <= 0;
@@ -193,10 +213,12 @@ module CPU(input    logic   clk_i,
             ex_RegWrite <= 0;
             ex_AluSrcB <= 0;
             ex_Branch <= 0;
+            ex_Jump <= 0;
             ex_AluResultSrc <= 0;
         end
         else begin
             ex_pc <= id_pc;
+            ex_pcplus4 <= id_pcplus4;
             ex_rs1v <= id_rs1v;
             ex_rs2v <= id_rs2v;
             ex_rd <= id_rd;
@@ -205,12 +227,13 @@ module CPU(input    logic   clk_i,
             ex_RegWrite <= RegWrite;
             ex_AluSrcB <= AluSrcB;
             ex_Branch <= Branch;
+            ex_Jump <= Jump;
             ex_AluResultSrc <= AluResultSrc;
         end
     end
 
     // PC
-    assign ex_pcsrc = ex_Branch & ex_alu_ne;
+    assign ex_pcsrc = (ex_Branch & ex_alu_ne) || ex_Jump;
 
     // Branch address
     assign ex_pctarget = ex_pc + ex_imm;
@@ -233,7 +256,14 @@ module CPU(input    logic   clk_i,
 
     // ALU result mux
     logic [63:0] ex_result;
-    assign ex_result = ex_AluResultSrc ? ex_pctarget : ex_alu_rs1_result;
+    always_comb begin
+        unique case (ex_AluResultSrc)
+            2'b00: ex_result = ex_alu_rs1_result;
+            2'b01: ex_result = ex_pctarget; // auipc
+            2'b11: ex_result = ex_pcplus4; // jal
+            default: ex_result = 0;
+        endcase
+    end
 
     ////////////////////
     // MEM
