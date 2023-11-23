@@ -13,7 +13,9 @@ module CPU(input    logic   clk_i,
     logic [31:0] if_instr;
     always_ff @(posedge clk_i) begin
         if (rst_i) if_pc <= 0;
-        else if_pc <= pcnext;
+        else  begin
+            if (!ex_stallIF) if_pc <= pcnext;
+        end
     end
 
     assign if_pcplus4 = if_pc + 1;
@@ -38,9 +40,11 @@ module CPU(input    logic   clk_i,
             id_pcplus4 <= 0;
         end
         else begin
-            id_instr <= if_instr;
-            id_pc <= if_pc;
-            id_pcplus4 <= if_pcplus4;
+            if (!ex_stallID) begin
+                id_instr <= if_instr;
+                id_pc <= if_pc;
+                id_pcplus4 <= if_pcplus4;
+            end
         end
     end
 
@@ -226,9 +230,13 @@ module CPU(input    logic   clk_i,
     // EX
     ////////////////////
 
-    // FORWARDING LOGIC
+    // HAZARD HANDLING
     logic [1:0] ex_forwardA, ex_forwardB;
+    logic       ex_loadStall, ex_stallIF, ex_stallID, ex_flushEX;
     always_comb begin
+        /////////////
+        // RAW HAZARD
+        /////////////
         ex_forwardA = 2'bxx;
         if (((ex_rs1 == mem_rd) && mem_RegWrite) && (ex_rs1 != 0)) begin
             // forward from mem stage
@@ -256,8 +264,15 @@ module CPU(input    logic   clk_i,
             // no forward
             ex_forwardB = 2'b00;
         end
-    end
 
+        /////////////
+        // LOAD HAZARD
+        /////////////
+        ex_loadStall = ex_WriteBackSrc && ((id_rs1 == ex_rd) || (id_rs2 == ex_rd));
+        ex_stallIF = ex_loadStall;
+        ex_stallID = ex_loadStall;
+        ex_flushEX = ex_loadStall;
+    end
 
     // EX STATE 
     logic [63:0]  ex_pc, ex_pctarget, ex_pcplus4;
@@ -275,7 +290,7 @@ module CPU(input    logic   clk_i,
     logic         ex_pcsrc;
     logic [4:0] ex_rs1, ex_rs2; // for forwarding
     always_ff @(posedge clk_i) begin
-        if (rst_i) begin
+        if (rst_i || ex_flushEX) begin
             ex_pc <= 0;
             ex_pcplus4 <= 0;
             ex_rs1v <= 0;
@@ -326,7 +341,7 @@ module CPU(input    logic   clk_i,
         unique case (ex_forwardA)
             2'b00: ex_SrcA = ex_rs1v;       // no forward
             2'b10: ex_SrcA = mem_result;    // forward from mem stage
-            2'b11: ex_SrcA = wb_result;     // forward from wb stage
+            2'b11: ex_SrcA = wb_data;       // forward from wb stage
             default: ex_SrcA = 0; 
         endcase
 
@@ -338,7 +353,7 @@ module CPU(input    logic   clk_i,
             unique case (ex_forwardB)
                 2'b00: ex_SrcB = ex_rs2v;       // no forward
                 2'b10: ex_SrcB = mem_result;    // forward from mem stage
-                2'b11: ex_SrcB = wb_result;     // forward from wb stage
+                2'b11: ex_SrcB = wb_data;       // forward from wb stage
                 default: ex_SrcB = 0; 
             endcase
         end
@@ -483,7 +498,7 @@ module registerfile(input   logic           clk_i,
     assign rd1_o = (a1_i != 0) ? REGS[a1_i] : 0;
     assign rd2_o = (a2_i != 0) ? REGS[a2_i] : 0;
 
-    always_ff @(posedge clk_i) begin
+    always_ff @(negedge clk_i) begin
         if (we_i) REGS[a3_i] <= wd_i;
     end
 endmodule
