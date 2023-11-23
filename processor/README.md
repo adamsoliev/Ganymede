@@ -5,3 +5,5 @@
 
 5-stage pipelined 64-bit RISC-V soft core
 - Supported instructions: add, sub, sll, xor, or, and, bne, lui, auipc, jal, ld, sd
+- Forwarding for RAW hazards
+

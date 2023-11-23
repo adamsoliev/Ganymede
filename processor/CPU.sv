@@ -226,6 +226,39 @@ module CPU(input    logic   clk_i,
     // EX
     ////////////////////
 
+    // FORWARDING LOGIC
+    logic [1:0] ex_forwardA, ex_forwardB;
+    always_comb begin
+        ex_forwardA = 2'bxx;
+        if (((ex_rs1 == mem_rd) && mem_RegWrite) && (ex_rs1 != 0)) begin
+            // forward from mem stage
+            ex_forwardA = 2'b10;
+        end
+        else if (((ex_rs1 == wb_rd) && wb_RegWrite) && (ex_rs1 != 0)) begin
+            // forward from wb stage
+            ex_forwardA = 2'b11;
+        end
+        else begin
+            // no forward
+            ex_forwardA = 2'b00;
+        end
+
+        ex_forwardB = 2'bxx;
+        if (((ex_rs2 == mem_rd) && mem_RegWrite) && (ex_rs2 != 0)) begin
+            // forward from mem stage
+            ex_forwardB = 2'b10;
+        end
+        else if (((ex_rs2 == wb_rd) && wb_RegWrite) && (ex_rs2 != 0)) begin
+            // forward from wb stage
+            ex_forwardB = 2'b11;
+        end
+        else begin
+            // no forward
+            ex_forwardB = 2'b00;
+        end
+    end
+
+
     // EX STATE 
     logic [63:0]  ex_pc, ex_pctarget, ex_pcplus4;
     logic [63:0]  ex_rs1v, ex_rs2v;
@@ -240,6 +273,7 @@ module CPU(input    logic   clk_i,
     logic         ex_WriteBackSrc;
     logic         ex_MemWrite;
     logic         ex_pcsrc;
+    logic [4:0] ex_rs1, ex_rs2; // for forwarding
     always_ff @(posedge clk_i) begin
         if (rst_i) begin
             ex_pc <= 0;
@@ -256,6 +290,8 @@ module CPU(input    logic   clk_i,
             ex_AluResultSrc <= 0;
             ex_WriteBackSrc <= 0;
             ex_MemWrite <= 0;
+            ex_rs1 <= 0;
+            ex_rs2 <= 0;
         end
         else begin
             ex_pc <= id_pc;
@@ -272,6 +308,8 @@ module CPU(input    logic   clk_i,
             ex_AluResultSrc <= AluResultSrc;
             ex_WriteBackSrc <= WriteBackSrc;
             ex_MemWrite <= MemWrite;
+            ex_rs1 <= id_rs1;
+            ex_rs2 <= id_rs2;
         end
     end
 
@@ -283,8 +321,28 @@ module CPU(input    logic   clk_i,
 
     // AluSrc MUX
     logic [63:0] ex_SrcA, ex_SrcB;
-    assign ex_SrcA = ex_rs1v;
-    assign ex_SrcB = ex_AluSrcB ? ex_imm : ex_rs2v;
+    always_comb begin
+        // ex_SrcA
+        unique case (ex_forwardA)
+            2'b00: ex_SrcA = ex_rs1v;       // no forward
+            2'b10: ex_SrcA = mem_result;    // forward from mem stage
+            2'b11: ex_SrcA = wb_result;     // forward from wb stage
+            default: ex_SrcA = 0; 
+        endcase
+
+        // ex_SrcB
+        if (ex_AluSrcB) begin
+            ex_SrcB = ex_imm;
+        end
+        else begin
+            unique case (ex_forwardB)
+                2'b00: ex_SrcB = ex_rs2v;       // no forward
+                2'b10: ex_SrcB = mem_result;    // forward from mem stage
+                2'b11: ex_SrcB = wb_result;     // forward from wb stage
+                default: ex_SrcB = 0; 
+            endcase
+        end
+    end
 
     // ALU
     logic [63:0] ex_alu_rs1_result;
