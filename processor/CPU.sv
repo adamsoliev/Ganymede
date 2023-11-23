@@ -34,7 +34,7 @@ module CPU(input    logic   clk_i,
     logic [31:0] id_instr;
     logic [63:0] id_pc, id_pcplus4;
     always_ff @(posedge clk_i) begin
-        if (rst_i) begin
+        if (rst_i || ex_flushID) begin
             id_instr <= 0;
             id_pc <= 0;
             id_pcplus4 <= 0;
@@ -232,7 +232,7 @@ module CPU(input    logic   clk_i,
 
     // HAZARD HANDLING
     logic [1:0] ex_forwardA, ex_forwardB;
-    logic       ex_loadStall, ex_stallIF, ex_stallID, ex_flushEX;
+    logic       ex_loadStall, ex_stallIF, ex_stallID, ex_flushEX, ex_flushID;
     always_comb begin
         /////////////
         // RAW HAZARD
@@ -268,10 +268,16 @@ module CPU(input    logic   clk_i,
         /////////////
         // LOAD HAZARD
         /////////////
+        // if load is in EX stage and next instr uses to-be loaded value, stall
         ex_loadStall = ex_WriteBackSrc && ((id_rs1 == ex_rd) || (id_rs2 == ex_rd));
         ex_stallIF = ex_loadStall;
         ex_stallID = ex_loadStall;
-        ex_flushEX = ex_loadStall;
+        // ex_pcsrc is here to flush EX pipeline register when branch is taken, 
+        // since we predict branch not taken
+        ex_flushEX = ex_loadStall || ex_pcsrc;
+
+        // flush ID pipeline register when branch is taken
+        ex_flushID = ex_pcsrc;
     end
 
     // EX STATE 

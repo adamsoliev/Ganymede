@@ -9,6 +9,6 @@
     - MEM   -> EX
     - WB    -> EX
     - WB    -> ID (implicitly through Register File)
-- Stalls for Load-use hazards
-    - Stall
+- Stalling for load-use hazards
+- Static 'not taken' branch predictor
 
