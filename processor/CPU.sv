@@ -70,6 +70,12 @@ module CPU(input    logic   clk_i,
     assign id_funct3 = id_instr[14:12];
     assign id_funct7 = id_instr[31:25];
 
+    logic [2:0] LoadStoreControl; // carries whether load is signed/unsigned and load/store width 
+    assign LoadStoreControl = id_funct3[1:0] == 2'b00 ? { id_funct3[2], 2'b11} :  // byte
+                               id_funct3[1:0] == 2'b01 ? { id_funct3[2], 2'b10} :  // halfword
+                               id_funct3[1:0] == 2'b10 ? { id_funct3[2], 2'b01} :  // word
+                                                         { id_funct3[2], 2'b00};   // doubleword
+
     logic [31:0] id_iimm, id_simm, id_bimm, id_uimm, id_jimm;
     assign id_iimm = { {20{id_instr[31]}}, id_instr[31:20] };
     assign id_simm = { {20{id_instr[31]}}, id_instr[31:25], id_instr[11:7] };
@@ -295,6 +301,7 @@ module CPU(input    logic   clk_i,
     logic         ex_MemWrite;
     logic         ex_pcsrc;
     logic [4:0] ex_rs1, ex_rs2; // for forwarding
+    logic [2:0] ex_LoadStoreControl;
     always_ff @(posedge clk_i) begin
         if (rst_i || ex_flushEX) begin
             ex_pc <= 0;
@@ -313,6 +320,7 @@ module CPU(input    logic   clk_i,
             ex_MemWrite <= 0;
             ex_rs1 <= 0;
             ex_rs2 <= 0;
+            ex_LoadStoreControl <= 0;
         end
         else begin
             ex_pc <= id_pc;
@@ -331,6 +339,7 @@ module CPU(input    logic   clk_i,
             ex_MemWrite <= MemWrite;
             ex_rs1 <= id_rs1;
             ex_rs2 <= id_rs2;
+            ex_LoadStoreControl <= LoadStoreControl;
         end
     end
 
@@ -395,6 +404,7 @@ module CPU(input    logic   clk_i,
     logic [4:0]  mem_rd;
     logic        mem_RegWrite, mem_WriteBackSrc, mem_MemWrite;
     logic [63:0] mem_result, mem_rs2v;
+    logic [2:0]  mem_LoadStoreControl;
     always_ff @(posedge clk_i) begin
         if (rst_i) begin
             mem_rd <= 0;
@@ -403,6 +413,7 @@ module CPU(input    logic   clk_i,
             mem_WriteBackSrc <= 0;
             mem_MemWrite <= 0;
             mem_rs2v <= 0;
+            mem_LoadStoreControl <= 0;
         end
         else begin
             mem_rd <= ex_rd;
@@ -411,18 +422,38 @@ module CPU(input    logic   clk_i,
             mem_WriteBackSrc <= ex_WriteBackSrc;
             mem_MemWrite <= ex_MemWrite;
             mem_rs2v <= ex_rs2v;
+            mem_LoadStoreControl <= ex_LoadStoreControl;
         end
     end
 
     // DATA CACHE LOGIC
-    logic [63:0] mem_load_result;
+    logic [63:0] load_data;
     dcache dc(
         .clk(clk_i), 
         .address(mem_result),
         .wd(mem_rs2v),
         .we(mem_MemWrite),
-        .rd(mem_load_result)
+        .rd(load_data)
     );
+
+    // LOADS
+    logic [31:0] load_word;
+    logic [15:0] load_halfword;
+    logic [7:0]  load_byte;
+    assign load_word        = mem_result[2] ? load_data[63:32]    : load_data[31:0];
+    assign load_halfword    = mem_result[1] ? load_word[31:16]    : load_word[15:0];
+    assign load_byte        = mem_result[0] ? load_halfword[15:8] : load_halfword[7:0];
+
+    logic load_sign;
+    assign load_sign = !mem_LoadStoreControl[2] & (mem_LoadStoreControl[1:0] == 2'b11 ? load_byte[7]      : 
+                                                 mem_LoadStoreControl[1:0] == 2'b10 ? load_halfword[15] : 
+                                                                                    load_word[31]);
+    
+    logic [63:0] mem_load_data;
+    assign mem_load_data = mem_LoadStoreControl[1:0] == 2'b11 ? {{56{load_sign}}, load_byte}        :
+                           mem_LoadStoreControl[1:0] == 2'b10 ? {{48{load_sign}}, load_halfword}    :
+                           mem_LoadStoreControl[1:0] == 2'b01 ? {{32{load_sign}}, load_word}        :
+                                                              load_data;
 
     ////////////////////
     // WB
@@ -431,27 +462,27 @@ module CPU(input    logic   clk_i,
     // WB STATE 
     logic [4:0]  wb_rd;
     logic        wb_RegWrite, wb_WriteBackSrc;
-    logic [63:0] wb_result, wb_load_result;
+    logic [63:0] wb_result, wb_load_data;
     always_ff @(posedge clk_i) begin
         if (rst_i) begin
             wb_rd <= 0;
             wb_RegWrite <= 0;
             wb_result <= 0;
-            wb_load_result <= 0;
+            wb_load_data <= 0;
             wb_WriteBackSrc <= 0;
         end
         else begin
             wb_rd <= mem_rd;
             wb_RegWrite <= mem_RegWrite;
             wb_result <= mem_result;
-            wb_load_result <= mem_load_result;
+            wb_load_data <= mem_load_data;
             wb_WriteBackSrc <= mem_WriteBackSrc;
         end
     end
 
     // Write Back data mux
     logic [63:0] wb_data;
-    assign wb_data = wb_WriteBackSrc ? wb_load_result : wb_result;
+    assign wb_data = wb_WriteBackSrc ? wb_load_data : wb_result;
 
     ////////////////////
     // TEST
@@ -486,7 +517,7 @@ module dcache(input     logic        clk,
     initial begin 
         $readmemh("./test/mem_data", DCACHE);
     end
-    assign rd = DCACHE[address];
+    assign rd = DCACHE[{address[63:3], 3'b000}];
     always_ff @(posedge clk) begin
         if (we) DCACHE[address] <= wd;
     end
