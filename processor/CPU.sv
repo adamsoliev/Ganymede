@@ -350,7 +350,7 @@ module CPU(input    logic   clk_i,
     assign ex_pctarget = ex_pc + ex_imm;
 
     // AluSrc MUX
-    logic [63:0] ex_SrcA, ex_SrcB;
+    logic [63:0] ex_SrcA, ex_SrcB, ex_rs2vf;
     always_comb begin
         // ex_SrcA
         unique case (ex_forwardA)
@@ -360,17 +360,19 @@ module CPU(input    logic   clk_i,
             default: ex_SrcA = 0; 
         endcase
 
+        unique case (ex_forwardB)
+            2'b00: ex_rs2vf = ex_rs2v;       // no forward
+            2'b10: ex_rs2vf = mem_result;    // forward from mem stage
+            2'b11: ex_rs2vf = wb_data;       // forward from wb stage
+            default: ex_rs2vf = 0; 
+        endcase
+
         // ex_SrcB
         if (ex_AluSrcB) begin
             ex_SrcB = ex_imm;
         end
         else begin
-            unique case (ex_forwardB)
-                2'b00: ex_SrcB = ex_rs2v;       // no forward
-                2'b10: ex_SrcB = mem_result;    // forward from mem stage
-                2'b11: ex_SrcB = wb_data;       // forward from wb stage
-                default: ex_SrcB = 0; 
-            endcase
+            ex_SrcB = ex_rs2vf;
         end
     end
 
@@ -421,7 +423,7 @@ module CPU(input    logic   clk_i,
             mem_result <= ex_result;
             mem_WriteBackSrc <= ex_WriteBackSrc;
             mem_MemWrite <= ex_MemWrite;
-            mem_rs2v <= ex_rs2v;
+            mem_rs2v <= ex_rs2vf;
             mem_LoadStoreControl <= ex_LoadStoreControl;
         end
     end
@@ -431,10 +433,52 @@ module CPU(input    logic   clk_i,
     dcache dc(
         .clk(clk_i), 
         .address(mem_result),
-        .wd(mem_rs2v),
+        .wd(store_data),
+        .wm(store_mask),
         .we(mem_MemWrite),
         .rd(load_data)
     );
+
+    // STORES
+    logic [63:0] store_data;
+    logic [7:0]  store_mask;
+    always_comb begin
+        store_data = 0;
+        store_mask = 8'b00000000;
+        if (mem_LoadStoreControl[1:0] == 2'b11) begin // byte
+            unique case (mem_result[2:0])
+                3'b000: begin store_data = {{56{1'b0}}, mem_rs2v[7:0]};              store_mask = 8'b00000001; end
+                3'b001: begin store_data = {{48{1'b0}}, mem_rs2v[7:0], {8{1'b0}}};   store_mask = 8'b00000010; end
+                3'b010: begin store_data = {{40{1'b0}}, mem_rs2v[7:0], {16{1'b0}}};  store_mask = 8'b00000100; end
+                3'b011: begin store_data = {{32{1'b0}}, mem_rs2v[7:0], {24{1'b0}}};  store_mask = 8'b00001000; end
+                3'b100: begin store_data = {{24{1'b0}}, mem_rs2v[7:0], {32{1'b0}}};  store_mask = 8'b00010000; end
+                3'b101: begin store_data = {{16{1'b0}}, mem_rs2v[7:0], {40{1'b0}}};  store_mask = 8'b00100000; end
+                3'b110: begin store_data = {{8{1'b0}},  mem_rs2v[7:0], {48{1'b0}}};  store_mask = 8'b01000000; end
+                3'b111: begin store_data = {mem_rs2v[7:0], {56{1'b0}}};              store_mask = 8'b10000000; end
+                default:begin store_data = {64{1'b0}};                               store_mask = 8'b00000000; end
+            endcase
+        end
+        else if (mem_LoadStoreControl[1:0] == 2'b10) begin // halfword
+            unique case (mem_result[2:0])
+                3'b000: begin store_data = {{48{1'b0}}, mem_rs2v[15:0]};              store_mask = 8'b00000011; end
+                3'b010: begin store_data = {{32{1'b0}}, mem_rs2v[15:0], {16{1'b0}}};  store_mask = 8'b00001100; end
+                3'b100: begin store_data = {{16{1'b0}}, mem_rs2v[15:0], {32{1'b0}}};  store_mask = 8'b00110000; end
+                3'b110: begin store_data = {mem_rs2v[15:0], {48{1'b0}}};              store_mask = 8'b11000000; end
+                default:begin store_data = {64{1'b0}};                                store_mask = 8'b00000000; end
+            endcase
+        end
+        else if (mem_LoadStoreControl[1:0] == 2'b01) begin // word
+            unique case (mem_result[2:0])
+                3'b000: begin store_data = {{32{1'b0}}, mem_rs2v[31:0]};  store_mask = 8'b00001111; end
+                3'b100: begin store_data = {mem_rs2v[31:0], {32{1'b0}}};  store_mask = 8'b11110000; end
+                default:begin store_data = {64{1'b0}};                    store_mask = 8'b00000000; end
+            endcase
+        end
+        else begin // doubleword
+            store_data = mem_rs2v;
+            store_mask = 8'b11111111;
+        end
+    end
 
     // LOADS
     logic [31:0] load_word;
@@ -509,8 +553,9 @@ endmodule
 
 module dcache(input     logic        clk,
               input     logic [63:0] address, 
-              input     logic [63:0] wd,
-              input     logic        we,
+              input     logic [63:0] wd, // data
+              input     logic [7:0]  wm, // mask
+              input     logic        we, // enable
               output    logic [63:0] rd
 );
     logic [63:0] DCACHE[100:0];
@@ -519,7 +564,16 @@ module dcache(input     logic        clk,
     end
     assign rd = DCACHE[{address[63:3], 3'b000}];
     always_ff @(posedge clk) begin
-        if (we) DCACHE[address] <= wd;
+        if (we) begin
+            if(wm[0]) DCACHE[{address[63:3], 3'b000}][ 7:0 ] <= wd[ 7:0 ];
+            if(wm[1]) DCACHE[{address[63:3], 3'b000}][15:8 ] <= wd[15:8 ];
+            if(wm[2]) DCACHE[{address[63:3], 3'b000}][23:16] <= wd[23:16];
+            if(wm[3]) DCACHE[{address[63:3], 3'b000}][31:24] <= wd[31:24];
+            if(wm[4]) DCACHE[{address[63:3], 3'b000}][39:32] <= wd[39:32];
+            if(wm[5]) DCACHE[{address[63:3], 3'b000}][47:40] <= wd[47:40];
+            if(wm[6]) DCACHE[{address[63:3], 3'b000}][55:48] <= wd[55:48];
+            if(wm[7]) DCACHE[{address[63:3], 3'b000}][63:56] <= wd[63:56];
+        end
     end
 endmodule
 

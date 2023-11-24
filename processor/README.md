@@ -4,7 +4,7 @@
 ![64-bit RISC-V Core design](./assets/RISCV_23_10_23.png)
 
 5-stage pipelined 64-bit RISC-V soft core
-- Supported instructions: add, sub, sll, xor, or, and, addi, bne, lui, auipc, jal, lb, lbu, lh, lhu, lw, lwu, ld, sd
+- Supported instructions: add, sub, sll, xor, or, and, addi, bne, lui, auipc, jal, lb, lbu, lh, lhu, lw, lwu, ld, sb, sh, sw, sd
 - Forwarding for RAW hazards
     - MEM   -> EX
     - WB    -> EX
