@@ -1,6 +1,7 @@
 /* verilator lint_off DECLFILENAME */
 /* verilator lint_off UNUSED */
 /* verilator lint_off WIDTH */
+
 module CPU(input    logic   clk_i,
            input    logic   rst_i);
 
@@ -92,6 +93,7 @@ module CPU(input    logic   clk_i,
     logic       Jump;
     logic       WriteBackSrc; // others vs load
     logic       MemWrite;
+    logic       Word;
     always_comb begin
         AluControl = 4'bxxxx;
         RegWrite = 1'bx;
@@ -102,8 +104,9 @@ module CPU(input    logic   clk_i,
         Jump = 1'bx;
         WriteBackSrc = 1'bx;
         MemWrite = 1'bx;
+        Word = 1'bx;
         unique case (id_opcode)
-            7'b0010011: begin // I-type
+            7'b0010011, 7'b0011011: begin // I-type
                 unique case ({id_funct3, id_funct7[5]})
                     4'b0000: AluControl = 4'b0000; // addi
                     4'b0010: AluControl = 4'b0010; // slli
@@ -124,6 +127,7 @@ module CPU(input    logic   clk_i,
                 Jump = 1'b0;
                 WriteBackSrc = 1'b0;
                 MemWrite = 1'b0;
+                Word = id_opcode == 7'b0010011 ? 1'b0 : 1'b1;
             end
             7'b0010111, 7'b0110111: begin // auipc, lui U-type
                 if (id_opcode == 7'b0010111) begin 
@@ -131,7 +135,7 @@ module CPU(input    logic   clk_i,
                     AluResultSrc = 2'b01;
                 end
                 else begin 
-                    AluControl = 4'b1010;                         // lui
+                    AluControl = 4'b1010; // lui
                     AluResultSrc = 2'b00;
                 end
                 RegWrite = 1'b1;
@@ -141,8 +145,9 @@ module CPU(input    logic   clk_i,
                 Jump = 1'b0;
                 WriteBackSrc = 1'b0;
                 MemWrite = 1'b0;
+                Word = 1'b0;
             end
-            7'b0110011: begin // R-type
+            7'b0110011, 7'b0111011: begin // R-type
                 unique case ({id_funct3, id_funct7[5]})
                     4'b0000: AluControl = 4'b0000; // add
                     4'b0001: AluControl = 4'b0001; // sub
@@ -164,6 +169,7 @@ module CPU(input    logic   clk_i,
                 Jump = 1'b0;
                 WriteBackSrc = 1'b0;
                 MemWrite = 1'b0;
+                Word = id_opcode == 7'b0110011 ? 1'b0 : 1'b1;
             end
             7'b1100011: begin // B-type
                 AluControl = 4'b0001;
@@ -175,6 +181,7 @@ module CPU(input    logic   clk_i,
                 Jump = 1'b0;
                 WriteBackSrc = 1'b0;
                 MemWrite = 1'b0;
+                Word = 1'b0;
             end
             7'b1101111: begin // J-type (jal)
                 AluControl = 4'bxxxx;
@@ -186,8 +193,9 @@ module CPU(input    logic   clk_i,
                 Jump = 1'b1;
                 WriteBackSrc = 1'b0;
                 MemWrite = 1'b0;
+                Word = 1'b0;
             end
-            7'b0000011: begin // I-type (ld)
+            7'b0000011: begin // I-type (loads)
                 AluControl = 4'b0000;
                 RegWrite = 1'b1;
                 AluSrcB = 1'b1; 
@@ -197,8 +205,9 @@ module CPU(input    logic   clk_i,
                 Jump = 1'b0;
                 WriteBackSrc = 1'b1;
                 MemWrite = 1'b0;
+                Word = 1'b0;
             end
-            7'b0100011: begin // S-type (sd)
+            7'b0100011: begin // S-type (stores)
                 AluControl = 4'b0000;
                 RegWrite = 1'b0;
                 AluSrcB = 1'b1; 
@@ -208,6 +217,7 @@ module CPU(input    logic   clk_i,
                 Jump = 1'b0;
                 WriteBackSrc = 1'b0;
                 MemWrite = 1'b1;
+                Word = 1'b0;
             end
             default: begin
                 AluControl = 4'bxxxx; // error
@@ -219,6 +229,7 @@ module CPU(input    logic   clk_i,
                 Jump = 1'bx;
                 WriteBackSrc = 1'bx;
                 MemWrite = 1'bx;
+                Word = 1'bx;
             end
         endcase
     end
@@ -308,6 +319,7 @@ module CPU(input    logic   clk_i,
     logic         ex_WriteBackSrc;
     logic         ex_MemWrite;
     logic         ex_pcsrc;
+    logic         ex_Word;
     logic [4:0] ex_rs1, ex_rs2; // for forwarding
     logic [2:0] ex_LoadStoreControl;
     always_ff @(posedge clk_i) begin
@@ -329,6 +341,7 @@ module CPU(input    logic   clk_i,
             ex_rs1 <= 0;
             ex_rs2 <= 0;
             ex_LoadStoreControl <= 0;
+            ex_Word <= 0;
         end
         else begin
             ex_pc <= id_pc;
@@ -348,6 +361,7 @@ module CPU(input    logic   clk_i,
             ex_rs1 <= id_rs1;
             ex_rs2 <= id_rs2;
             ex_LoadStoreControl <= LoadStoreControl;
+            ex_Word <= Word;
         end
     end
 
@@ -391,6 +405,7 @@ module CPU(input    logic   clk_i,
         .SrcA_i(ex_SrcA),
         .SrcB_i(ex_SrcB),
         .AluControl_i(ex_AluControl),
+        .Word_i(ex_Word),
         .ne_o(ex_alu_ne),
         .result_o(ex_alu_rs1_result)
     );
@@ -536,17 +551,6 @@ module CPU(input    logic   clk_i,
     logic [63:0] wb_data;
     assign wb_data = wb_WriteBackSrc ? wb_load_data : wb_result;
 
-    ////////////////////
-    // TEST
-    ////////////////////
-    logic [63:0] if_pc_copy;
-    assign if_pc_copy = if_pc;
-    always_comb begin
-        if (if_pc_copy > 1000) begin
-            $finish();
-        end
-    end
-
 endmodule
 
 module icache(input     logic [31:0] address_i, 
@@ -605,33 +609,38 @@ endmodule
 module alu(input    logic [63:0]   SrcA_i,
            input    logic [63:0]   SrcB_i,
            input    logic [3:0]    AluControl_i,
+           input    logic          Word_i,
            output   logic          ne_o,
            output   logic [63:0]   result_o
 );
     logic [63:0] difference;
     assign difference = SrcA_i - SrcB_i;
 
+    logic [63:0] alu_result;
     logic lt_flag, ltu_flag;
     always_comb begin
         lt_flag  = SrcA_i[63] == SrcB_i[63] ? difference[63] : SrcA_i[63];
         ltu_flag = SrcA_i[63] == SrcB_i[63] ? difference[63] : SrcB_i[63];
         unique case (AluControl_i)
-            4'b0000: result_o = SrcA_i + SrcB_i;   // add
-            4'b0001: result_o = difference;        // sub
-            4'b0010: result_o = SrcA_i << SrcB_i;  // sll
-            4'b0011: result_o = {63'b0, lt_flag};  // slt
-            4'b0100: result_o = {63'b0, ltu_flag}; // sltu
-            4'b0101: result_o = SrcA_i ^ SrcB_i;   // xor
+            4'b0000: alu_result = SrcA_i + SrcB_i;   // add
+            4'b0001: alu_result = difference;        // sub
+            4'b0010: alu_result = SrcA_i << SrcB_i;  // sll
+            4'b0011: alu_result = {63'b0, lt_flag};  // slt
+            4'b0100: alu_result = {63'b0, ltu_flag}; // sltu
+            4'b0101: alu_result = SrcA_i ^ SrcB_i;   // xor
             // 4'b0110; // srl
             // 4'b0111; // sra
-            4'b1000: result_o = SrcA_i | SrcB_i;   // or
-            4'b1001: result_o = SrcA_i & SrcB_i;   // and
-            4'b1010: result_o = SrcB_i;            // lui
-            default: result_o = {64{1'bx}};
+            4'b1000: alu_result = SrcA_i | SrcB_i;   // or
+            4'b1001: alu_result = SrcA_i & SrcB_i;   // and
+            4'b1010: alu_result = SrcB_i;            // lui
+            default: alu_result = {64{1'bx}};
         endcase
+        result_o = Word_i ? {{32{alu_result[31]}}, alu_result[31:0]} : alu_result;
     end
+
     assign ne_o = SrcA_i != SrcB_i;
 endmodule
+
 /* verilator lint_on WIDTH */
 /* verilator lint_on UNUSED */
 /* verilator lint_on DECLFILENAME */
