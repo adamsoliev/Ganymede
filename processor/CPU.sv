@@ -104,10 +104,18 @@ module CPU(input    logic   clk_i,
         MemWrite = 1'bx;
         unique case (id_opcode)
             7'b0010011: begin // I-type
-                unique case (id_funct3)
-                    3'b000: AluControl = 4'b0000; // addi
+                unique case ({id_funct3, id_funct7[5]})
+                    4'b0000: AluControl = 4'b0000; // addi
+                    4'b0010: AluControl = 4'b0010; // slli
+                    4'b0100: AluControl = 4'b0011; // slti
+                    4'b0110: AluControl = 4'b0100; // sltiu
+                    4'b1000: AluControl = 4'b0101; // xori
+                    4'b1010: AluControl = 4'b0110; // srli
+                    4'b1011: AluControl = 4'b0111; // srai
+                    4'b1100: AluControl = 4'b1000; // ori
+                    4'b1110: AluControl = 4'b1001; // andi
                     default: AluControl = 4'bxxxx; // error
-                endcase 
+                endcase
                 RegWrite = 1'b1;
                 AluSrcB = 1'b1; 
                 ImmSrc = 3'b000;
@@ -600,19 +608,25 @@ module alu(input    logic [63:0]   SrcA_i,
            output   logic          ne_o,
            output   logic [63:0]   result_o
 );
+    logic [63:0] difference;
+    assign difference = SrcA_i - SrcB_i;
+
+    logic lt_flag, ltu_flag;
     always_comb begin
+        lt_flag  = SrcA_i[63] == SrcB_i[63] ? difference[63] : SrcA_i[63];
+        ltu_flag = SrcA_i[63] == SrcB_i[63] ? difference[63] : SrcB_i[63];
         unique case (AluControl_i)
-            4'b0000: result_o = SrcA_i + SrcB_i; // add
-            4'b0001: result_o = SrcA_i - SrcB_i; // sub
-            4'b0010: result_o = SrcA_i << SrcB_i; // sll
-            // 4'b0011; // slt
-            // 4'b0100; // sltu
-            4'b0101: result_o = SrcA_i ^ SrcB_i; // xor
+            4'b0000: result_o = SrcA_i + SrcB_i;   // add
+            4'b0001: result_o = difference;        // sub
+            4'b0010: result_o = SrcA_i << SrcB_i;  // sll
+            4'b0011: result_o = {63'b0, lt_flag};  // slt
+            4'b0100: result_o = {63'b0, ltu_flag}; // sltu
+            4'b0101: result_o = SrcA_i ^ SrcB_i;   // xor
             // 4'b0110; // srl
             // 4'b0111; // sra
-            4'b1000: result_o = SrcA_i | SrcB_i; // or
-            4'b1001: result_o = SrcA_i & SrcB_i; // and
-            4'b1010: result_o = SrcB_i;          // lui
+            4'b1000: result_o = SrcA_i | SrcB_i;   // or
+            4'b1001: result_o = SrcA_i & SrcB_i;   // and
+            4'b1010: result_o = SrcB_i;            // lui
             default: result_o = {64{1'bx}};
         endcase
     end
