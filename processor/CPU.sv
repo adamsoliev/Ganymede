@@ -19,7 +19,7 @@ module CPU(input    logic   clk_i,
         end
     end
 
-    assign if_pcplus4 = if_pc + 1;
+    assign if_pcplus4 = if_pc + 4;
     assign pcnext = ex_pcsrc ? ex_pctarget : if_pcplus4;
 
     // INSTRUCTION CACHE LOGIC
@@ -220,16 +220,20 @@ module CPU(input    logic   clk_i,
                 Word = 1'b0;
             end
             default: begin
-                AluControl = 4'bxxxx; // error
-                RegWrite = 1'bx;
-                AluSrcB = 1'bx; 
-                ImmSrc = 3'bxxx;
-                Branch = 1'bx;
-                AluResultSrc = 2'bxx;
-                Jump = 1'bx;
-                WriteBackSrc = 1'bx;
-                MemWrite = 1'bx;
-                Word = 1'bx;
+                if (id_pc != 0 && id_rd == 0 && id_rs1 == 0 && id_rs2 == 0 && id_funct3 == 0 && id_funct7 == 0) begin
+                    $fdisplay(2, "RETURN VALUE: %d", ex_result);
+                    $finish;
+                end
+                AluControl = 4'b0000; // error
+                RegWrite = 1'b0;
+                AluSrcB = 1'b0; 
+                ImmSrc = 3'b000;
+                Branch = 1'b0;
+                AluResultSrc = 2'b00;
+                Jump = 1'b0;
+                WriteBackSrc = 1'b0;
+                MemWrite = 1'b0;
+                Word = 1'b0;
             end
         endcase
     end
@@ -556,11 +560,11 @@ endmodule
 module icache(input     logic [31:0] address_i, 
               output    logic [31:0] rd_o
 );
-    logic [31:0] ICACHE[100:0];
+    logic [31:0] ICACHE[4096:0];
     initial begin 
         $readmemh("./test/mem_instr", ICACHE);
     end
-    assign rd_o = ICACHE[address_i];
+    assign rd_o = ICACHE[address_i[31:2]];
 endmodule
 
 module dcache(input     logic        clk,
@@ -574,6 +578,7 @@ module dcache(input     logic        clk,
     initial begin 
         $readmemh("./test/mem_data", DCACHE);
     end
+    // wire [63:0] dword_addr = ({mem_daddr[63:3], 3'b000} - {{48{1'b0}}, 16'h2000})/8;
     assign rd = DCACHE[{address[63:3], 3'b000}];
     always_ff @(posedge clk) begin
         if (we) begin
