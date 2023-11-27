@@ -107,16 +107,21 @@ module CPU(input    logic   clk_i,
         Word = 1'bx;
         unique case (id_opcode)
             7'b0010011, 7'b0011011: begin // I-type
-                unique case ({id_funct3, id_funct7[5]})
-                    4'b0000: AluControl = 4'b0000; // addi
-                    4'b0010: AluControl = 4'b0010; // slli
-                    4'b0100: AluControl = 4'b0011; // slti
-                    4'b0110: AluControl = 4'b0100; // sltiu
-                    4'b1000: AluControl = 4'b0101; // xori
-                    4'b1010: AluControl = 4'b0110; // srli
-                    4'b1011: AluControl = 4'b0111; // srai
-                    4'b1100: AluControl = 4'b1000; // ori
-                    4'b1110: AluControl = 4'b1001; // andi
+                unique case (id_funct3)
+                    3'b000: AluControl = 4'b0000; // addi
+                    3'b001: AluControl = 4'b0010; // slli
+                    3'b010: AluControl = 4'b0011; // slti
+                    3'b011: AluControl = 4'b0100; // sltiu
+                    3'b100: AluControl = 4'b0101; // xori
+                    3'b101: begin
+                        unique case (id_funct7[5])
+                            1'b0: AluControl = 4'b0110;     // srli
+                            1'b1: AluControl = 4'b0111;     // srai
+                            default: AluControl = 4'bxxxx;  // error
+                        endcase
+                    end
+                    3'b110: AluControl = 4'b1000; // ori
+                    3'b111: AluControl = 4'b1001; // andi
                     default: AluControl = 4'bxxxx; // error
                 endcase
                 RegWrite = 1'b1;
@@ -221,7 +226,7 @@ module CPU(input    logic   clk_i,
             end
             default: begin
                 if (id_pc != 0 && id_rd == 0 && id_rs1 == 0 && id_rs2 == 0 && id_funct3 == 0 && id_funct7 == 0) begin
-                    $fdisplay(2, "RETURN VALUE: %d", ex_result);
+                    $display("RETURN VALUE: %d at PC:%h", ex_result, if_pc);
                     $finish;
                 end
                 AluControl = 4'b0000; // error
@@ -578,18 +583,22 @@ module dcache(input     logic        clk,
     initial begin 
         $readmemh("./test/mem_data", DCACHE);
     end
-    // wire [63:0] dword_addr = ({mem_daddr[63:3], 3'b000} - {{48{1'b0}}, 16'h2000})/8;
-    assign rd = DCACHE[{address[63:3], 3'b000}];
+
+    // recalculate address for testing purposes
+    logic [63:0] maddress;
+    assign maddress = ({address[63:3], 3'b000} - {{48{1'b0}}, 16'h2000})/8;
+
+    assign rd = DCACHE[maddress];
     always_ff @(posedge clk) begin
         if (we) begin
-            if(wm[0]) DCACHE[{address[63:3], 3'b000}][ 7:0 ] <= wd[ 7:0 ];
-            if(wm[1]) DCACHE[{address[63:3], 3'b000}][15:8 ] <= wd[15:8 ];
-            if(wm[2]) DCACHE[{address[63:3], 3'b000}][23:16] <= wd[23:16];
-            if(wm[3]) DCACHE[{address[63:3], 3'b000}][31:24] <= wd[31:24];
-            if(wm[4]) DCACHE[{address[63:3], 3'b000}][39:32] <= wd[39:32];
-            if(wm[5]) DCACHE[{address[63:3], 3'b000}][47:40] <= wd[47:40];
-            if(wm[6]) DCACHE[{address[63:3], 3'b000}][55:48] <= wd[55:48];
-            if(wm[7]) DCACHE[{address[63:3], 3'b000}][63:56] <= wd[63:56];
+            if(wm[0]) DCACHE[maddress][ 7:0 ] <= wd[ 7:0 ];
+            if(wm[1]) DCACHE[maddress][15:8 ] <= wd[15:8 ];
+            if(wm[2]) DCACHE[maddress][23:16] <= wd[23:16];
+            if(wm[3]) DCACHE[maddress][31:24] <= wd[31:24];
+            if(wm[4]) DCACHE[maddress][39:32] <= wd[39:32];
+            if(wm[5]) DCACHE[maddress][47:40] <= wd[47:40];
+            if(wm[6]) DCACHE[maddress][55:48] <= wd[55:48];
+            if(wm[7]) DCACHE[maddress][63:56] <= wd[63:56];
         end
     end
 endmodule

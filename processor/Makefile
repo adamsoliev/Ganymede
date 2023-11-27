@@ -17,13 +17,14 @@ CPU: CPU.cpp obj_dir/VCPU__ALL.a
 			CPU.cpp obj_dir/VCPU__ALL.a \
 			-o CPU 
 
-TESTS := lb lh 
+TESTS := lb lbu lh lhu lw lwu ld addi slli slti sltiu xori ori andi auipc sb sh sw sd and sub sll slt sltu xor or and jal addiw slliw addw subw 
+# failing: sllw lui
 
 run:
 	@$(foreach test,$(TESTS), \
         echo "Running test: $(test)"; \
         /usr/bin/time --quiet  -f "%e" timeout 5s ./CPU $(test) || echo "$(test) failed"; true;)
-	@# gtkwave CPUtrace.vcd
+	# @ gtkwave CPUtrace.vcd
 
 .PHONY: clean
 clean:
