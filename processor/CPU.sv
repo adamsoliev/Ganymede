@@ -630,29 +630,80 @@ module alu(input    logic [63:0]   SrcA_i,
     logic [63:0] difference;
     assign difference = SrcA_i - SrcB_i;
 
+    logic [63:0] shift_result;
+    shifter sh(
+        .a_i(SrcA_i),
+        .b_i(SrcB_i),
+        .aluControl_i(AluControl_i),
+        .word_i(Word_i),
+        .result_o(shift_result)
+    );
+
     logic [63:0] alu_result;
     logic lt_flag, ltu_flag;
     always_comb begin
         lt_flag  = SrcA_i[63] == SrcB_i[63] ? difference[63] : SrcA_i[63];
         ltu_flag = SrcA_i[63] == SrcB_i[63] ? difference[63] : SrcB_i[63];
         unique case (AluControl_i)
-            4'b0000: alu_result = SrcA_i + SrcB_i;   // add
-            4'b0001: alu_result = difference;        // sub
-            4'b0010: alu_result = SrcA_i << SrcB_i;  // sll
-            4'b0011: alu_result = {63'b0, lt_flag};  // slt
-            4'b0100: alu_result = {63'b0, ltu_flag}; // sltu
-            4'b0101: alu_result = SrcA_i ^ SrcB_i;   // xor
-            // 4'b0110; // srl
-            // 4'b0111; // sra
-            4'b1000: alu_result = SrcA_i | SrcB_i;   // or
-            4'b1001: alu_result = SrcA_i & SrcB_i;   // and
-            4'b1010: alu_result = SrcB_i;            // lui
+            4'b0000: alu_result = SrcA_i + SrcB_i;      // add
+            4'b0001: alu_result = difference;           // sub
+            4'b0010: alu_result = shift_result;         // sll
+            4'b0011: alu_result = {63'b0, lt_flag};     // slt
+            4'b0100: alu_result = {63'b0, ltu_flag};    // sltu
+            4'b0101: alu_result = SrcA_i ^ SrcB_i;      // xor
+            4'b0110: alu_result = shift_result;         // srl
+            4'b0111: alu_result = shift_result;         // sra
+            4'b1000: alu_result = SrcA_i | SrcB_i;      // or
+            4'b1001: alu_result = SrcA_i & SrcB_i;      // and
+            4'b1010: alu_result = SrcB_i;               // lui
             default: alu_result = {64{1'bx}};
         endcase
         result_o = Word_i ? {{32{alu_result[31]}}, alu_result[31:0]} : alu_result;
     end
 
     assign ne_o = SrcA_i != SrcB_i;
+endmodule
+
+module shifter(input    logic [63:0] a_i,
+               input    logic [63:0] b_i,
+               input    logic [3:0]  aluControl_i,
+               input    logic        word_i,
+               output   logic [63:0] result_o
+);
+    logic [63:0] shift_operand;
+    logic shift_fill_bit;
+    logic [5:0] shamt;
+    logic [64:0] shift_operand_ext;
+    logic [63:0] shift_result;
+
+    always_comb begin
+        shift_operand = 'x;
+        unique casez ({word_i, aluControl_i[2:1]})
+            // left
+            3'b?01: for (int i = 0; i < 64; i++) shift_operand[i] = a_i[63 - i]; 
+            // right
+            3'b011: shift_operand = a_i; 
+            3'b111: shift_operand = {a_i[31:0], 32'dx};
+            default: ;
+        endcase
+
+        shift_fill_bit = aluControl_i == 4'b0111 && shift_operand[63];
+        shamt = word_i ? {1'b0, b_i[4:0]} : b_i[5:0];
+
+        shift_operand_ext = {shift_fill_bit, shift_operand};
+        shift_result = signed'(shift_operand_ext) >>> shamt;
+
+        result_o = 'x;
+        unique casez ({word_i, aluControl_i[2:1]})
+            // left
+            3'b?01: for (int i = 0; i < 64; i++) result_o[i] = shift_result[63 - i]; 
+            // right
+            3'b011: result_o = shift_result;
+            3'b111: result_o = {32'dx, shift_operand[63:32]};
+            default: ;
+        endcase
+    end
+
 endmodule
 
 /* verilator lint_on WIDTH */
