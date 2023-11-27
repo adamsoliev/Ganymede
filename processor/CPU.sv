@@ -699,7 +699,7 @@ module shifter(input    logic [63:0] a_i,
             3'b?01: for (int i = 0; i < 64; i++) result_o[i] = shift_result[63 - i]; 
             // right
             3'b011: result_o = shift_result;
-            3'b111: result_o = {32'dx, shift_operand[63:32]};
+            3'b111: result_o = {32'dx, shift_result[63:32]};
             default: ;
         endcase
     end
