@@ -1,6 +1,19 @@
 Testing
 https://www.reddit.com/r/FPGA/comments/kl1q3i/soft_cpus_how_to_debug_and_test_in_a_sane_way/
 
+Memory hierarchy 
++ ----------------- + ----------- + --------------- + -------------- +
+|                   |    Latency  |    Throughput   |   Price / GB   |
++ ----------------- + ----------- + --------------- + -------------- +
+|       L1 cache    |    1 ns     |                 |                |
+| SRAM              |             |     100+ GB/s   |      $100      |
+|       L2 cache    |    10 ns    |                 |                |
++ ----------------- + ----------- + --------------- + -------------- +
+| DRAM              |    100 ns   |     30 GB/s     |      $3        |
++ ----------------- + ----------- + --------------- + -------------- +
+| SSD               |    1^5 ns   |     1 GB/s      |      $0.1      |
++ ----------------- + ----------- + --------------- + -------------- +
+
 Fundamentals by Yale Patt
     Moore's Law
         A law of physics
