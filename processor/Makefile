@@ -19,7 +19,7 @@ CPU: CPU.cpp obj_dir/VCPU__ALL.a
 
 TESTS := lb lbu lh lhu lw lwu ld addi slli slti sltiu xori srli srai ori \
 		 andi auipc sb sh sw sd and sub sll slt sltu xor srl sra or and \
-		 lui jal addiw slliw srliw sraiw addw subw sllw srlw sraw
+		 lui jalr jal addiw slliw srliw sraiw addw subw sllw srlw sraw
 
 run:
 	@$(foreach test,$(TESTS), \

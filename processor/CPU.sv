@@ -90,7 +90,7 @@ module CPU(input    logic   clk_i,
     logic [2:0] ImmSrc;
     logic       Branch;
     logic [1:0] AluResultSrc;
-    logic       Jump;
+    logic [1:0] Jump; // first bit - whether jump or not; second bit - whether jal or jalr
     logic       WriteBackSrc; // others vs load
     logic       MemWrite;
     logic       Word;
@@ -101,7 +101,7 @@ module CPU(input    logic   clk_i,
         ImmSrc = 3'bxxx;
         Branch = 1'bx;
         AluResultSrc = 2'bxx;
-        Jump = 1'bx;
+        Jump = 2'bxx;
         WriteBackSrc = 1'bx;
         MemWrite = 1'bx;
         Word = 1'bx;
@@ -129,7 +129,7 @@ module CPU(input    logic   clk_i,
                 ImmSrc = 3'b000;
                 Branch = 1'b0;
                 AluResultSrc = 2'b00;
-                Jump = 1'b0;
+                Jump = 2'b00;
                 WriteBackSrc = 1'b0;
                 MemWrite = 1'b0;
                 Word = id_opcode == 7'b0010011 ? 1'b0 : 1'b1;
@@ -147,7 +147,7 @@ module CPU(input    logic   clk_i,
                 AluSrcB = 1'b1; 
                 ImmSrc = 3'b001;
                 Branch = 1'b0;
-                Jump = 1'b0;
+                Jump = 2'b00;
                 WriteBackSrc = 1'b0;
                 MemWrite = 1'b0;
                 Word = 1'b0;
@@ -171,7 +171,7 @@ module CPU(input    logic   clk_i,
                 ImmSrc = 3'bxxx;
                 Branch = 1'b0;
                 AluResultSrc = 2'b00;
-                Jump = 1'b0;
+                Jump = 2'b00;
                 WriteBackSrc = 1'b0;
                 MemWrite = 1'b0;
                 Word = id_opcode == 7'b0110011 ? 1'b0 : 1'b1;
@@ -183,19 +183,25 @@ module CPU(input    logic   clk_i,
                 ImmSrc = 3'b010;
                 Branch = 1'b1;
                 AluResultSrc = 2'b00;
-                Jump = 1'b0;
+                Jump = 2'b00;
                 WriteBackSrc = 1'b0;
                 MemWrite = 1'b0;
                 Word = 1'b0;
             end
-            7'b1101111: begin // J-type (jal)
+            7'b1101111, 7'b1100111: begin // J-type (jal) and I-type (jalr)
                 AluControl = 4'bxxxx;
                 RegWrite = 1'b1;
                 AluSrcB = 1'b0; 
-                ImmSrc = 3'b011;
                 Branch = 1'b0;
                 AluResultSrc = 2'b11;
-                Jump = 1'b1;
+                if (id_opcode == 7'b1101111) begin  // jal
+                    Jump = 2'b01;  
+                    ImmSrc = 3'b011;
+                end
+                else begin                          // jalr
+                    Jump = 2'b11;                          
+                    ImmSrc = 3'b000;
+                end
                 WriteBackSrc = 1'b0;
                 MemWrite = 1'b0;
                 Word = 1'b0;
@@ -207,7 +213,7 @@ module CPU(input    logic   clk_i,
                 ImmSrc = 3'b000;
                 Branch = 1'b0;
                 AluResultSrc = 2'b00;
-                Jump = 1'b0;
+                Jump = 2'b00;
                 WriteBackSrc = 1'b1;
                 MemWrite = 1'b0;
                 Word = 1'b0;
@@ -219,7 +225,7 @@ module CPU(input    logic   clk_i,
                 ImmSrc = 3'b100;
                 Branch = 1'b0;
                 AluResultSrc = 2'b00;
-                Jump = 1'b0;
+                Jump = 2'b00;
                 WriteBackSrc = 1'b0;
                 MemWrite = 1'b1;
                 Word = 1'b0;
@@ -235,7 +241,7 @@ module CPU(input    logic   clk_i,
                 ImmSrc = 3'b000;
                 Branch = 1'b0;
                 AluResultSrc = 2'b00;
-                Jump = 1'b0;
+                Jump = 2'b00;
                 WriteBackSrc = 1'b0;
                 MemWrite = 1'b0;
                 Word = 1'b0;
@@ -323,7 +329,7 @@ module CPU(input    logic   clk_i,
     logic         ex_RegWrite;
     logic         ex_AluSrcB;
     logic         ex_Branch;
-    logic         ex_Jump;
+    logic [1:0]   ex_Jump;
     logic [1:0]   ex_AluResultSrc;
     logic         ex_WriteBackSrc;
     logic         ex_MemWrite;
@@ -375,10 +381,10 @@ module CPU(input    logic   clk_i,
     end
 
     // PC
-    assign ex_pcsrc = (ex_Branch & ex_alu_ne) || ex_Jump;
+    assign ex_pcsrc = (ex_Branch & ex_alu_ne) || ex_Jump[0];
 
     // Branch address
-    assign ex_pctarget = ex_pc + ex_imm;
+    assign ex_pctarget = ex_Jump[1] ? ex_SrcA + ex_imm : ex_pc + ex_imm;
 
     // AluSrc MUX
     logic [63:0] ex_SrcA, ex_SrcB, ex_rs2vf;
@@ -425,7 +431,7 @@ module CPU(input    logic   clk_i,
         unique case (ex_AluResultSrc)
             2'b00: ex_result = ex_alu_rs1_result;
             2'b01: ex_result = ex_pctarget; // auipc
-            2'b11: ex_result = ex_pcplus4; // jal
+            2'b11: ex_result = ex_pcplus4; // jal, jalr
             default: ex_result = 0;
         endcase
     end
