@@ -88,7 +88,7 @@ module CPU(input    logic   clk_i,
     logic       RegWrite;
     logic       AluSrcB;
     logic [2:0] ImmSrc;
-    logic       Branch;
+    logic [3:0] Branch;
     logic [1:0] AluResultSrc;
     logic [1:0] Jump; // first bit - whether jump or not; second bit - whether jal or jalr
     logic       WriteBackSrc; // others vs load
@@ -99,7 +99,7 @@ module CPU(input    logic   clk_i,
         RegWrite = 1'bx;
         AluSrcB = 1'bx; 
         ImmSrc = 3'bxxx;
-        Branch = 1'bx;
+        Branch = 4'bxxxx;
         AluResultSrc = 2'bxx;
         Jump = 2'bxx;
         WriteBackSrc = 1'bx;
@@ -127,7 +127,7 @@ module CPU(input    logic   clk_i,
                 RegWrite = 1'b1;
                 AluSrcB = 1'b1; 
                 ImmSrc = 3'b000;
-                Branch = 1'b0;
+                Branch = 4'b0000;
                 AluResultSrc = 2'b00;
                 Jump = 2'b00;
                 WriteBackSrc = 1'b0;
@@ -146,7 +146,7 @@ module CPU(input    logic   clk_i,
                 RegWrite = 1'b1;
                 AluSrcB = 1'b1; 
                 ImmSrc = 3'b001;
-                Branch = 1'b0;
+                Branch = 4'b0000;
                 Jump = 2'b00;
                 WriteBackSrc = 1'b0;
                 MemWrite = 1'b0;
@@ -169,7 +169,7 @@ module CPU(input    logic   clk_i,
                 RegWrite = 1'b1;
                 AluSrcB = 1'b0; 
                 ImmSrc = 3'bxxx;
-                Branch = 1'b0;
+                Branch = 4'b0000;
                 AluResultSrc = 2'b00;
                 Jump = 2'b00;
                 WriteBackSrc = 1'b0;
@@ -181,7 +181,7 @@ module CPU(input    logic   clk_i,
                 RegWrite = 1'b0;
                 AluSrcB = 1'b0; 
                 ImmSrc = 3'b010;
-                Branch = 1'b1;
+                Branch = {id_funct3, 1'b1};
                 AluResultSrc = 2'b00;
                 Jump = 2'b00;
                 WriteBackSrc = 1'b0;
@@ -192,7 +192,7 @@ module CPU(input    logic   clk_i,
                 AluControl = 4'bxxxx;
                 RegWrite = 1'b1;
                 AluSrcB = 1'b0; 
-                Branch = 1'b0;
+                Branch = 4'b0000;
                 AluResultSrc = 2'b11;
                 if (id_opcode == 7'b1101111) begin  // jal
                     Jump = 2'b01;  
@@ -211,7 +211,7 @@ module CPU(input    logic   clk_i,
                 RegWrite = 1'b1;
                 AluSrcB = 1'b1; 
                 ImmSrc = 3'b000;
-                Branch = 1'b0;
+                Branch = 4'b0000;
                 AluResultSrc = 2'b00;
                 Jump = 2'b00;
                 WriteBackSrc = 1'b1;
@@ -223,7 +223,7 @@ module CPU(input    logic   clk_i,
                 RegWrite = 1'b0;
                 AluSrcB = 1'b1; 
                 ImmSrc = 3'b100;
-                Branch = 1'b0;
+                Branch = 4'b0000;
                 AluResultSrc = 2'b00;
                 Jump = 2'b00;
                 WriteBackSrc = 1'b0;
@@ -235,11 +235,11 @@ module CPU(input    logic   clk_i,
                     $display("RETURN VALUE: %d at PC:%h", ex_result, if_pc);
                     $finish;
                 end
-                AluControl = 4'b0000; // error
+                AluControl = 4'b0000; 
                 RegWrite = 1'b0;
                 AluSrcB = 1'b0; 
                 ImmSrc = 3'b000;
-                Branch = 1'b0;
+                Branch = 4'b0000;
                 AluResultSrc = 2'b00;
                 Jump = 2'b00;
                 WriteBackSrc = 1'b0;
@@ -328,7 +328,7 @@ module CPU(input    logic   clk_i,
     logic [3:0]   ex_AluControl;
     logic         ex_RegWrite;
     logic         ex_AluSrcB;
-    logic         ex_Branch;
+    logic [3:0]   ex_Branch;
     logic [1:0]   ex_Jump;
     logic [1:0]   ex_AluResultSrc;
     logic         ex_WriteBackSrc;
@@ -380,10 +380,10 @@ module CPU(input    logic   clk_i,
         end
     end
 
-    // PC
-    assign ex_pcsrc = (ex_Branch & ex_alu_ne) || ex_Jump[0];
+    // Branch/Jump
+    assign ex_pcsrc = (ex_Branch[0] & ex_alu_branch) || ex_Jump[0];
 
-    // Branch address
+    // Target Address
     assign ex_pctarget = ex_Jump[1] ? ex_SrcA + ex_imm : ex_pc + ex_imm;
 
     // AluSrc MUX
@@ -415,13 +415,14 @@ module CPU(input    logic   clk_i,
 
     // ALU
     logic [63:0] ex_alu_rs1_result;
-    logic        ex_alu_ne;
+    logic        ex_alu_branch;
     alu alu(
         .SrcA_i(ex_SrcA),
         .SrcB_i(ex_SrcB),
         .AluControl_i(ex_AluControl),
         .Word_i(ex_Word),
-        .ne_o(ex_alu_ne),
+        .BranchControl_i(ex_Branch),
+        .branch_o(ex_alu_branch),
         .result_o(ex_alu_rs1_result)
     );
 
@@ -630,7 +631,8 @@ module alu(input    logic [63:0]   SrcA_i,
            input    logic [63:0]   SrcB_i,
            input    logic [3:0]    AluControl_i,
            input    logic          Word_i,
-           output   logic          ne_o,
+           input    logic [3:0]    BranchControl_i,
+           output   logic          branch_o,
            output   logic [63:0]   result_o
 );
     logic [63:0] difference;
@@ -646,8 +648,9 @@ module alu(input    logic [63:0]   SrcA_i,
     );
 
     logic [63:0] alu_result;
-    logic lt_flag, ltu_flag;
+    logic lt_flag, ltu_flag, eq_flag;
     always_comb begin
+        eq_flag  = SrcA_i == SrcB_i;
         lt_flag  = SrcA_i[63] == SrcB_i[63] ? difference[63] : SrcA_i[63];
         ltu_flag = SrcA_i[63] == SrcB_i[63] ? difference[63] : SrcB_i[63];
         unique case (AluControl_i)
@@ -665,9 +668,17 @@ module alu(input    logic [63:0]   SrcA_i,
             default: alu_result = {64{1'bx}};
         endcase
         result_o = Word_i ? {{32{alu_result[31]}}, alu_result[31:0]} : alu_result;
-    end
 
-    assign ne_o = SrcA_i != SrcB_i;
+        unique case (BranchControl_i)
+            4'b0001: branch_o = eq_flag;
+            4'b0011: branch_o = !eq_flag;
+            4'b1001: branch_o = lt_flag;
+            4'b1011: branch_o = !lt_flag || eq_flag;
+            4'b1101: branch_o = ltu_flag;
+            4'b1111: branch_o = !ltu_flag || eq_flag;
+            default: branch_o = 1'bx;
+        endcase
+    end
 endmodule
 
 module shifter(input    logic [63:0] a_i,
