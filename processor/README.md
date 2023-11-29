@@ -1,7 +1,7 @@
 
 ## Design
 
-![64-bit RISC-V Core design](./assets/RISCV_25_10_23.png)
+![64-bit RISC-V Core design](./assets/RISCV_29_10_23.png)
 
 5-stage pipelined 64-bit RISC-V core
 - Unsupported instructions: branches except bne and jalr
