@@ -14,6 +14,42 @@ Memory hierarchy
 | SSD               |    1^5 ns   |     1 GB/s      |      $0.1      |
 + ----------------- + ----------- + --------------- + -------------- +
 
+Managing complexity
+    Abstraction - hiding details when they are unimportant
+    Discipline - sticking to abstraction layers
+    Hierarchy - tree of well-connected modules
+    Modularity - well-defined functions and interfaces
+    Regularity - uniformity among modules; heavy reuse of common ones and minimization of unique ones
+
+Digital abstraction
+    1s and 0s
+    Number systems and arithmetic
+        Binary, decimal, octal, hex
+        Unsigned/signed (two's complement)
+    Logic gates
+        AND, OR, XOR, NAND, NOR, XNOR, NOT 
+    Beneath - real world is contiguous (analog)
+        Specific voltages, logic levels, noise margin
+        CMOS transistors (nMOS - on when gate is 1 | pMOS - off when gate is 1)
+
+Circuit - a black box characterized by
+    Inputs/outputs
+    Functional specification - how inputs relate to outputs
+    Timing specification - delay between inputs changing and outputs responding
+
+    combinational circuits
+        Inputs -> outputs
+    sequencial circuits
+        Inputs + state -> outputs
+        Latch/flip-flop stores 1 bit; N-bit register is a bank of N flip-flops that share common CLK
+        Synchronous sequencial circuits - having state that is synchronized to CLK
+        Finite State Machines
+            Moore machine: state -> output 
+            Mealy machine: input + state -> output
+        Timing - aperture (when signal is stable) of sequencial element is defined by a setup and hold time, before and after CLK edge
+            Having aperture time allows us think in clock cycles (nth aperture time) rather than in contiguous time
+            Cost of above assumption is clock period (time between two aperture times) should be long enough for all signals to settle
+
 Fundamentals by Yale Patt
     Moore's Law
         A law of physics
@@ -42,8 +78,9 @@ Fundamentals by Yale Patt
 
     The Transformation Hierarchy
         Problem
-        Algorithm
-        Program
+        Application Software
+        Operating System
+        Architecture
         ISA
         Microarchitecture
         Circuits
