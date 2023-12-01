@@ -39,6 +39,7 @@ Circuit - a black box characterized by
 
     combinational circuits
         Inputs -> outputs
+        Timing - propagation and contamination delay
     sequencial circuits
         Inputs + state -> outputs
         Latch/flip-flop stores 1 bit; N-bit register is a bank of N flip-flops that share common CLK
@@ -49,6 +50,37 @@ Circuit - a black box characterized by
         Timing - aperture (when signal is stable) of sequencial element is defined by a setup and hold time, before and after CLK edge
             Having aperture time allows us think in clock cycles (nth aperture time) rather than in contiguous time
             Cost of above assumption is clock period (time between two aperture times) should be long enough for all signals to settle
+
+Digital building blocks
+    arith circuits (adders/substractors/comparators/shifters/rotators/multipliers/dividers) 
+    sequencial circuits (counters/shift registers)
+    registers, memory
+
+Key points of any new computer architecture
+    Data word length
+    Registers
+    Memory organization
+    Instructions
+
+Microarchitecture
+    Single-cycle processor 
+        clock cycle should be long enough to support the slowest instr [load]
+    Multi-cycle processor 
+        breaks down instr to multiple shorter steps, so simpler instrs execute in fewer cycles
+        requires less circuitry
+    Pipelining (how deep?)
+    Branch prediction 
+    Superscalar (how many way?)
+    Out-of-order (RAW, WAR, WAW hazards)
+    Register renaming for WAR and WAW hazards (how many internal registers?)
+    Multithreading (multiple copies of architectural state)
+    Multiprocessor (homo vs heterogeneous)
+
+    Execution time of a program = (# instrs) * (cycles/instr) * (seconds/cycle)
+        1. # instrs: ISA (simple vs complex instrs)
+        2. cycles/instrs: microarchitecture (pipelining, branch prediction, out-of-order, etc)
+        3. seconds/cycle: critical path in through logic in processor (carry-lookahead adder vs ripple-carry adder, 
+            faster transistors [bipolar, CMOS, improved CMOS, etc])
 
 Fundamentals by Yale Patt
     Moore's Law
