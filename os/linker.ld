@@ -1,49 +1,52 @@
 OUTPUT_ARCH( "riscv" )
 
-ENTRY( _start )
+ENTRY( _entry )
 
-MEMORY
-{
-  ram   (wxa!ri) : ORIGIN = 0x80000000, LENGTH = 128M
+MEMORY {
+  ram   (wxa!ri) : ORIGIN = 0x80000000, LENGTH = 1M
 }
 
-PHDRS
-{
-  text PT_LOAD;
-  data PT_LOAD;
-  bss PT_LOAD;
-}
+SECTIONS {
 
-SECTIONS
-{
+  . = 0x80000000;
+
   .text : {
-    PROVIDE(_text_start = .);
     *(.text.init) *(.text .text.*)
-    PROVIDE(_text_end = .);
-  } >ram AT>ram :text
+  } 
    PROVIDE(_global_pointer = .);
   .rodata : {
-    PROVIDE(_rodata_start = .);
     *(.rodata .rodata.*)
-    PROVIDE(_rodata_end = .);
-  } >ram AT>ram :text
+  }
 
   .data : {
     . = ALIGN(4096);
-    PROVIDE(_data_start = .);
     *(.sdata .sdata.*) *(.data .data.*)
-    PROVIDE(_data_end = .);
-  } >ram AT>ram :data
+  }
 
   .bss :{
-    PROVIDE(_bss_start = .);
     *(.sbss .sbss.*) *(.bss .bss.*)
-    PROVIDE(_bss_end = .);
-  } >ram AT>ram :bss
+  }
 
-  PROVIDE(_memory_start = ORIGIN(ram));
-  PROVIDE(_stack = _bss_end + 0x80000);
-  PROVIDE(_memory_end = ORIGIN(ram) + LENGTH(ram));
-  PROVIDE(_heap_start = _stack);
-  PROVIDE(_heap_size = _memory_end - _stack);
+  PROVIDE(_stack = . + 0x80000);
 }
+
+/*
+
+            +---------------------------+
+            |        Unallocated        |
+            +---------------------------+
+            |      (Heap and Stack)     |
+            +---------------------------+
+            |        .bss               |
+            +---------------------------+
+            |        .data              |
+            +---------------------------+
+            |        .rodata            |
+            +---------------------------+
+            |        .text              |
+0x80000000  +---------------------------+
+            |                           |
+            |         I/O devices       |
+            |                           |
+0x00000000  +---------------------------+
+*/
