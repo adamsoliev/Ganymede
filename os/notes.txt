@@ -1,0 +1,1 @@
+process: instructions, data and stack and per-process state private to kernel
