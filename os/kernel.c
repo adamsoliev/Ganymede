@@ -1,6 +1,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+void main();
+
 unsigned char *uart = (unsigned char *)0x10000000;
 void putchar(char c) {
         *uart = c;
