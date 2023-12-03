@@ -82,6 +82,11 @@ Microarchitecture
         3. seconds/cycle: critical path in through logic in processor (carry-lookahead adder vs ripple-carry adder, 
             faster transistors [bipolar, CMOS, improved CMOS, etc])
 
+Memory hierarchy
+    Locality (temporal and spacial)
+    From small-fast-expensive to large-slow-cheap
+    Cache (write-through, write-back; direct mapped, set associative, fully associative)
+
 Fundamentals by Yale Patt
     Moore's Law
         A law of physics
