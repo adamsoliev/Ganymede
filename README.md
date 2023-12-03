@@ -6,7 +6,7 @@
 
 2. [RISC-V processor](processor/)
 
-3. RISC-V OS
+3. [RISC-V OS](os/)
 
 4. ML framework (running in the above system)
 

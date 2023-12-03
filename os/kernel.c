@@ -15,11 +15,4 @@ void print(const char *str) {
         return;
 }
 
-void kmain(void) {
-        print("Hello world!\r\n");
-        while (1) {
-                // Read input from the UART
-                putchar(*uart);
-        }
-        return;
-}
+void main(void) { print("Hello world!\n"); }

@@ -1,37 +1,65 @@
-.section .init
- 
+
+# Disable generation of compressed instructions.
 .option norvc
- 
-.type start, @function
-.global start
-start:
-	.cfi_startproc
- 
+
+# Define a .data section.
+.section .data
+
+# Define a .text.init section.
+.section .text.init
+
+# Execution starts here.
+.global _start
+_start:
+	# Any hardware threads (hart) that are not bootstrapping
+	# need to wait for an IPI
+	csrr	t0, mhartid
+	bnez	t0, 3f
+	# SATP should be zero, but let's make sure
+	csrw	satp, zero
+	
+	# Disable linker instruction relaxation for the `la` instruction below.
+	# This disallows the assembler from assuming that `gp` is already initialized.
+	# This causes the value stored in `gp` to be calculated from `pc`.
 .option push
 .option norelax
-	la gp, global_pointer
+	la		gp, _global_pointer
 .option pop
- 
-	/* Reset satp */
-	csrw satp, zero
- 
-	/* Setup stack */
-	la sp, stack_top
- 
-	/* Clear the BSS section */
-	la t5, bss_start
-	la t6, bss_end
-bss_clear:
-	sd zero, (t5)
-	addi t5, t5, 8
-	bltu t5, t6, bss_clear
- 
-	la t0, kmain
-	csrw mepc, t0
- 
-	/* Jump to kernel! */
-	tail kmain
- 
-	.cfi_endproc
- 
-.end
+	# Set all bytes in the BSS section to zero.
+	la 		a0, _bss_start
+	la		a1, _bss_end
+	bgeu	a0, a1, 2f
+1:
+	sd		zero, (a0)
+	addi	a0, a0, 8
+	bltu	a0, a1, 1b
+2:
+	# Control registers, set the stack, mstatus, mepc,
+	# and mtvec to return to the main function.
+	# li		t5, 0xffff;
+	# csrw	medeleg, t5
+	# csrw	mideleg, t5
+	la		sp, _stack
+	# Setting `mstatus` register:
+	# 0b11 << 11: Machine's previous protection mode is 3 (MPP=3).
+	# 1 << 7    : Machine's previous interrupt-enable bit is 1 (MPIE=1).
+	# 1 << 3    : Machine's interrupt-enable bit is 1 (MIE=1).
+	li		t0, (0b11 << 11) | (1 << 7) | (1 << 3)
+	csrw	mstatus, t0
+	# Machine's exception program counter (MEPC) is set to `main`.
+	la		t1, main
+	csrw	mepc, t1
+	mret
+3:
+
+	# Parked harts go here. We need to set these
+	# to only awaken if it receives a software interrupt,
+	# which we're going to call the SIPI (Software Intra-Processor Interrupt).
+	# We only use these to run user-space programs, although this may
+	# change.
+4:
+	wfi
+	j		4b
+
+
+    

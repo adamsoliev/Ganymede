@@ -1,1 +1,6 @@
-process: instructions, data and stack and per-process state private to kernel
+
+
+boot loader in ROM -> kernel -> memory @ 0x80000000
+_entry
+    setup stack (assign address to some variable and then move its value to stack pointer)
+    call start
