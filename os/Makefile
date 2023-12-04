@@ -1,6 +1,6 @@
 # Build
 CC=riscv64-unknown-linux-gnu-gcc
-CFLAGS=-ffreestanding -nostartfiles -nostdlib -nodefaultlibs
+CFLAGS=-Wall -Wextra -ffreestanding -nostartfiles -nostdlib -nodefaultlibs
 CFLAGS+=-g -Wl,--gc-sections -mcmodel=medany
 RUNTIME=entry.S
 LINKER_SCRIPT=virt.ld

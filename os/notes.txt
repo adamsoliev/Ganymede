@@ -1,6 +1,26 @@
+XV6
+
+Initial setup
+    boot loader in ROM loads kernel into memory at 0x80000000
+        first set of instrs in .text of kernel are specified by linker ENTRY command (_entry)
+    _entry 
+        set up stack
+        call C code at start
+    start
+        set mstatus
+        set mepc to main's address
+        set satp to 0 (turn off virtual address translation)
+        delegate all interrupts/exceptions to supervisor mode
+        turn on clock chip
+        call mret (which jumps to address at mepc)
+    main
+        initialize devices and subsystems
+        create a process and return to user space in that process 
+        start shell on console
+        system is up
 
 
-boot loader in ROM -> kernel -> memory @ 0x80000000
-_entry
-    setup stack (assign address to some variable and then move its value to stack pointer)
-    call start
+Console input
+    read syscall -> consoleread -> sleeps until cons.buf is filled up by consoleinstr -> copies input to user prcoess
+Console output
+    write syscall -> uartputc -> uart_tx_buf -> uartstart -> continiously sends char 
