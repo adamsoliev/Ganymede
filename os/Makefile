@@ -1,19 +1,33 @@
+# Build
+CC=riscv64-unknown-linux-gnu-gcc
+CFLAGS=-ffreestanding -nostartfiles -nostdlib -nodefaultlibs
+CFLAGS+=-g -Wl,--gc-sections -mcmodel=medany
+RUNTIME=entry.S
+LINKER_SCRIPT=virt.ld
+KERNEL_IMAGE=main
 
+# QEMU
+QEMU=qemu-system-riscv64
+MACH=virt
+MEM=128M
+RUN=$(QEMU) -nographic -machine $(MACH) -m $(MEM)
+RUN+=-bios none -kernel $(KERNEL_IMAGE)
 
-all: kernel entry link run
+# QEMU (debug)
+GDB_PORT=1234
 
-kernel: 
-	@riscv64-unknown-linux-gnu-gcc -Wall -Wextra -c -mcmodel=medany kernel.c -o kernel.o -ffreestanding
+all: main
+	$(CC) $(CFLAGS) $(RUNTIME) *.o -T $(LINKER_SCRIPT) -o $(KERNEL_IMAGE)
 
-entry:
-	@riscv64-unknown-linux-gnu-as -c entry.S -o entry.o
+main:
+	$(CC) -c kernel.c $(CFLAGS) -o main.o
 
-link:
-	@riscv64-unknown-linux-gnu-ld -T linker.ld -nostdlib kernel.o entry.o -o kernel.elf
+run: all
+	$(RUN)
 
-run: 
-	@qemu-system-riscv64 -machine virt -bios none -kernel kernel.elf -serial mon:stdio
+debug: all
+	$(RUN) -gdb tcp::$(GDB_PORT) -S
 
 clean:
-	@rm -vf *.o
-	@rm -vf kernel.elf 
+	rm -vf *.o
+	rm -vf $(KERNEL_IMAGE)
