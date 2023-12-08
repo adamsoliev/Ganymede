@@ -21,6 +21,15 @@ Initial setup
 
 
 Console input
-    read syscall -> consoleread -> sleeps until cons.buf is filled up by consoleinstr -> copies input to user prcoess
+    read() -> fileread() -> devsw[CONSOLE].read() -> consoleread() -> wait
+    until cons.buf is filled up by consoleintr() -> copy to user-space dst ->
+    return to user process
+
 Console output
-    write syscall -> uartputc -> uart_tx_buf -> uartstart -> continiously sends char 
+    write() -> filewrite() -> devsw[CONSOLE].write() -> consolewrite() ->
+    uartputc() -> uartstart() -> send if THR has space; otherwise return, will
+    be called again with interrupt when THR is ready to accept [uartintr() -> uartstart()]
+
+NS16450 UART
+https://www.lammertbies.nl/comm/info/serial-uart
+    
