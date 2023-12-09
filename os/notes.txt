@@ -20,15 +20,37 @@ Initial setup
         system is up
 
 
-Console input
-    read() -> fileread() -> devsw[CONSOLE].read() -> consoleread() -> wait
-    until cons.buf is filled up by consoleintr() -> copy to user-space dst ->
-    return to user process
+Syscalls
+  read
+      read() -> fileread() -> devsw[CONSOLE].read() -> consoleread() -> wait
+      until cons.buf is filled up by consoleintr(), which also echoes chars back
+      to user -> copy to user-space dst -> return to user process
 
-Console output
-    write() -> filewrite() -> devsw[CONSOLE].write() -> consolewrite() ->
-    uartputc() -> uartstart() -> send if THR has space; otherwise return, will
-    be called again with interrupt when THR is ready to accept [uartintr() -> uartstart()]
+  write
+      write() -> filewrite() -> devsw[CONSOLE].write() -> consolewrite() ->
+      uartputc() -> uartstart() -> send if THR has space; otherwise return, will
+      be called again via interrupt when THR is ready to accept [uartintr() -> uartstart()]
+
+  // console related traps <-> consoleintr()
+  trap handler -> devintr() -> PLIC via scause -> uartintr() -> consoleintr()
+
+TRAPS - events that cause CPU to set aside ordinary execution of instructions
+  types: syscall, exception, interrupt
+  
+  transparent handling of traps (save state -> handle trap -> restore state)
+
+  handling proceeds in four stages
+    hardware action taken by RISC-V CPU
+    some assembly instructions that prepare the way for kernel C code
+    C function that decides what to do with the trap
+    syscall or device-driver routine
+
+  separate code for three distinct cases: 
+    traps from used space: syscall, device interrupt or exception
+      uservec() -> usertrap() -> usertrapret() -> userret()
+    traps from kernel space: device interrupt or exception
+    timer interrupts
+  
 
 NS16450 UART
 https://www.lammertbies.nl/comm/info/serial-uart
