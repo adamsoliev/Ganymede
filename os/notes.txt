@@ -51,6 +51,12 @@ TRAPS - events that cause CPU to set aside ordinary execution of instructions
     traps from kernel space: device interrupt or exception
     timer interrupts
   
+Memory managemenet
+  page-grained allocation
+  byte-grained allocation
+  managing mmu
+
+  
 
 NS16450 UART
 https://www.lammertbies.nl/comm/info/serial-uart

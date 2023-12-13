@@ -1,6 +1,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+__attribute__((aligned(512))) char _stack[4096];
+
 #define UART0 0x10000000L
 #define Reg(reg) ((volatile unsigned char *)(UART0 + reg))
 
@@ -65,9 +67,14 @@ void main(void) {
                         if (c == '\r')
                                 uartputc('\n');
                         else if (c == 0x7f)
-                                uartputc('\b');
+                                print("\b \b");
                         else
                                 uartputc(c);
                 }
         }
 }
+
+/*
+Address spaces: kernel and per-process
+
+*/

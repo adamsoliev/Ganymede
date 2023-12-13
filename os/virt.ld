@@ -9,6 +9,7 @@ SECTIONS {
   .text : {
     *(.text .text.*)
     . = ALIGN(0x1000);
+    PROVIDE(etext = .);
   } 
 
   .rodata : {
@@ -23,7 +24,6 @@ SECTIONS {
     *(.sdata .sdata.*) /* do not need to distinguish this from .data */
     . = ALIGN(16);
     *(.data .data.*)
-
   }
 
   .bss :{
@@ -33,11 +33,10 @@ SECTIONS {
     *(.bss .bss.*)
   }
 
-  PROVIDE(_stack = . + 0x80000);
+  PROVIDE(end = .);
 }
 
 /*
-
             +---------------------------+
             |        Unallocated        |
             +---------------------------+
