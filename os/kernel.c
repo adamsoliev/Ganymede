@@ -3,6 +3,9 @@
 
 __attribute__((aligned(512))) char _stack[4096];
 
+////////////////
+// CONSOLE (& uart)
+////////////////
 #define UART0 0x10000000L
 #define Reg(reg) ((volatile unsigned char *)(UART0 + reg))
 
@@ -27,8 +30,6 @@ __attribute__((aligned(512))) char _stack[4096];
 #define ReadReg(reg) (*(Reg(reg)))
 #define WriteReg(reg, v) (*(Reg(reg)) = (v))
 /* clang-format on */
-
-void main();
 
 void uartinit(void) {
         WriteReg(IER, 0x00);            // disable interrupts.
@@ -55,8 +56,53 @@ void print(const char *str) {
         return;
 }
 
+////////////////
+// RISC-V
+////////////////
+#define PGSIZE 4096  // bytes per page
+#define PGSHIFT 12   // bits of offset within a page
+#define PGROUNDUP(sz) (((sz) + PGSIZE - 1) & ~(PGSIZE - 1))
+#define PGROUNDDOWN(a) (((a)) & ~(PGSIZE - 1))
+
+////////////////
+// MEMLAYOUT
+////////////////
+#define KERNBASE 0x80000000L
+#define PHYSTOP (KERNBASE + 128 * 1024 * 1024)
+
+char end[];  // first address after kernel
+             // defined by virt.ld
+
+struct run {
+        struct run *next;
+};
+
+struct {
+        struct run *freelist;
+} kmem;
+
+void kinit() {
+        char *p = (char *)PGROUNDUP((unsigned long)end);
+        for (; p + PGSIZE <= (char *)(void *)PHYSTOP; p += PGSIZE) {
+                // add a page of physical memory pointed at by p to head of list
+                struct run *r;
+                r = (struct run *)p;
+                r->next = kmem.freelist;
+                kmem.freelist = r;
+        }
+}
+
+// allocate one 4096-byte page of physical memory
+void *kalloc(void) {
+        struct run *r;
+        r = kmem.freelist;
+        if (r) kmem.freelist = r->next;
+        return (void *)r;
+}
+
 void main(void) {
         uartinit();
+        kinit();
         print("------------------------------------\r\n");
         print("<<<      64-bit RISC-V OS        >>>\r\n");
         print("------------------------------------\r\n");
@@ -73,8 +119,3 @@ void main(void) {
                 }
         }
 }
-
-/*
-Address spaces: kernel and per-process
-
-*/
