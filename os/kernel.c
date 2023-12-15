@@ -1,3 +1,5 @@
+#include <assert.h>
+#include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -48,16 +50,75 @@ int uartgetc(void) {
         return -1;
 }
 
-void print(const char *str) {
-        while (*str != '\0') {
-                uartputc(*str);
-                str++;
+////////////////
+// PRINTS
+////////////////
+static char digits[] = "0123456789abcdef";
+void printint(int xx, int base, int sign) {
+        char buf[16];
+        int i;
+        unsigned int x;
+        if (sign && (sign = xx < 0))
+                x = -xx;
+        else
+                x = xx;
+
+        i = 0;
+        do {
+                buf[i++] = digits[x % base];
+        } while ((x /= base) != 0);
+
+        if (sign) buf[i++] = '-';
+        while (--i >= 0) uartputc(buf[i]);
+}
+
+void printptr(unsigned long x) {
+        int i;
+        uartputc('0');
+        uartputc('x');
+        for (i = 0; i < (int)(sizeof(unsigned long) * 2); i++, x <<= 4)
+                uartputc(digits[x >> (sizeof(unsigned long) * 8 - 4)]);
+}
+
+void printf(char *fmt, ...) {
+        va_list ap;
+        int i, c;
+        char *s;
+        if (fmt == 0) {
+                uartputc('n');
+                uartputc('u');
+                uartputc('l');
+                uartputc('l');
         }
-        return;
+
+        va_start(ap, fmt);
+        for (i = 0; (c = fmt[i] & 0xff) != 0; i++) {
+                if (c != '%') {
+                        uartputc(c);
+                        continue;
+                }
+                c = fmt[++i] & 0xff;
+                if (c == 0) break;
+                switch (c) {
+                        case 'd': printint(va_arg(ap, int), 10, 1); break;
+                        case 'x': printint(va_arg(ap, int), 16, 1); break;
+                        case 'p': printptr(va_arg(ap, unsigned long)); break;
+                        case 's':
+                                if ((s = va_arg(ap, char *)) == 0) s = "(null)";
+                                for (; *s; s++) uartputc(*s);
+                                break;
+                        case '%': uartputc('%'); break;
+                        default:
+                                uartputc('%');
+                                uartputc(c);
+                                break;
+                }
+        }
+        va_end(ap);
 }
 
 ////////////////
-// RISC-V
+// RISC-V 
 ////////////////
 #define PGSIZE 4096  // bytes per page
 #define PGSHIFT 12   // bits of offset within a page
@@ -68,10 +129,10 @@ void print(const char *str) {
 // MEMLAYOUT
 ////////////////
 #define KERNBASE 0x80000000L
-#define PHYSTOP (KERNBASE + 128 * 1024 * 1024)
+#define PHYSTOP (KERNBASE + 128 * 1024 * 1024)  // 128 MB
 
-char end[];  // first address after kernel
-             // defined by virt.ld
+char end[1];  // first address after kernel
+              // defined by virt.ld
 
 struct run {
         struct run *next;
@@ -101,11 +162,17 @@ void *kalloc(void) {
 }
 
 void main(void) {
-        uartinit();
-        kinit();
         print("------------------------------------\r\n");
         print("<<<      64-bit RISC-V OS        >>>\r\n");
         print("------------------------------------\r\n");
+
+        uartinit();
+        kinit();
+
+        unsigned long *page = kalloc();
+        printf("allocated page: %p\r\n", page);
+        unsigned long *page1 = kalloc();
+        printf("allocated page1: %p\r\n", page1);
 
         while (1) {
                 int c = uartgetc();
@@ -113,7 +180,7 @@ void main(void) {
                         if (c == '\r')
                                 uartputc('\n');
                         else if (c == 0x7f)
-                                print("\b \b");
+                                printf("%s", "\b \b");
                         else
                                 uartputc(c);
                 }
