@@ -160,6 +160,11 @@ void panic(char *s) {
 ////////////////
 #define KERNBASE 0x80000000L
 #define PHYSTOP (KERNBASE + 128 * 1024 * 1024)  // 128 MB
+#define TRAMPOLINE (MAXVA - PGSIZE)
+
+// map kernel stacks beneath the trampoline,
+// each surrounded by invalid guard pages.
+#define KSTACK(p) (TRAMPOLINE - ((p) + 1) * 2 * PGSIZE)
 
 char end[];  // first address after kernel
              // defined by virt.ld
@@ -211,6 +216,7 @@ int mappages(pagetable_t pagetable, unsigned long va, unsigned long size, unsign
              int perm);
 void kvmmap(pagetable_t kpgtbl, unsigned long va, unsigned long pa, unsigned long sz, int perm);
 pagetable_t kvmmake(void);
+void proc_mapstacks(pagetable_t kpgtbl);
 
 pagetable_t kernel_pagetable;
 
@@ -247,7 +253,7 @@ pagetable_t kvmmake(void) {
         // kvmmap(kpgtbl, TRAMPOLINE, (unsigned long)trampoline, PGSIZE, PTE_R | PTE_X);
 
         // allocate and map a kernel stack for each process.
-        // proc_mapstacks(kpgtbl);
+        proc_mapstacks(kpgtbl);
 
         return kpgtbl;
 }
@@ -292,6 +298,91 @@ unsigned long *walk(pagetable_t pagetable, unsigned long va, int alloc) {
         return &pagetable[PX(0, va)];
 }
 
+// Saved registers for kernel context switches.
+struct context {
+        unsigned long ra;
+        unsigned long sp;
+
+        // callee-saved
+        unsigned long s0;
+        unsigned long s1;
+        unsigned long s2;
+        unsigned long s3;
+        unsigned long s4;
+        unsigned long s5;
+        unsigned long s6;
+        unsigned long s7;
+        unsigned long s8;
+        unsigned long s9;
+        unsigned long s10;
+        unsigned long s11;
+};
+
+enum procstate { UNUSED, USED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
+
+// Per-process state
+struct proc {
+        //   struct spinlock lock;
+
+        // p->lock must be held when using these:
+        enum procstate state;  // Process state
+        void *chan;            // If non-zero, sleeping on chan
+        int killed;            // If non-zero, have been killed
+        int xstate;            // Exit status to be returned to parent's wait
+        int pid;               // Process ID
+
+        // wait_lock must be held when using this:
+        struct proc *parent;  // Parent process
+
+        // these are private to the process, so p->lock need not be held.
+        unsigned long kstack;         // Virtual address of kernel stack
+        unsigned long sz;             // Size of process memory (bytes)
+        pagetable_t pagetable;        // User page table
+        struct trapframe *trapframe;  // data page for trampoline.S
+        struct context context;       // swtch() here to run process
+        struct file *ofile[16];       // Open files
+        struct inode *cwd;            // Current directory
+        char name[16];                // Process name (debugging)
+};
+
+#define NPROC 64  // maximum number of processes
+
+struct proc proc[NPROC];
+
+void proc_mapstacks(pagetable_t kpgtbl) {
+        struct proc *p;
+
+        for (p = proc; p < &proc[NPROC]; p++) {
+                char *pa = kalloc();
+                if (pa == 0) panic("kalloc");
+                unsigned long va = KSTACK((int)(p - proc));
+                kvmmap(kpgtbl, va, (unsigned long)pa, PGSIZE, PTE_R | PTE_W);
+        }
+}
+
+////////////////
+// TURN ON PAGING
+////////////////
+#define SATP_SV39 (8L << 60)
+#define MAKE_SATP(pagetable) (SATP_SV39 | (((unsigned long)pagetable) >> 12))
+
+void kvminithart();
+static inline void w_satp(unsigned long x);
+static inline void sfence_vma();
+
+void kvminithart() {
+        // wait for any previous writes to the page table memory to finish.
+        sfence_vma();
+        w_satp(MAKE_SATP(kernel_pagetable));
+        // flush stale entries from the TLB.
+        sfence_vma();
+}
+
+// flush all TLB entries
+static inline void sfence_vma() { asm volatile("sfence.vma zero, zero"); }
+
+static inline void w_satp(unsigned long x) { asm volatile("csrw satp, %0" : : "r"(x)); }
+
 void *memset(void *dst, int c, unsigned int n) {
         char *cdst = (char *)dst;
         for (unsigned int i = 0; i < n; i++) {
@@ -300,14 +391,18 @@ void *memset(void *dst, int c, unsigned int n) {
         return dst;
 }
 
+////////////////
+// MAIN
+////////////////
 void main(void) {
         printf("%s", "------------------------------------\r\n");
         printf("%s", "<<<      64-bit RISC-V OS        >>>\r\n");
         printf("%s", "------------------------------------\r\n");
 
         uartinit();
-        kinit();    // allocator
-        kvminit();  // k page table
+        kinit();        // allocator
+        kvminit();      // k page table
+        kvminithart();  // turn on paging
 
         unsigned long *page = kalloc();
         printf("allocated page: %p\r\n", page);
