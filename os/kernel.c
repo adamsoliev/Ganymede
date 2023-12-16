@@ -117,6 +117,12 @@ void printf(char *fmt, ...) {
         va_end(ap);
 }
 
+void panic(char *s) {
+        printf("panic: ");
+        printf(s);
+        printf("\n");
+}
+
 ////////////////
 // RISC-V
 ////////////////
@@ -124,6 +130,30 @@ void printf(char *fmt, ...) {
 #define PGSHIFT 12   // bits of offset within a page
 #define PGROUNDUP(sz) (((sz) + PGSIZE - 1) & ~(PGSIZE - 1))
 #define PGROUNDDOWN(a) (((a)) & ~(PGSIZE - 1))
+
+#define PTE_V (1L << 0)  // valid
+#define PTE_R (1L << 1)
+#define PTE_W (1L << 2)
+#define PTE_X (1L << 3)
+#define PTE_U (1L << 4)  // user can access
+
+// shift a physical address to the right place for a PTE.
+#define PA2PTE(pa) ((((unsigned long)pa) >> 12) << 10)
+
+#define PTE2PA(pte) (((pte) >> 10) << 12)
+
+#define PTE_FLAGS(pte) ((pte) & 0x3FF)
+
+// extract the three 9-bit page table indices from a virtual address.
+#define PXMASK 0x1FF  // 9 bits
+#define PXSHIFT(level) (PGSHIFT + (9 * (level)))
+#define PX(level, va) ((((unsigned long)(va)) >> PXSHIFT(level)) & PXMASK)
+
+// one beyond the highest possible virtual address.
+// MAXVA is actually one bit less than the max allowed by
+// Sv39, to avoid having to sign-extend virtual addresses
+// that have the high bit set.
+#define MAXVA (1L << (9 + 9 + 9 + 12 - 1))
 
 ////////////////
 // MEMLAYOUT
@@ -168,6 +198,105 @@ void kfree(void *pa) {
         kmem.freelist = r;
 }
 
+typedef unsigned long *pagetable_t;
+
+char etext[];  // kernel.ld sets this to end of kernel code.
+
+void *memset(void *dst, int c, unsigned int n);
+unsigned long *walk(pagetable_t pagetable, unsigned long va, int alloc);
+int mappages(pagetable_t pagetable, unsigned long va, unsigned long size, unsigned long pa,
+             int perm);
+void kvmmap(pagetable_t kpgtbl, unsigned long va, unsigned long pa, unsigned long sz, int perm);
+pagetable_t kvmmake(void);
+
+pagetable_t kernel_pagetable;
+
+void kvminit(void) { kernel_pagetable = kvmmake(); }
+
+// Make a direct-map page table for the kernel.
+pagetable_t kvmmake(void) {
+        pagetable_t kpgtbl;
+
+        kpgtbl = (pagetable_t)kalloc();
+        memset(kpgtbl, 0, PGSIZE);
+
+        // uart registers
+        kvmmap(kpgtbl, UART0, UART0, PGSIZE, PTE_R | PTE_W);
+
+        // // virtio mmio disk interface
+        // kvmmap(kpgtbl, VIRTIO0, VIRTIO0, PGSIZE, PTE_R | PTE_W);
+
+        // PLIC
+        // kvmmap(kpgtbl, PLIC, PLIC, 0x400000, PTE_R | PTE_W);
+
+        // map kernel text executable and read-only.
+        kvmmap(kpgtbl, KERNBASE, KERNBASE, (unsigned long)etext - KERNBASE, PTE_R | PTE_X);
+
+        // map kernel data and the physical RAM we'll make use of.
+        kvmmap(kpgtbl,
+               (unsigned long)etext,
+               (unsigned long)etext,
+               PHYSTOP - (unsigned long)etext,
+               PTE_R | PTE_W);
+
+        // map the trampoline for trap entry/exit to
+        // the highest virtual address in the kernel.
+        // kvmmap(kpgtbl, TRAMPOLINE, (unsigned long)trampoline, PGSIZE, PTE_R | PTE_X);
+
+        // allocate and map a kernel stack for each process.
+        // proc_mapstacks(kpgtbl);
+
+        return kpgtbl;
+}
+
+void kvmmap(pagetable_t kpgtbl, unsigned long va, unsigned long pa, unsigned long sz, int perm) {
+        if (mappages(kpgtbl, va, sz, pa, perm) != 0) panic("kvmmap");
+}
+
+int mappages(pagetable_t pagetable, unsigned long va, unsigned long size, unsigned long pa,
+             int perm) {
+        unsigned long a, last;
+        unsigned long *pte;
+
+        if (size == 0) panic("mappages: size");
+
+        a = PGROUNDDOWN(va);
+        last = PGROUNDDOWN(va + size - 1);
+        for (;;) {
+                if ((pte = walk(pagetable, a, 1)) == 0) return -1;
+                if (*pte & PTE_V) panic("mappages: remap");
+                *pte = PA2PTE(pa) | perm | PTE_V;
+                if (a == last) break;
+                a += PGSIZE;
+                pa += PGSIZE;
+        }
+        return 0;
+}
+
+unsigned long *walk(pagetable_t pagetable, unsigned long va, int alloc) {
+        if (va >= MAXVA) panic("walk");
+
+        for (int level = 2; level > 0; level--) {
+                unsigned long *pte = &pagetable[PX(level, va)];
+                if (*pte & PTE_V) {
+                        pagetable = (pagetable_t)PTE2PA(*pte);
+                } else {
+                        if (!alloc || (pagetable = (unsigned long *)kalloc()) == 0) return 0;
+                        memset(pagetable, 0, PGSIZE);
+                        *pte = PA2PTE(pagetable) | PTE_V;
+                }
+        }
+        return &pagetable[PX(0, va)];
+}
+
+void *memset(void *dst, int c, unsigned int n) {
+        char *cdst = (char *)dst;
+        for (unsigned int i = 0; i < n; i++) {
+                cdst[i] = c;
+        }
+        return dst;
+}
+
 void main(void) {
         printf("%s", "------------------------------------\r\n");
         printf("%s", "<<<      64-bit RISC-V OS        >>>\r\n");
@@ -175,6 +304,7 @@ void main(void) {
 
         uartinit();
         kinit();
+        kvminit();
 
         unsigned long *page = kalloc();
         printf("allocated page: %p\r\n", page);

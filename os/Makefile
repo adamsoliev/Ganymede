@@ -22,7 +22,7 @@ all: main
 main:
 	$(CC) -c kernel.c $(CFLAGS) -o main.o
 
-run: all
+run: clean all
 	$(RUN)
 
 debug: all
