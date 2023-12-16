@@ -383,6 +383,21 @@ static inline void sfence_vma() { asm volatile("sfence.vma zero, zero"); }
 
 static inline void w_satp(unsigned long x) { asm volatile("csrw satp, %0" : : "r"(x)); }
 
+////////////////
+// PROCESS TABLE
+////////////////
+void procinit(void) {
+        struct proc *p;
+
+        // initlock(&pid_lock, "nextpid");
+        // initlock(&wait_lock, "wait_lock");
+        for (p = proc; p < &proc[NPROC]; p++) {
+                // initlock(&p->lock, "proc");
+                p->state = UNUSED;
+                p->kstack = KSTACK((int)(p - proc));
+        }
+}
+
 void *memset(void *dst, int c, unsigned int n) {
         char *cdst = (char *)dst;
         for (unsigned int i = 0; i < n; i++) {
@@ -403,6 +418,7 @@ void main(void) {
         kinit();        // allocator
         kvminit();      // k page table
         kvminithart();  // turn on paging
+        procinit();     // init process table
 
         unsigned long *page = kalloc();
         printf("allocated page: %p\r\n", page);
