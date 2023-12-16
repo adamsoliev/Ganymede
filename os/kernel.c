@@ -156,7 +156,7 @@ void panic(char *s) {
 #define MAXVA (1L << (9 + 9 + 9 + 12 - 1))
 
 ////////////////
-// MEMLAYOUT
+// ALLOCATOR
 ////////////////
 #define KERNBASE 0x80000000L
 #define PHYSTOP (KERNBASE + 128 * 1024 * 1024)  // 128 MB
@@ -198,9 +198,12 @@ void kfree(void *pa) {
         kmem.freelist = r;
 }
 
+////////////////
+// K PAGE TABLE
+////////////////
 typedef unsigned long *pagetable_t;
 
-char etext[];  // kernel.ld sets this to end of kernel code.
+char etext[];  // virt.ld sets this to end of kernel code.
 
 void *memset(void *dst, int c, unsigned int n);
 unsigned long *walk(pagetable_t pagetable, unsigned long va, int alloc);
@@ -303,8 +306,8 @@ void main(void) {
         printf("%s", "------------------------------------\r\n");
 
         uartinit();
-        kinit();
-        kvminit();
+        kinit();    // allocator
+        kvminit();  // k page table
 
         unsigned long *page = kalloc();
         printf("allocated page: %p\r\n", page);
