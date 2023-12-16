@@ -118,7 +118,7 @@ void printf(char *fmt, ...) {
 }
 
 ////////////////
-// RISC-V 
+// RISC-V
 ////////////////
 #define PGSIZE 4096  // bytes per page
 #define PGSHIFT 12   // bits of offset within a page
@@ -131,8 +131,8 @@ void printf(char *fmt, ...) {
 #define KERNBASE 0x80000000L
 #define PHYSTOP (KERNBASE + 128 * 1024 * 1024)  // 128 MB
 
-char end[1];  // first address after kernel
-              // defined by virt.ld
+char end[];  // first address after kernel
+             // defined by virt.ld
 
 struct run {
         struct run *next;
@@ -161,16 +161,24 @@ void *kalloc(void) {
         return (void *)r;
 }
 
+void kfree(void *pa) {
+        struct run *r;
+        r = (struct run *)pa;
+        r->next = kmem.freelist;
+        kmem.freelist = r;
+}
+
 void main(void) {
-        print("------------------------------------\r\n");
-        print("<<<      64-bit RISC-V OS        >>>\r\n");
-        print("------------------------------------\r\n");
+        printf("%s", "------------------------------------\r\n");
+        printf("%s", "<<<      64-bit RISC-V OS        >>>\r\n");
+        printf("%s", "------------------------------------\r\n");
 
         uartinit();
         kinit();
 
         unsigned long *page = kalloc();
         printf("allocated page: %p\r\n", page);
+        kfree(page);
         unsigned long *page1 = kalloc();
         printf("allocated page1: %p\r\n", page1);
 
