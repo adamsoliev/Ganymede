@@ -19,7 +19,6 @@ Initial setup
         start shell on console
         system is up
 
-
 Syscalls
   read
       read() -> fileread() -> devsw[CONSOLE].read() -> consoleread() -> wait
@@ -56,8 +55,66 @@ Memory managemenet
   byte-grained allocation
   managing mmu
 
-  
-
 NS16450 UART
 https://www.lammertbies.nl/comm/info/serial-uart
-    
+
+----------------------------------------------------------------
+XV6 Notes
+----------------------------------------------------------------
+Process and memory: instructions, data, and stack and kstack
+
+I/O and file descriptors
+
+Pipes
+
+File system: inode, dirs, names, 
+
+Thus an operating system must fulfill three requirements: multiplexing, isolation, and interaction.
+
+RISC-V CPU modes: machine, supervisor and user
+
+Traps and syscalls
+  Syscall, exception (illegal action), interrupt (device I/O)
+  
+  All are transparently handled in kernel
+  
+  RISC-V trap machinery (for traps handled in supervisor mode)
+    stvec     address of trap handler
+    sepc      where PC is saved before jumping to trap handler
+    scause    reason for trap
+    sscratch  helper register to save user registers
+    sstatus   SIP bit - whether device interrupts are on/off; SPP bit - whether trap came from user/supervisor mode
+
+  while executing user code
+    ------------------------------------------
+    uservec (in trampoline page) -> usertrap (trap.c)
+    ------------------------------------------
+      uservec   - save regs in & retrieve trap handling info from trapframe page; switch page tables; call usertrap
+      usertrap  - determine cause of the trap, process it and return
+        modify stvec, save sepc, (syscall | devintr | error) 
+    ------------------------------------------
+    usertrapret (trap.c) -> userret (in trampoline page)
+    ------------------------------------------
+      usertrapret - restore control registers to prep for a future trap;
+        point stvec to uservec, prepping trapframe fields, set sepc to prev saved
+        user pc; call userret
+      userret     - switch page tables; restore user regs; execute sret to return to user space
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
