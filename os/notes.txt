@@ -99,21 +99,33 @@ Traps and syscalls
         point stvec to uservec, prepping trapframe fields, set sepc to prev saved
         user pc; call userret
       userret     - switch page tables; restore user regs; execute sret to return to user space
-      
 
+  while executing kernel space
+    ------------------------------------------
+    kernelvec -> kerneltrap
+    ------------------------------------------
+      kernelvec   - save regs into a respective kernel stack
+      kerneltrap  - save control regs; (devinstr | error)
 
+Interrupts and device drivers
+  consoleinit - configure UART hardware to generate interrupts (on receive and transmit)
+  consoleread - wait for inputs to arrive (via interrupts) & be buffered in
+  cons.buf; copy that to user space; return to user process
 
+    shell -> read syscall -> consoleread -> sleep until waken by consoleintr
+    (uservec | kernelvec) -> (usertrap | kerneltrap) -> devintr -> uartintr -> consoleintr -> collect input and wake up consoleread if there is one
+    
+    shell -> write -> uartputc -> uartstart
+                      uartintr -> uartstart 
 
-
-
-
-
-
-
-
-
-
-
+File system
+  File descriptor - abstract many Unix resources using the file system interface
+  Pathname        - provide hierarchical path names & resolve them using recursive lookup
+  Directory       - implement each dir as a special kind of inode
+  Inode           - provide individual files (inode with unique i-number & some blocks holding the file's data)
+  Logging         - wrap updates to several blocks in a transaction
+  Buffer cache    - cache blocks and synchronize access to them
+  Disk            - read/write blocks on virtio hard drive
 
 
 
