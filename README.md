@@ -24,8 +24,8 @@
    - [From Blinker to RISC-V](https://github.com/BrunoLevy/learn-fpga/tree/master/FemtoRV/TUTORIALS/FROM_BLINKER_TO_RISCV)
 
 3. Operating System
-   - [XV6-RISCV](https://github.com/mit-pdos/xv6-riscv)
-   - [EGOS-2000](https://github.com/yhzhang0128/egos-2000)
+   - [xv6-riscv](https://github.com/mit-pdos/xv6-riscv)
+   - [egos-2000](https://github.com/yhzhang0128/egos-2000)
 
 ## Inspirations
 
