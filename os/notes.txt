@@ -1,5 +1,7 @@
 XV6
 
+RISC-V CPU modes: machine, supervisor and user
+
 Initial setup
     boot loader in ROM loads kernel into memory at 0x80000000
         first set of instrs in .text of kernel are specified by linker ENTRY command (_entry)
@@ -19,61 +21,23 @@ Initial setup
         start shell on console
         system is up
 
-Syscalls
-  read
-      read() -> fileread() -> devsw[CONSOLE].read() -> consoleread() -> wait
-      until cons.buf is filled up by consoleintr(), which also echoes chars back
-      to user -> copy to user-space dst -> return to user process
-
-  write
-      write() -> filewrite() -> devsw[CONSOLE].write() -> consolewrite() ->
-      uartputc() -> uartstart() -> send if THR has space; otherwise return, will
-      be called again via interrupt when THR is ready to accept [uartintr() -> uartstart()]
-
-  // console related traps <-> consoleintr()
-  trap handler -> devintr() -> PLIC via scause -> uartintr() -> consoleintr()
-
-TRAPS - events that cause CPU to set aside ordinary execution of instructions
-  types: syscall, exception, interrupt
-  
-  transparent handling of traps (save state -> handle trap -> restore state)
-
-  handling proceeds in four stages
-    hardware action taken by RISC-V CPU
-    some assembly instructions that prepare the way for kernel C code
-    C function that decides what to do with the trap
-    syscall or device-driver routine
-
-  separate code for three distinct cases: 
-    traps from used space: syscall, device interrupt or exception
-      uservec() -> usertrap() -> usertrapret() -> userret()
-    traps from kernel space: device interrupt or exception
-    timer interrupts
-  
-Memory managemenet
-  page-grained allocation
-  byte-grained allocation
-  managing mmu
-
-NS16450 UART
-https://www.lammertbies.nl/comm/info/serial-uart
-
-----------------------------------------------------------------
-XV6 Notes
-----------------------------------------------------------------
-Process and memory: instructions, data, and stack and kstack
-
-I/O and file descriptors
-
-Pipes
-
-File system: inode, dirs, names, 
-
 Thus an operating system must fulfill three requirements: multiplexing, isolation, and interaction.
 
-RISC-V CPU modes: machine, supervisor and user
+----------------------------------------------------------------
+1. OS INTERFACES
+----------------------------------------------------------------
 
-Traps and syscalls
+----------------------------------------------------------------
+2. OS ORGANIZATION
+----------------------------------------------------------------
+
+----------------------------------------------------------------
+3. PAGE TABLES
+----------------------------------------------------------------
+
+----------------------------------------------------------------
+4. TRAPS AND SYSCALLS
+----------------------------------------------------------------
   Syscall, exception (illegal action), interrupt (device I/O)
   
   All are transparently handled in kernel
@@ -107,18 +71,35 @@ Traps and syscalls
       kernelvec   - save regs into a respective kernel stack
       kerneltrap  - save control regs; (devinstr | error)
 
-Interrupts and device drivers
+----------------------------------------------------------------
+5. INTERRUPTS AND DEVICE DRIVERS
+----------------------------------------------------------------
   consoleinit - configure UART hardware to generate interrupts (on receive and transmit)
   consoleread - wait for inputs to arrive (via interrupts) & be buffered in
   cons.buf; copy that to user space; return to user process
 
-    shell -> read syscall -> consoleread -> sleep until waken by consoleintr
+    shell -> read() -> fileread() -> devsw[CONSOLE].read() -> consoleread() -> wait until waken by consoleintr
     (uservec | kernelvec) -> (usertrap | kerneltrap) -> devintr -> uartintr -> consoleintr -> collect input and wake up consoleread if there is one
     
-    shell -> write -> uartputc -> uartstart
-                      uartintr -> uartstart 
+    shell -> write() -> filewrite() -> devsw[CONSOLE].write() -> consolewrite() -> uartputc() -> uartstart() 
+                                                                                  uartintr() -> uartstart() 
+  
+  NS16450 UART
+  https://www.lammertbies.nl/comm/info/serial-uart
 
-File system
+----------------------------------------------------------------
+6. LOCKING
+----------------------------------------------------------------
+  Spinlocks (for short critical sections)
+  Sleeplocks (for lengthy operations)
+
+----------------------------------------------------------------
+7. SCHEDULING
+----------------------------------------------------------------
+
+----------------------------------------------------------------
+8. FILE SYSTEM
+----------------------------------------------------------------
   File descriptor - abstract many Unix resources using the file system interface
   Pathname        - provide hierarchical path names & resolve them using recursive lookup
   Directory       - implement each dir as a special kind of inode
@@ -127,6 +108,7 @@ File system
   Buffer cache    - cache blocks and synchronize access to them
   Disk            - read/write blocks on virtio hard drive
 
-
-
+----------------------------------------------------------------
+9. CONCURRENCY REVISITED
+----------------------------------------------------------------
 
