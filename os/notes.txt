@@ -90,6 +90,34 @@ Thus an operating system must fulfill three requirements: multiplexing, isolatio
 ----------------------------------------------------------------
 6. LOCKING
 ----------------------------------------------------------------
+  Kernel data structures need to be protected from concurrent changes, such as in
+    Multiprocessor parallelism
+    Thread switching
+    Interrupts
+  
+  Lock is a simple correct solution but is bad for performance
+
+  In some cases multiple locks are needed to protect a code path. In such cases,
+  lock acquire/release ordering matters. Otherwise, deadlocks might arise. By 
+  defintion, these lock chains need to be global and honoring such a global ordering
+  might be difficult programmatically. 
+
+  Re-entrant locks??
+
+  Protecting data that is used by both threads and interrupt handlers should be 
+  done with care; otherwise, the thread holding a lock for data might be 
+  interrupted and the corresponding interrupt handler might also try to acquire the 
+  same lock. That lock won't be released because it can only be released by the
+  thread but that thread won't continue running unless the interrupt handler returns; 
+  the handler won't return because it can't acquire the lock - deadlock. 
+
+  Memory ordering should be turn-off around critical sections protected by locks
+
+  Sleeplock is used in longer waiting cases; it allows yielding and interrupts, 
+  allowing CPU to be used efficiently while the process waits (e.g., for disk I/O). 
+  Important implementation detail about sleeplocks is just before going to sleep,
+  CPU is yielded atomically and lock is released. 
+
   Spinlocks (for short critical sections)
   Sleeplocks (for lengthy operations)
 
