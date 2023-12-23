@@ -31,9 +31,9 @@ spin:
 # RISC-V PRIV 
 
 # ---------------------------
-# ecall      USER         ^
-# --|---------------------|--
-#   |                     |
+# ecall      USER        ^
+# --|--------------------|---
+#   |                    |
 #   v                   sret
 #          SUPERVISOR
 #  ecall                 ^
@@ -49,6 +49,12 @@ spin:
 # mie
 # MEIE SEIE MTIE STIE MSIE SSIE
 # 11    9    7    5    3    1   
+
+# medeleg
+# bit positions correspond to bit positions of mcause (see mcause table in latest riscv priv spec)
+
+# mideleg
+# bit positions correspond to bit positions of mie/mip
 
 # mstatus       - M status     
 # mepc          - M pc
