@@ -124,6 +124,56 @@ Thus an operating system must fulfill three requirements: multiplexing, isolatio
 ----------------------------------------------------------------
 7. SCHEDULING
 ----------------------------------------------------------------
+  thread - one serial execution
+    pc, regs, stack
+
+  xv6 multiplexes in 
+    sleep/wakeup mechamism
+    periodic switch to copy with processes that computer for long periods
+  
+  issues
+    how to do it? 
+    how to do it transparently to user? 
+    locking of process data structures to avoid races between different CPUs? 
+    how to handle switching user/supervisor resources? 
+    how do avoid races that result in loss of wakeup signals?
+  
+  context switching
+    user stack #1 -> kstack #1 -> scheduler context of the core -> kstack #2 -> user stack #2
+  
+  scheduling
+    important thing to understand here is that sched and scheduler intentionally transfer
+    control to each other via thread switch. 
+      A kernel thread gives up CPU in sched 
+      Control is transfered to scheduler 
+      Scheduler returns in another kernel thread's sched call
+  
+  sleep/wakeup
+
+    Typical usage of sleep/wakeup
+    -----------------------------------------------------------------------------------
+    Thread1
+    ------------
+    acquire(cond_lock);
+    while (cond) 
+      sleep(&cond, &cond_lock);  // &cond is an address and just used as a channel
+    release(cond_lock);
+
+    Thread2
+    ------------
+    acquire(cond_lock);
+    cond += change;
+    wakeup(&cond);
+    release(cond_lock);
+    -----------------------------------------------------------------------------------
+    
+    going into sleep, we need to have condition_lock. To put the current process to sleep (change its state), 
+    we acquire the process_lock inside sleep; right after, we release the condition_lock, 
+    so that some other thread can acquire that condition_lock and change the condition. 
+    That thread then waits spinning, waiting to acquire the process_lock that sleep holds. Once 
+    sleep finishes and releases the process_lock, wakeup can proceed and acquire the process_lock
+    and wake up the process. This mechanism is important to avoid coordination issues, including lost wakeups.
+
 
 ----------------------------------------------------------------
 8. FILE SYSTEM
