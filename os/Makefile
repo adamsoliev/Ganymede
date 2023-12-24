@@ -26,7 +26,11 @@ run: clean all
 	$(RUN)
 
 debug: all
+	@echo "*** Now run 'gdb-multiarch $(KERNEL_IMAGE)' in another window"
+	@echo "*** Once in, run 'target remote localhost:$(GDB_PORT)'"
 	$(RUN) -gdb tcp::$(GDB_PORT) -S
+
+debug-info:
 
 clean:
 	rm -vf *.o

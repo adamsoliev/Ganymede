@@ -43,7 +43,7 @@ _entry:
     sd      t1, 32(t0)                  # store desired interval at timer_scratch[4]
 
     csrw    mscratch, t0
-    
+
     # set M-mode trap handler
     la      t0, timervec
     csrw    mtvec, t0
@@ -96,12 +96,6 @@ timervec:
         csrrw a0, mscratch, a0
 
         mret
-
-
-
-
-
-
 
 
 
