@@ -1,16 +1,69 @@
+# .option norvc
+# .section .data
+# .section .text.init
+# .global _entry
+
+# _entry:
+#     li      t0, 0x1800
+#     csrc    mstatus, t0
+#     li      t0, 0x802
+#     csrs    mstatus, t0
+#     li      t0, 0xa0 
+#     csrs    mie, t0
+#     li      t0, 0x20
+#     csrs    mideleg, t0
+#     la      t0, mtrap
+#     csrw    mtvec, t0
+#     li      t0, 500000
+#     li      t1, 0x2004000
+#     sd      t0, 0(t1)
+#     la      t1, supervisor
+#     csrw    mepc, t1
+
+#     # PMP
+#     li	    t0, -1
+#     srli 	t0, t0, 0xa
+#     csrw	pmpaddr0, t0
+#     li	    t0, 15
+#     csrw	pmpcfg0, t0
+
+#     mret
+
+# mtrap:
+#     li      t0, 0x20
+#     csrs    mip, t0
+#     mret
+
+# supervisor:
+#     li      t0, 20
+#     la      t0, strap
+#     csrw    stvec, t0
+#     j       spin
+
+# strap:
+#     j       spin
+
+# spin:
+#     j       spin
+
 .section .text
 .global _entry
 _entry:
 
     # clear 11 and 12 bits and set them to 01 (S-mode), for mret
-    csrr	a5,mstatus
-    lui 	a4,0xffffe
-    add	    a4,a4,2047 # ffffffffffffe7ff <end+0xffffffff7ffda20f>
-    and 	a5,a5,a4
-    lui 	a4,0x1
-    add	    a4,a4,-2048 # 800 <_entry-0x7ffff800>
-    or	    a5,a5,a4
-    csrw	mstatus,a5
+    # csrr	a5,mstatus
+    # lui 	a4,0xffffe
+    # add	    a4,a4,2047 # ffffffffffffe7ff <end+0xffffffff7ffda20f>
+    # and 	a5,a5,a4
+    # lui 	a4,0x1
+    # add	    a4,a4,-2048 # 800 <_entry-0x7ffff800>
+    # or	    a5,a5,a4
+    # csrw	mstatus,a5
+
+    li      t0, 0x1800
+    csrc    mstatus, t0
+    li      t0, 0x802
+    csrs    mstatus, t0
 
     # li      t0, (3 << 11)
     # csrc    mstatus, t0
@@ -18,16 +71,19 @@ _entry:
     # csrs    mstatus, t0
 
     # set mepc to C's main
-    la		t0, main
+    la		t0, supervisor
     csrw	mepc, t0
 
     # disable paging 
     csrw	satp, zero
 
     # delegate all M-mode interrupts and exceptions to S-mode
-    li      t0, 0xffff
-    csrw    medeleg, t0
-    csrw    mideleg, t0
+    # li      t0, 0xffff
+    # csrw    medeleg, t0
+    # csrw    mideleg, t0
+
+    li      t0, 0x20
+    csrs    mideleg, t0
 
     # enable S-mode external, timer, software interrupts
     csrr    t0, sie
@@ -74,9 +130,12 @@ _entry:
     csrw    mstatus, t0
 
     # enable M-mode timer interrupts
-    csrr    t0, mie
-    ori     t0, t0, (1 << 7) 
-    csrw    mie, t0
+    # csrr    t0, mie
+    # ori     t0, t0, (1 << 7) 
+    # csrw    mie, t0
+
+    li      t0, 0xa0 
+    csrs    mie, t0
 
     # return from M-mode to lower privilige mode (S in our case)
     mret
@@ -84,6 +143,8 @@ _entry:
 spin:
     j spin
 
+supervisor:
+    j spin
 
 .globl timervec
 .align 4

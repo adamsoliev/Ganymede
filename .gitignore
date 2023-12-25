@@ -1,9 +1,16 @@
 
-/compiler/build/
 .vscode
-**/*.o
+
+/compiler/build/
 compiler/playground/build
+
 processor/test/mem_data
 processor/test/mem_instr
+
+os/kernel
+
+*/*.o
+*/*.asm
+*/*.gdb_history
 
 
