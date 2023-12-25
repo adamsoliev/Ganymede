@@ -30,8 +30,7 @@ debug: all
 	@echo "*** Once in, run 'target remote localhost:$(GDB_PORT)'"
 	$(RUN) -gdb tcp::$(GDB_PORT) -S
 
-debug-info:
-
 clean:
 	rm -vf *.o
 	rm -vf $(KERNEL_IMAGE)
+	rm .gdb_history

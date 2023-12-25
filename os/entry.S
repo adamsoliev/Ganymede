@@ -25,19 +25,23 @@ _entry:
     li      t6, (1 << 9) | (1 << 5) | (1 << 1)
     csrw    sie, t6
 
-    # The hardware ensures that MTIME increases at a constant frequency, and 
-    # a timer interrupt is triggered when MTIME becomes greater than MTIMECMP. 
-    # Therefore, periodic interrupts can be requested by software by setting MTIMECMP reg
+    # the hardware ensures that mtime increases at a constant frequency, and 
+    # a timer interrupt is triggered when mtime becomes greater than mtimecmp. 
+    # therefore, periodic interrupts can be requested by software by setting mtimecmp reg
 
     # ask CLINT for timer interrupt
-    li      t0, (0x200BFF8 + 1000000)   # 1000000 cycles; about 1/10th second in qemu 
-    li      t1, 0x2004000               # assuming a single core: 0x2000000 + 4000 + 8(hartID), where hartID is 0
-    sd      t0, 0(t1)                   # set MTIMECMP
+    # li      t0, (0x200BFF8 + 1000000)   # 1000000 cycles; about 1/10th second in qemu 
+    li      t0, 0x200BFF8               # load address of mtime
+    ld      t1, 0(t0)                   # load value of mtime
+    li      t0, 1000000                 # load 1000000 (cycles; about 1/10th second in qemu)
+    add     t0, t0, t1                  # mtime + interval 
+    li      t1, 0x2004000               # load address of mtimecmp, assuming a single core: 0x2000000 + 4000 + 8(hartID), where hartID is 0
+    sd      t0, 0(t1)                   # set mtimecmp
 
     # prepare info in timer_scratch[] for timervec
     la      t0, timer_scratch           # load timer_scratch's address
-    li      t1, 0x2004000               # load MTIMECMP's address 
-    sd      t1, 24(t0)                  # store MTIMECMP's address at timer_scratch[3]
+    li      t1, 0x2004000               # load mtimecmp's address 
+    sd      t1, 24(t0)                  # store mtimecmp's address at timer_scratch[3]
 
     li      t1, 1000000                 # load desired interval (in cycles) 
     sd      t1, 32(t0)                  # store desired interval at timer_scratch[4]
@@ -69,7 +73,7 @@ spin:
 .align 4
 timervec:
         # timer_scratch[0,8,16] : register save area.
-        # timer_scratch[24]     : address of CLINT's MTIMECMP register.
+        # timer_scratch[24]     : address of CLINT's mtimecmp register.
         # timer_scratch[32]     : desired interval between interrupts.
         
         csrrw a0, mscratch, a0
@@ -79,7 +83,7 @@ timervec:
 
         # schedule the next timer interrupt
         # by adding interval to mtimecmp.
-        ld a1, 24(a0) # MTIMECMP
+        ld a1, 24(a0) # mtimecmp
         ld a2, 32(a0) # interval
         ld a3, 0(a1)
         add a3, a3, a2
@@ -96,11 +100,6 @@ timervec:
         csrrw a0, mscratch, a0
 
         mret
-
-
-
-
-
 
 
 # https://danielmangum.com/posts/risc-v-bytes-timer-interrupts/
@@ -148,6 +147,8 @@ timervec:
 # mtvec         - M trap-vector base address
 # mscratch      - M 
 # mcounteren    - M counter enable
+# mtime         - M real-time counter
+# mtimecmp      - M timer compare
 # --------------------------------------------------------------------------------------
 
 
