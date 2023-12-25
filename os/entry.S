@@ -3,27 +3,43 @@
 _entry:
 
     # clear 11 and 12 bits and set them to 01 (S-mode), for mret
-    li      t0, (3 << 11)
-    csrc    mstatus, t0
-    li      t1, (1 << 11)
-    csrs    mstatus, t1
+    csrr	a5,mstatus
+    lui 	a4,0xffffe
+    add	    a4,a4,2047 # ffffffffffffe7ff <end+0xffffffff7ffda20f>
+    and 	a5,a5,a4
+    lui 	a4,0x1
+    add	    a4,a4,-2048 # 800 <_entry-0x7ffff800>
+    or	    a5,a5,a4
+    csrw	mstatus,a5
+
+    # li      t0, (3 << 11)
+    # csrc    mstatus, t0
+    # li      t0, (1 << 11)
+    # csrs    mstatus, t0
 
     # set mepc to C's main
-    la		t2, main
-    csrw	mepc, t2
+    la		t0, main
+    csrw	mepc, t0
 
     # disable paging 
     csrw	satp, zero
 
     # delegate all M-mode interrupts and exceptions to S-mode
-    li      t4, 0xffff
-    csrw    medeleg, t4
-    li      t5, 0xffff
-    csrw    mideleg, t5
+    li      t0, 0xffff
+    csrw    medeleg, t0
+    csrw    mideleg, t0
 
     # enable S-mode external, timer, software interrupts
-    li      t6, (1 << 9) | (1 << 5) | (1 << 1)
-    csrw    sie, t6
+    csrr    t0, sie
+    ori     t0, t0, (1 << 9) | (1 << 5) | (1 << 1)
+    csrw    sie, t0
+
+    # PMP
+    li	    t0, -1
+    srli 	t0, t0, 0xa
+    csrw	pmpaddr0, t0
+    li	    t0, 15
+    csrw	pmpcfg0, t0
 
     # the hardware ensures that mtime increases at a constant frequency, and 
     # a timer interrupt is triggered when mtime becomes greater than mtimecmp. 
@@ -32,35 +48,35 @@ _entry:
     # ask CLINT for timer interrupt
     # li      t0, (0x200BFF8 + 1000000)   # 1000000 cycles; about 1/10th second in qemu 
     li      t0, 0x200BFF8               # load address of mtime
-    ld      t1, 0(t0)                   # load value of mtime
-    li      t0, 1000000                 # load 1000000 (cycles; about 1/10th second in qemu)
+    ld      t0, 0(t0)                   # load value of mtime
+    li      t1, 1000000                 # load 1000000 (cycles; about 1/10th second in qemu)
     add     t0, t0, t1                  # mtime + interval 
-    li      t1, 0x2004000               # load address of mtimecmp, assuming a single core: 0x2000000 + 4000 + 8(hartID), where hartID is 0
-    sd      t0, 0(t1)                   # set mtimecmp
+
+    li      t6, 0x2004000               # load address of mtimecmp, assuming a single core: 0x2000000 + 4000 + 8(hartID), where hartID is 0
+    sd      t0, 0(t6)                   # set mtimecmp
 
     # prepare info in timer_scratch[] for timervec
-    la      t0, timer_scratch           # load timer_scratch's address
-    li      t1, 0x2004000               # load mtimecmp's address 
-    sd      t1, 24(t0)                  # store mtimecmp's address at timer_scratch[3]
+    # la      t0, timer_scratch           # load timer_scratch's address
+    # sd      t6, 24(t0)                  # store mtimecmp's address at timer_scratch[3]
 
-    li      t1, 1000000                 # load desired interval (in cycles) 
-    sd      t1, 32(t0)                  # store desired interval at timer_scratch[4]
+    # li      t1, 1000000                 # load desired interval (in cycles) 
+    # sd      t1, 32(t0)                  # store desired interval at timer_scratch[4]
 
-    csrw    mscratch, t0
+    # csrw    mscratch, t0
 
     # set M-mode trap handler
     la      t0, timervec
     csrw    mtvec, t0
 
     # enable M-mode interrupts
-    csrr    t1, mstatus
-    ori     t1, t1, (1 << 3) 
-    csrw    mstatus, t1
+    csrr    t0, mstatus
+    ori     t0, t0, (1 << 3) 
+    csrw    mstatus, t0
 
     # enable M-mode timer interrupts
-    csrr    t1, mie
-    ori     t1, t1, (1 << 7) 
-    csrw    mie, t1
+    csrr    t0, mie
+    ori     t0, t0, (1 << 7) 
+    csrw    mie, t0
 
     # return from M-mode to lower privilige mode (S in our case)
     mret

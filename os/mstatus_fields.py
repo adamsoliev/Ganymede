@@ -34,15 +34,13 @@ def print_mstatus_fields(mstatus_value):
             print(f"{field.rjust(max_field_len)}: {bin(value)[2:]}")
         else:
             start, end = indexes
-            # value = (mstatus_value >> start) & ((1 << (end - start + 1)) - 1)
             value = (mstatus_value >> end) & 3
             binary_value = bin(value)[2:].zfill(start - end + 1)
-            # print(f"{field}: {binary_value}")
             print(f"{field.rjust(max_field_len)}: {binary_value}")
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print("Usage: python script.py <mstatus_value>")
+        print("Usage: python3 script.py <mstatus_value>")
         sys.exit(1)
 
     input_value = sys.argv[1]
