@@ -7,6 +7,9 @@ void kernelvec();
 void w_stvec(unsigned long x);
 unsigned long r_sip();
 void w_sip(unsigned long x);
+unsigned long r_sstatus();
+void w_sstatus(unsigned long x);
+
 void scheduler(void);
 
 // _entry jumps here
@@ -26,6 +29,7 @@ void kerneltrap() {
 void scheduler(void) {
         for (;;) {
                 //
+                w_sstatus(r_sstatus() | (1 << 1));
                 int a = 32 + 43;
         }
 }
@@ -38,3 +42,9 @@ unsigned long r_sip() {
         return x;
 }
 void w_sip(unsigned long x) { asm volatile("csrw sip, %0" : : "r"(x)); }
+unsigned long r_sstatus() {
+        unsigned long x;
+        asm volatile("csrr %0, sstatus" : "=r"(x));
+        return x;
+}
+void w_sstatus(unsigned long x) { asm volatile("csrw sstatus, %0" : : "r"(x)); }
