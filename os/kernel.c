@@ -1,10 +1,18 @@
+__attribute__((aligned(16))) char stack0[4096];
+
 unsigned long timer_scratch[5];
 
+void scheduler(void);
+
+// _entry jumps here
 int main() {
-        // _entry jumps here
-        // install kernel trap vector
-        int a = 23;
-        int b = 32;
-        int c = a + b;
+        // initialize subsystems
+        scheduler();
         return 0;
+}
+
+void scheduler(void) {
+        for (;;) {
+                //
+        }
 }

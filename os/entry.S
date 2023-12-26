@@ -49,41 +49,30 @@
 .section .text
 .global _entry
 _entry:
+    la      sp, stack0
 
     # clear 11 and 12 bits and set them to 01 (S-mode), for mret
-    # csrr	a5,mstatus
-    # lui 	a4,0xffffe
-    # add	    a4,a4,2047 # ffffffffffffe7ff <end+0xffffffff7ffda20f>
-    # and 	a5,a5,a4
-    # lui 	a4,0x1
-    # add	    a4,a4,-2048 # 800 <_entry-0x7ffff800>
-    # or	    a5,a5,a4
-    # csrw	mstatus,a5
+    # li      t0, (3 << 11)
+    # csrc    mstatus, t0
+    # li      t0, (1 << 11)
+    # csrs    mstatus, t0
 
     li      t0, 0x1800
     csrc    mstatus, t0
     li      t0, 0x802
     csrs    mstatus, t0
 
-    # li      t0, (3 << 11)
-    # csrc    mstatus, t0
-    # li      t0, (1 << 11)
-    # csrs    mstatus, t0
-
     # set mepc to C's main
-    la		t0, supervisor
+    la		t0, main
     csrw	mepc, t0
 
     # disable paging 
     csrw	satp, zero
 
     # delegate all M-mode interrupts and exceptions to S-mode
-    # li      t0, 0xffff
-    # csrw    medeleg, t0
-    # csrw    mideleg, t0
-
-    li      t0, 0x20
-    csrs    mideleg, t0
+    li      t0, 0xffff
+    csrw    medeleg, t0
+    csrw    mideleg, t0
 
     # enable S-mode external, timer, software interrupts
     csrr    t0, sie
@@ -109,7 +98,7 @@ _entry:
     add     t0, t0, t1                  # mtime + interval 
 
     li      t6, 0x2004000               # load address of mtimecmp, assuming a single core: 0x2000000 + 4000 + 8(hartID), where hartID is 0
-    sd      t0, 0(t6)                   # set mtimecmp
+    sd      t1, 0(t6)                   # set mtimecmp
 
     # prepare info in timer_scratch[] for timervec
     # la      t0, timer_scratch           # load timer_scratch's address
@@ -130,9 +119,9 @@ _entry:
     csrw    mstatus, t0
 
     # enable M-mode timer interrupts
-    # csrr    t0, mie
-    # ori     t0, t0, (1 << 7) 
-    # csrw    mie, t0
+    csrr    t0, mie
+    ori     t0, t0, (1 << 7) 
+    csrw    mie, t0
 
     li      t0, 0xa0 
     csrs    mie, t0
@@ -143,41 +132,38 @@ _entry:
 spin:
     j spin
 
-supervisor:
-    j spin
 
 .globl timervec
 .align 4
 timervec:
-        # timer_scratch[0,8,16] : register save area.
-        # timer_scratch[24]     : address of CLINT's mtimecmp register.
-        # timer_scratch[32]     : desired interval between interrupts.
-        
-        csrrw a0, mscratch, a0
-        sd a1, 0(a0)
-        sd a2, 8(a0)
-        sd a3, 16(a0)
+    # timer_scratch[0,8,16] : register save area.
+    # timer_scratch[24]     : address of CLINT's mtimecmp register.
+    # timer_scratch[32]     : desired interval between interrupts.
+    
+    csrrw a0, mscratch, a0
+    sd a1, 0(a0)
+    sd a2, 8(a0)
+    sd a3, 16(a0)
 
-        # schedule the next timer interrupt
-        # by adding interval to mtimecmp.
-        ld a1, 24(a0) # mtimecmp
-        ld a2, 32(a0) # interval
-        ld a3, 0(a1)
-        add a3, a3, a2
-        sd a3, 0(a1)
+    # schedule the next timer interrupt
+    # by adding interval to mtimecmp.
+    ld a1, 24(a0) # mtimecmp
+    ld a2, 32(a0) # interval
+    ld a3, 0(a1)
+    add a3, a3, a2
+    sd a3, 0(a1)
 
-        # arrange for a supervisor software interrupt
-        # after this handler returns.
-        li a1, 2
-        csrw sip, a1
+    # arrange for a supervisor software interrupt
+    # after this handler returns.
+    li a1, 2
+    csrw sip, a1
 
-        ld a3, 16(a0)
-        ld a2, 8(a0)
-        ld a1, 0(a0)
-        csrrw a0, mscratch, a0
+    ld a3, 16(a0)
+    ld a2, 8(a0)
+    ld a1, 0(a0)
+    csrrw a0, mscratch, a0
 
-        mret
-
+    mret
 
 # https://danielmangum.com/posts/risc-v-bytes-timer-interrupts/
 
