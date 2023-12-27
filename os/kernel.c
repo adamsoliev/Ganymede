@@ -23,7 +23,7 @@ int main() {
 
 void kerneltrap() {
         // acknowledge software interrupt by clearing sip.SSIP
-        w_sip(r_sip() | (~2));
+        w_sip(r_sip() & (~2));
 }
 
 void scheduler(void) {
