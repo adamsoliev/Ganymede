@@ -1,14 +1,6 @@
+
 // data structures
 enum procstate { UNUSED, USED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
-
-struct proc {
-        enum procstate state;
-        int pid;
-        unsigned long kstack;
-        unsigned long sz;
-        struct context context;
-        char name[16];
-};
 
 struct context {
         unsigned long ra;
@@ -29,12 +21,30 @@ struct context {
         unsigned long s11;
 };
 
-//
+struct proc {
+        enum procstate state;
+        int pid;
+        unsigned long kstack;
+        unsigned long sz;
+        struct context context;
+        char name[16];
+};
+
+// os
 #define NPROC 4
-// since this OS runs on single CPU, we just have global vars for
-struct proc *cur_proc;        // currently running process
-struct context *cur_context;  // swtch() here to enter scheduler
-struct proc proc[NPROC];      // process table
+
+// risc-v
+#define PGSIZE 4096  // bytes per page
+#define MAXVA (1L << (9 + 9 + 9 + 12 - 1))
+
+// memlayout
+#define TRAMPOLINE (MAXVA - PGSIZE)
+#define KSTACK(p) (TRAMPOLINE - ((p) + 1) * 2 * PGSIZE)
+
+// since this OS runs on a single CPU, we just have global vars for
+struct proc *cur_proc;       // currently running process
+struct context cur_context;  // swtch() here to enter scheduler
+struct proc proct[NPROC];    // process table
 
 __attribute__((aligned(16))) char stack0[4096];
 
@@ -47,6 +57,8 @@ unsigned long r_sip();
 void w_sip(unsigned long x);
 unsigned long r_sstatus();
 void w_sstatus(unsigned long x);
+void procinit(void);
+void swtch(struct context *, struct context *);
 
 void scheduler(void);
 
@@ -60,10 +72,21 @@ int main() {
 }
 
 void scheduler(void) {
+        struct proc *p;
+        cur_proc = 0;
+
         for (;;) {
-                //
+                // enable device interrupt
                 w_sstatus(r_sstatus() | (1 << 1));
-                int a = 32 + 43;
+
+                for (p = proct; p < &proct[NPROC]; p++) {
+                        if (p->state == RUNNABLE) {
+                                p->state = RUNNING;
+                                cur_proc = p;
+                                swtch(&cur_context, &p->context);
+                                cur_proc = 0;
+                        }
+                }
         }
 }
 
@@ -72,9 +95,9 @@ void scheduler(void) {
 //////////////
 void procinit(void) {
         struct proc *p;
-        for (p = proc; p < &proc[NPROC]; p++) {
+        for (p = proct; p < &proct[NPROC]; p++) {
                 p->state = UNUSED;
-                p->kstack = 0;
+                p->kstack = KSTACK((int)(p - proct));
         }
 }
 
@@ -100,3 +123,25 @@ unsigned long r_sstatus() {
         return x;
 }
 void w_sstatus(unsigned long x) { asm volatile("csrw sstatus, %0" : : "r"(x)); }
+
+/*
+userinit
+        allocproc
+                find unused proc
+
+                mark it as used
+                allocate trapframe
+                create user page table with trampoline/trapframe
+                set up new context
+                        p->context.ra = forkret
+                        p->context.sp = p->kstack + PGSIZE
+
+        allocate a page for initcode's instrs and data and copy them into it
+
+        prepare for the first 'return' from kernel to user by setting up trapframe
+                p->trapframe->epc = 0           // 
+                p->trapframe->sp = PGSIZE       // 
+        
+        p->name = "initcode"
+        p->state = RUNNABLE
+*/
