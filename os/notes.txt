@@ -147,31 +147,44 @@ gle page table that describes the kernel’s address space
 ----------------------------------------------------------------
 4. TRAPS AND SYSCALLS
 ----------------------------------------------------------------
-  Syscall, exception (illegal action), interrupt (device I/O)
+  syscall (user), exception (kernel|user), interrupt (kernel|user)
+
+  convenient to have separate code path for three distinct cases
+    traps from user space     (syscall|exception|interrupt)
+    traps from kernel space   (exception|interrupt)
+    timer interrupts          (kernel|user)
   
-  All are transparently handled in kernel
-  
-  RISC-V trap machinery (for traps handled in supervisor mode)
+  risc-v trap (generic term for above) machinery (for traps handled in supervisor mode)
     stvec     address of trap handler
-    sepc      where PC is saved before jumping to trap handler
+    sepc      where pc is saved before jumping to trap handler
     scause    reason for trap
     sscratch  helper register to save user registers
-    sstatus   SIP bit - whether device interrupts are on/off; SPP bit - whether trap came from user/supervisor mode
+    sstatus   sip bit - whether device interrupts are on/off; spp bit - whether trap came from user/supervisor mode
 
-  while executing user code
-    ------------------------------------------
-    uservec (in trampoline page) -> usertrap (trap.c)
-    ------------------------------------------
-      uservec   - save regs in & retrieve trap handling info from trapframe page; switch page tables; call usertrap
-      usertrap  - determine cause of the trap, process it and return
-        modify stvec, save sepc, (syscall | devintr | error) 
-    ------------------------------------------
-    usertrapret (trap.c) -> userret (in trampoline page)
-    ------------------------------------------
-      usertrapret - restore control registers to prep for a future trap;
-        point stvec to uservec, prepping trapframe fields, set sepc to prev saved
-        user pc; call userret
-      userret     - switch page tables; restore user regs; execute sret to return to user space
+  in a trap, risc-v hw does (note that CPU does minimal work possible)
+    disable interrupts by clearing the sie bit in sstatus
+    copy the pc to sepc
+    save the current mode (user or supervisor) in the spp bit in sstatus
+    set scause to reflect the trap’s cause
+    set the mode to supervisor
+    copy stvec to the pc
+    start executing at the new pc
+
+  in user space
+    uservec -> usertrap -> usertrapret -> userret (fundamentally, 
+    this sequences is saving user state, loading necessary kernel state,
+    handling trap, restoring user state, resuming)
+
+    riscv hw doesn't switch page tables, so trap handler needs a common mapping (in user and
+    kernel page tables) to go in/out of kernel when in user space; thus,
+    trampoline is mapped at the top of every process' and kernel's page table
+
+    right below trampoline, each process has trapframe page to save/restore
+    necessary state (gen regs, kstack, cpuhardid, &usertrap, &kptable);
+    TRAPFRAME (va in user page table) and p->trapframe (pa) refers to this page
+
+  in kernel space
+    kernelvec -> kerneltrap
 
   while executing kernel space
     ------------------------------------------
