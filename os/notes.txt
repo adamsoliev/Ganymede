@@ -24,8 +24,35 @@ Initial setup
 Thus an operating system must fulfill three requirements: multiplexing, isolation, and interaction.
 
 ----------------------------------------------------------------
-1. OS INTERFACES
+1. OS INTERFACES (abstractions that STOOD THE TEST OF TIME)
 ----------------------------------------------------------------
+Process 
+  user-space memory (instrs, data, stack) and per-process state private to kernel
+
+File descriptor
+  int representing a kernel-managed object that a process reads/writes;
+  that object is often referred to as a 'file' (could be file|dir|device|pipe)
+
+  the xv6 kernel uses the file descriptor as an index into a per-process table, 
+  so that every process has a private space of file descriptors starting at zero
+  
+Pipes
+  kernel buffer exposed to processes as a pair of file descriptors, 
+  one for reading and one for writing; pipes provide a way for processes to communicate
+
+File system
+  data files and directories, which contain named references to data files and other dirs
+
+  struct inode (file|dir|device)
+    file    - inode with data
+    dir     - inode with a sequence of dirent structs, each of which
+              {
+                int inum;     // ref to file's inode (unique to each file)
+                char name[x]; // file's name (also called 'link')
+              }
+    device  - inode with device address 
+
+  inode is in-memory copy of dinode, which is on disk
 
 ----------------------------------------------------------------
 2. OS ORGANIZATION
@@ -189,4 +216,18 @@ Thus an operating system must fulfill three requirements: multiplexing, isolatio
 ----------------------------------------------------------------
 9. CONCURRENCY REVISITED
 ----------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
