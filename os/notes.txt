@@ -113,6 +113,36 @@ Process - unit of isolation
 ----------------------------------------------------------------
 3. PAGE TABLES
 ----------------------------------------------------------------
+risc-v instructions (both user and kernel) manipulate virtual addresses; ram is 
+indexed with physical addresses; risc-v page table hw does VA -> PA for loads/stores
+
+xv6 runs on sv39 risc-v (27 index bits + 12 offset bits); risc-v hw translates 
+va -> pa by walking the three-level tree of page tables (each 9 bits of 27 index bits 
+for each level of 512-entries (2^9) page tables);
+
+  virtual address                physical address
+  +----------------------+       +----------------------+
+  | ext | index | offset |   =>  |      PPN    | offset |
+  +----------------------+       +----------------------+
+  
+        44          10                     44         10                      44        10          
+  +----------------------+ 511       +----------------------+ 511        +----------------------+ 511  
+  |              |       |           |              |       |            |              |       |      
+  +----------------------+           +----------------------+            +----------------------+    
+  |              |       |           |              |       |            |              |       |      
+  +----------------------+           +----------------------+            +----------------------+    
+  |     PPN      | Flags |  --+      |              |       |            |     PPN      | Flags |      
+  +----------------------+    |      +----------------------+            +----------------------+      
+  |              |       |    |      |      PPN     | Flags |   --+      |              |       |      
+  +----------------------+    |      +----------------------+     |      +----------------------+      
+  |              |       |    |      |              |       |     |      |              |       |      
+  +----------------------+ 0  +----> +----------------------+ 0   +----> +----------------------+ 0    
+  ^     Page directory                     Page directory                      Page directory              
+  |
+  satp
+
+xv6 maintains one page table per process, describing each process’s user address space, plus a sin-
+gle page table that describes the kernel’s address space
 
 ----------------------------------------------------------------
 4. TRAPS AND SYSCALLS
