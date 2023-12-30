@@ -161,7 +161,7 @@ gle page table that describes the kernel’s address space
     sscratch  helper register to save user registers
     sstatus   sip bit - whether device interrupts are on/off; spp bit - whether trap came from user/supervisor mode
 
-  in a trap, risc-v hw does (note that CPU does minimal work possible)
+  in a trap, risc-v hw will (note that CPU does minimal work possible)
     disable interrupts by clearing the sie bit in sstatus
     copy the pc to sepc
     save the current mode (user or supervisor) in the spp bit in sstatus
@@ -171,27 +171,29 @@ gle page table that describes the kernel’s address space
     start executing at the new pc
 
   in user space
-    uservec -> usertrap -> usertrapret -> userret (fundamentally, 
-    this sequences is saving user state, loading necessary kernel state,
-    handling trap, restoring user state, resuming)
+    uservec -> usertrap -> usertrapret -> userret 
+    (save user state, load necessary kernel state, handle trap, return to user
+    space, restore user state and resume)
 
-    riscv hw doesn't switch page tables, so trap handler needs a common mapping (in user and
-    kernel page tables) to go in/out of kernel when in user space; thus,
-    trampoline is mapped at the top of every process' and kernel's page table
+    when forcing a trap, riscv hw doesn't switch page tables, so trap handler needs 
+    a common mapping (in user and kernel page tables) to go in/out of kernel
+    when it is in user space; thus, trampoline is mapped at the top of every 
+    process' and kernel's page table
 
     right below trampoline, each process has trapframe page to save/restore
     necessary state (gen regs, kstack, cpuhardid, &usertrap, &kptable);
-    TRAPFRAME (va in user page table) and p->trapframe (pa) refers to this page
+    TRAPFRAME (va in user page table) and p->trapframe (pa) refer to this page
 
   in kernel space
-    kernelvec -> kerneltrap
+    kernelvec -> kerneltrap 
+    (again, save kernel state, handle trap and restore kernel state)
 
-  while executing kernel space
-    ------------------------------------------
-    kernelvec -> kerneltrap
-    ------------------------------------------
-      kernelvec   - save regs into a respective kernel stack
-      kerneltrap  - save control regs; (devinstr | error)
+  timer interrupts
+    risc-v requires that timer interrupts be taken in machine mode. Since 
+    xv6 kernel operates in supervisor mode, basic strategy for timer interrupts 
+    is for handler to ask riscv to raise 'software interrupt' 
+    and immediately return; riscv delivers software interrupts to kernel 
+    with ordinary trap mechanism
 
 ----------------------------------------------------------------
 5. INTERRUPTS AND DEVICE DRIVERS
@@ -205,7 +207,6 @@ gle page table that describes the kernel’s address space
     
     shell -> write() -> filewrite() -> devsw[CONSOLE].write() -> consolewrite() -> uartputc() -> uartstart() 
                                                                                   uartintr() -> uartstart() 
-  
   NS16450 UART
   https://www.lammertbies.nl/comm/info/serial-uart
 
@@ -251,24 +252,14 @@ gle page table that describes the kernel’s address space
 
   xv6 multiplexes in 
     sleep/wakeup mechamism
-    periodic switch to copy with processes that computer for long periods
+    timer interrupts
   
-  issues
-    how to do it? 
-    how to do it transparently to user? 
-    locking of process data structures to avoid races between different CPUs? 
-    how to handle switching user/supervisor resources? 
-    how do avoid races that result in loss of wakeup signals?
-  
-  context switching
-    user stack #1 -> kstack #1 -> scheduler context of the core -> kstack #2 -> user stack #2
-  
-  scheduling
-    important thing to understand here is that sched and scheduler intentionally transfer
-    control to each other via thread switch. 
-      A kernel thread gives up CPU in sched 
-      Control is transfered to scheduler 
-      Scheduler returns in another kernel thread's sched call
+  context switching - save one set of regs and restore another set (each called context) 
+    in xv6 case, it will do so through middleman - scheduler; so, replace current
+    context with context of scheduler; scheduler finds another process to run and
+    calls swtch, which replaces scheduler context with newly found process';
+    notice implicit jumps here - when xv6 replaces context (ra,sp,etc), it returns on new stack
+    (user stack #1 -> kstack #1 -> scheduler context of the core -> kstack #2 -> user stack #2)
   
   sleep/wakeup
 
