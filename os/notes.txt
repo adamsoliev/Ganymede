@@ -305,15 +305,111 @@ gle page table that describes the kernel’s address space
 
 
 
+1. U-mode
+  a. syscall | exception | interrupt
+  b. timer interrupt
+2. S-mode
+  a. exception | interrupt
+  b. timer interrupt
+
+1a
++---+-----------------------------------------------
+| U | running                               resume
+|   |   |                                     ^
++---+---v-------------------------------------|-----
+| S | uservec -> usertrap -> usertrapret -> userret
++---+-----------------------------------------------
+| M | 
++---+-----------------------------------------------
+  uservec                                         usertrapret
+    save user regs into TF                          turn off intrs
+    load kstack, &usertrap, &kptable from TF        set stvec to uservec
+    install kptable                                 save kstack, &usertrap, &kptable into TF
+  usertrap                                          set sstatus.SPP to U-mode
+    set stvec to kernelvec (we are in S-mode)       set sepc to saved TF->epc
+    save sepc into TF->epc                          userret(p->pagetable)
+    if (syscall)                                  userret
+      incr TF->epc by 4                             install uptable
+      turn on intrs                                 restore user regs from TF
+      syscall()                                     sret
+    else if (devinstr)
+      route to device
+    else 
+      error
+
+1b
++---+------------------------------------------------------------
+| U | running                                           resume
+|   |     |                                                ^
++---+-----|------------------------------------------------|-----
+| S |     |      uservec -> usertrap -> usertrapret -> userret
+|   |     |      ^
++---+-----v------|-----------------------------------------------
+| M |     timervec
++---+------------------------------------------------------------
+  timervec
+    reset mtimecmp
+    raise 'software interrupt'
+    mret 
+  *implicit here that when time interrupted in U-mode, we save user pc in mepc and
+  restore it in mret; since mstatus.MPP points to S-mode, we 'software trap' into
+  S-mode, saving restored user pc in sepc and jumping to stvec
+
+  uservec                                         usertrapret
+    save user regs into TF                          turn off intrs
+    load kstack, &usertrap, &kptable from TF        set stvec to uservec
+    install kptable                                 save kstack, &usertrap, &kptable into TF
+  usertrap                                          set sstatus.SPP to U-mode
+    set stvec to kernelvec (we are in S-mode)       set sepc to saved TF->epc
+    save sepc into TF->epc                          userret(p->pagetable)
+    if (syscall)                                  userret
+      incr TF->epc by 4                             install uptable
+      turn on intrs                                 restore user regs from TF
+      syscall()                                     sret
+    else if (devinstr)
+      clear sip.SSIP acknowledging software interrupt
+    else 
+      error
+    yield
 
 
+RISC-V Priviliged
+  -------------------------------------------------
+  MACHINE-LEVEL ISA
+  -------------------------------------------------
+  misa                  - M ISA reg
+  mvendorid             - M vendor ID reg
+  marchid               - M architecture ID reg
+  mimpid                - M implementation ID reg
+  mhartid               - M hart ID reg
+  mstatus and mstatush  - M status regs
+  mtvec                 - M trap-vector base-address reg
+  medeleg and mideleg   - M trap delegation regs
+  mip and mie           - M interrupt regs
+  mcounteren            - M counter-enable reg
+  mcountinhibit         - M counter-inhibit CSR
+  mscratch              - M scratch reg
+  mepc                  - M exception pc
+  mcause                - M cause reg
+  mtval                 - M trap value reg
+  mconfigptr            - M configuration pointer reg
+  menvcfg and menvcfgh  - M env conf regs
+  mseccfg               - M security conf reg
+  mtime and mtimecmp    - M timer regs
 
 
-
-
-
-
-
-
+  -------------------------------------------------
+  SUPERVISOR-LEVEL ISA
+  -------------------------------------------------
+  sstatus               - S status reg
+  stvec                 - S trap-vector base-address reg
+  sip and sie           - S interrupt regs
+  scounteren            - S counter-enable reg
+  sscratch              - S scratch reg
+  sepc                  - S exception pc
+  scause                - S cause reg
+  stval                 - S trap value reg
+  senvcfg               - S env conf reg
+  satp                  - S address translation and protection reg
 
 
