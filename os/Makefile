@@ -29,14 +29,14 @@ $(KERNEL_IMAGE): $(OBJS)
 	$(LD) $(LDFLAGS) -T virt.ld -o $@ $(OBJS) 
 	$(OBJDUMP) -S kernel > kernel.asm
 
-%.o: %.c
+%.o: %.c kernel.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
-%.o: %.S
+%.o: %.S kernel.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(OBJS) $(KERNEL_IMAGE) */*.asm
+	rm -f $(OBJS) $(KERNEL_IMAGE) *.asm
 
 debug: all
 	@echo "*** Now run 'gdb-multiarch $(KERNEL_IMAGE)' in another window"
