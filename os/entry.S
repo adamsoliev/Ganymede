@@ -226,16 +226,13 @@ swtch:
 uservec:    
     # trap.c sets stvec to point here, so
     # traps from user space start here,
-    # in supervisor mode, but with a
-    # user page table.
+    # in supervisor mode
 
     # save user a0 in sscratch so
     # a0 can be used to get at TRAPFRAME.
     csrw sscratch, a0
 
-    # each process has a separate p->trapframe memory area,
-    # but it's mapped to the same virtual address
-    # (TRAPFRAME) in every process's user page table.
+    # each process has a separate p->trapframe memory area
     li a0, TRAPFRAME
     
     # save the user registers in TRAPFRAME
@@ -287,10 +284,9 @@ uservec:
 .globl userret
 .align 4
 userret:
-    # userret(pagetable)
+    # userret()
     # called by usertrapret() in trap.c to
     # switch from kernel to user.
-    # a0: user page table, for satp.
 
     li a0, TRAPFRAME
 

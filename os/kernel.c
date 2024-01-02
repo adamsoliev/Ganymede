@@ -234,7 +234,6 @@ void usertrapret(void) {
         w_sstatus(r_sstatus() & ~(1 << 1));
 
         // send syscalls, interrupts, and exceptions to uservec in trampoline.S
-        // unsigned long trampoline_uservec = TRAMPOLINE + (uservec - trampoline);
         w_stvec((unsigned long)uservec);
 
         // set up trapframe values that uservec will need when
@@ -255,9 +254,7 @@ void usertrapret(void) {
         w_sepc(p->trapframe->epc);
 
         // jump to userret in trampoline.S at the top of memory, which
-        // switches to the user page table, restores user registers,
-        // and switches to user mode with sret.
-        // unsigned long trampoline_userret = TRAMPOLINE + (userret - trampoline);
+        // restores user registers, and switches to user mode with sret.
         userret();
 }
 
