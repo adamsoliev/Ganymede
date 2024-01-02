@@ -1,3 +1,18 @@
+Scratch
+  1. trapframe
+      each process needs to have its own trapframe area; right now we are
+      assigning one address to all trapframes
+  2. initcode instructions' placement shouldn't be hardcoded
+  ====> add physical memory allocator, which solves both of the above
+  3. we need some sort of print functionality in a process so that we know
+     things are working property without gdbing 
+  4. add second process and print stuff from both to see timer interrupts
+     working
+  5. add paging
+
+
+
+
 XV6
 
 ----------------------------------------------------------------

@@ -154,7 +154,7 @@ void userinit(void) {
         struct proc *p = &proct[0];
 
         p->pid = 1;
-        p->trapframe = (struct trapframe *)TRAPFRAME;  // START + 3MB
+        p->trapframe = (struct trapframe *)TRAPFRAME;
 
         // set up new context to start executing at usertrapret,
         // which returns to user space.
