@@ -1,4 +1,4 @@
-.global _start      
-_start: 
+.globl start      
+start: 
         li t1, 23
-        j _start
+        j start

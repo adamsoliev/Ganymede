@@ -2,6 +2,7 @@
 CC=riscv64-unknown-linux-gnu-gcc
 LD=riscv64-unknown-linux-gnu-ld
 OBJDUMP=riscv64-unknown-linux-gnu-objdump
+OBJCOPY=riscv64-unknown-linux-gnu-objcopy
 CFLAGS=-Wall -Wextra -ffreestanding -nostartfiles -nostdlib -nodefaultlibs
 CFLAGS+=-g -Wl,--gc-sections -mcmodel=medany
 LDFLAGS = -z max-page-size=4096
@@ -11,7 +12,9 @@ KERNEL_IMAGE=kernel
 
 OBJS = \
 	entry.o \
-	kernel.o
+	kernel.o \
+	initcode.o \
+
 
 # QEMU
 QEMU=qemu-system-riscv64
@@ -25,9 +28,14 @@ GDB_PORT=1234
 
 all: $(KERNEL_IMAGE)
 
-$(KERNEL_IMAGE): $(OBJS)
+$(KERNEL_IMAGE): $(OBJS) initcode
 	$(LD) $(LDFLAGS) -T virt.ld -o $@ $(OBJS) 
 	$(OBJDUMP) -S kernel > kernel.asm
+
+initcode: initcode.S
+	$(CC) $(CFLAGS) -march=rv64g -nostdinc -I. -c initcode.S -o initcode.o
+	$(LD) $(LDFLAGS) -N -e start -Ttext 0 -o initcode.out initcode.o
+	$(OBJCOPY) -S -O binary initcode.out initcode
 
 %.o: %.c kernel.h
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -36,7 +44,7 @@ $(KERNEL_IMAGE): $(OBJS)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(OBJS) $(KERNEL_IMAGE) *.asm
+	rm -f $(OBJS) $(KERNEL_IMAGE) *.asm initcode initcode.out 
 
 debug: all
 	@echo "*** Now run 'gdb-multiarch $(KERNEL_IMAGE)' in another window"

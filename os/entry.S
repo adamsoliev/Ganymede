@@ -221,9 +221,6 @@ swtch:
     ret
 
 
-.section trampsec
-.globl trampoline
-trampoline:
 .align 4
 .globl uservec
 uservec:    
@@ -231,7 +228,6 @@ uservec:
     # traps from user space start here,
     # in supervisor mode, but with a
     # user page table.
-    #
 
     # save user a0 in sscratch so
     # a0 can be used to get at TRAPFRAME.
@@ -289,6 +285,7 @@ uservec:
     jr t0
 
 .globl userret
+.align 4
 userret:
     # userret(pagetable)
     # called by usertrapret() in trap.c to

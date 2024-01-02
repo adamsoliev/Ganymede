@@ -77,13 +77,14 @@ struct proc {
 };
 
 // trap
-void kernelvec();
+void kernelvec(void);
 void usertrap(void);
 void usertrapret(void);
 
 unsigned long timer_scratch[5];
 
-extern char trampoline[], uservec[], userret[];
+extern char trampoline[], uservec[];
+void userret(void);
 
 // process
 void procinit(void);
@@ -153,7 +154,7 @@ void userinit(void) {
         struct proc *p = &proct[0];
 
         p->pid = 1;
-        p->trapframe = (struct trapframe *)0x80300000;  // START + 3MB
+        p->trapframe = (struct trapframe *)TRAPFRAME;  // START + 3MB
 
         // set up new context to start executing at usertrapret,
         // which returns to user space.
@@ -162,13 +163,17 @@ void userinit(void) {
 
         // copy initcode's instructions to mem starting at 0x80500000
         // pc has to be set to the above too
-        unsigned long STARTADDR = 0x80500000;  // START + 5MB
-        memmove((void *)STARTADDR, initcode, sizeof(initcode));
+        char *STARTADDR = (void *)0x80500000;  // START + 5MB
+        char *copy = STARTADDR;
+        for (int i = 0; i < 8; i++) {
+                *copy = initcode[i];
+                copy++;
+        }
         p->sz = PGSIZE;
 
         // prepare for the very first 'return' from kernel to user
-        p->trapframe->epc = STARTADDR;              // user pc
-        p->trapframe->sp = STARTADDR + PGSIZE * 2;  // user stack pointer
+        p->trapframe->epc = (unsigned long)STARTADDR;              // user pc
+        p->trapframe->sp = (unsigned long)STARTADDR + PGSIZE * 2;  // user stack pointer
 
         safestrcpy(p->name, "initcode", sizeof(p->name));
 
@@ -229,8 +234,8 @@ void usertrapret(void) {
         w_sstatus(r_sstatus() & ~(1 << 1));
 
         // send syscalls, interrupts, and exceptions to uservec in trampoline.S
-        unsigned long trampoline_uservec = TRAMPOLINE + (uservec - trampoline);
-        w_stvec(trampoline_uservec);
+        // unsigned long trampoline_uservec = TRAMPOLINE + (uservec - trampoline);
+        w_stvec((unsigned long)uservec);
 
         // set up trapframe values that uservec will need when
         // the process next traps into the kernel.
@@ -253,7 +258,7 @@ void usertrapret(void) {
         // switches to the user page table, restores user registers,
         // and switches to user mode with sret.
         // unsigned long trampoline_userret = TRAMPOLINE + (userret - trampoline);
-        // ((void (*)(unsigned long))trampoline_userret);
+        userret();
 }
 
 void kerneltrap() {
@@ -287,24 +292,6 @@ void w_sepc(unsigned long x) { asm volatile("csrw sepc, %0" : : "r"(x)); }
 ////////////////////////////////
 // STRING
 ////////////////////////////////
-void *memmove(void *dst, const void *src, unsigned int n) {
-        const char *s;
-        char *d;
-
-        if (n == 0) return dst;
-
-        s = src;
-        d = dst;
-        if (s < d && s + n > d) {
-                s += n;
-                d += n;
-                while (n-- > 0) *--d = *--s;
-        } else
-                while (n-- > 0) *d++ = *s++;
-
-        return dst;
-}
-
 // Like strncpy but guaranteed to NUL-terminate.
 char *safestrcpy(char *s, const char *t, int n) {
         char *os;
