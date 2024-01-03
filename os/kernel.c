@@ -168,11 +168,11 @@ void userinit(void) {
         // set up new context to start executing at usertrapret,
         // which returns to user space.
         p->context.ra = (unsigned long)usertrapret;
-        p->context.sp = p->kstack;
+        p->context.sp = p->kstack + PGSIZE;  // stack grows downward, so point to top
 
         // copy initcode's instructions to mem starting at STARTADDR
         // pc has to be set to that address too
-        char *STARTADDR = kalloc();
+        char *STARTADDR = kalloc();  // for user code, data and stack
         char *copy = STARTADDR;
         for (int i = 0; i < 8; i++) {
                 *copy = initcode[i];
@@ -181,8 +181,8 @@ void userinit(void) {
         p->sz = PGSIZE;
 
         // prepare for the very first 'return' from kernel to user
-        p->trapframe->epc = (unsigned long)STARTADDR;              // user pc
-        p->trapframe->sp = (unsigned long)STARTADDR + PGSIZE * 2;  // user stack pointer
+        p->trapframe->epc = (unsigned long)STARTADDR;          // user pc (bottom)
+        p->trapframe->sp = (unsigned long)STARTADDR + PGSIZE;  // user stack pointer (top)
 
         safestrcpy(p->name, "initcode", sizeof(p->name));
 
@@ -247,7 +247,7 @@ void usertrapret(void) {
 
         // set up trapframe values that uservec will need when
         // the process next traps into the kernel.
-        p->trapframe->kernel_sp = p->kstack;  // process's kernel stack
+        p->trapframe->kernel_sp = p->kstack + PGSIZE;  // process's kernel stack
         p->trapframe->kernel_trap = (unsigned long)usertrap;
 
         // set up the registers that trampoline.S's sret will use
