@@ -288,7 +288,7 @@ userret:
     # called by usertrapret() in trap.c to
     # switch from kernel to user.
 
-    li a0, TRAPFRAME
+    # li a0, TRAPFRAME
 
     # restore all but a0 from TRAPFRAME
     ld ra, 40(a0)

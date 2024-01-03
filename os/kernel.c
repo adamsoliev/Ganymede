@@ -84,7 +84,7 @@ void usertrapret(void);
 unsigned long timer_scratch[5];
 
 extern char trampoline[], uservec[];
-void userret(void);
+void userret(void *);
 
 // process
 void procinit(void);
@@ -102,8 +102,8 @@ unsigned long r_sepc();
 void w_sepc(unsigned long x);
 
 // string
-void *memmove(void *dst, const void *src, unsigned int n);
 char *safestrcpy(char *s, const char *t, int n);
+void *memset(void *dst, int c, unsigned int n);
 
 // os
 int main();
@@ -117,11 +117,22 @@ struct proc proct[NPROC];
 struct proc *cur_proc;
 struct context cur_context;
 
+unsigned char initcode[] = {0x13, 0x03, 0x70, 0x01, 0x6f, 0xf0, 0xdf, 0xff};
+
+// memory allocation
+void *kalloc(void);
+void kfree(void *pa);
+void freerange(void *pa_start, void *pa_end);
+
+extern char end[];  // first address after kernel.
+                    // defined by kernel.ld.
+
 ///////////////////////////////////////////////////////////////////////////////
 // _entry jumps here
 int main() {
+        freerange(end, (void *)PHYSTOP);    // physical page allocator
         procinit();                         // process table
-        w_stvec((unsigned long)kernelvec);  // install kernel trap vector
+        w_stvec((unsigned long)kernelvec);  // kernel trap vector
         userinit();                         // first user process
 
         scheduler();
@@ -148,22 +159,20 @@ void scheduler(void) {
 // PROCESS
 ////////////////////////////////
 
-unsigned char initcode[] = {0x13, 0x03, 0x70, 0x01, 0x6f, 0xf0, 0xdf, 0xff};
-
 void userinit(void) {
         struct proc *p = &proct[0];
 
         p->pid = 1;
-        p->trapframe = (struct trapframe *)TRAPFRAME;
+        p->trapframe = (struct trapframe *)kalloc();
 
         // set up new context to start executing at usertrapret,
         // which returns to user space.
         p->context.ra = (unsigned long)usertrapret;
-        p->context.sp = p->kstack + PGSIZE;
+        p->context.sp = p->kstack;
 
-        // copy initcode's instructions to mem starting at 0x80500000
-        // pc has to be set to the above too
-        char *STARTADDR = (void *)0x80500000;  // START + 5MB
+        // copy initcode's instructions to mem starting at STARTADDR
+        // pc has to be set to that address too
+        char *STARTADDR = kalloc();
         char *copy = STARTADDR;
         for (int i = 0; i < 8; i++) {
                 *copy = initcode[i];
@@ -184,7 +193,7 @@ void procinit(void) {
         struct proc *p;
         for (p = proct; p < &proct[NPROC]; p++) {
                 p->state = UNALLOCATED;
-                p->kstack = KSTACK((int)(p - proct));
+                p->kstack = (unsigned long)kalloc();
         }
 }
 
@@ -238,7 +247,7 @@ void usertrapret(void) {
 
         // set up trapframe values that uservec will need when
         // the process next traps into the kernel.
-        p->trapframe->kernel_sp = p->kstack + PGSIZE;  // process's kernel stack
+        p->trapframe->kernel_sp = p->kstack;  // process's kernel stack
         p->trapframe->kernel_trap = (unsigned long)usertrap;
 
         // set up the registers that trampoline.S's sret will use
@@ -255,7 +264,7 @@ void usertrapret(void) {
 
         // jump to userret in trampoline.S at the top of memory, which
         // restores user registers, and switches to user mode with sret.
-        userret();
+        userret(p->trapframe);
 }
 
 void kerneltrap() {
@@ -299,4 +308,62 @@ char *safestrcpy(char *s, const char *t, int n) {
                 ;
         *s = 0;
         return os;
+}
+
+void *memset(void *dst, int c, unsigned int n) {
+        char *cdst = (char *)dst;
+        unsigned int i;
+        for (i = 0; i < n; i++) {
+                cdst[i] = c;
+        }
+        return dst;
+}
+
+////////////////////////////////
+// MEMORY ALLOCATION
+////////////////////////////////
+struct run {
+        struct run *next;
+};
+
+struct {
+        struct run *freelist;
+} kmem;
+
+void freerange(void *pa_start, void *pa_end) {
+        char *p;
+        p = (char *)PGROUNDUP((unsigned long)pa_start);
+        for (; p + PGSIZE < (char *)pa_end; p += PGSIZE) kfree(p);
+}
+
+// Free the page of physical memory pointed at by pa,
+// which normally should have been returned by a
+// call to kalloc().  (The exception is when
+// initializing the allocator; see kinit above.)
+void kfree(void *pa) {
+        struct run *r;
+
+        // if (((unsigned long)pa % PGSIZE) != 0 || (char *)pa < end || (unsigned long)pa >= PHYSTOP)
+        //         panic("kfree");
+
+        // Fill with junk to catch dangling refs.
+        memset(pa, 1, PGSIZE);
+
+        r = (struct run *)pa;
+
+        r->next = kmem.freelist;
+        kmem.freelist = r;
+}
+
+// Allocate one 4096-byte page of physical memory.
+// Returns a pointer that the kernel can use.
+// Returns 0 if the memory cannot be allocated.
+void *kalloc(void) {
+        struct run *r;
+
+        r = kmem.freelist;
+        if (r) kmem.freelist = r->next;
+
+        if (r) memset((char *)r, 5, PGSIZE);  // fill with junk
+        return (void *)r;
 }

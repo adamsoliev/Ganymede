@@ -3,8 +3,11 @@ CC=riscv64-unknown-linux-gnu-gcc
 LD=riscv64-unknown-linux-gnu-ld
 OBJDUMP=riscv64-unknown-linux-gnu-objdump
 OBJCOPY=riscv64-unknown-linux-gnu-objcopy
-CFLAGS=-Wall -Wextra -ffreestanding -nostartfiles -nostdlib -nodefaultlibs
-CFLAGS+=-g -Wl,--gc-sections -mcmodel=medany
+CFLAGS = -Wall -Werror -O -fno-omit-frame-pointer -ggdb -gdwarf-2
+CFLAGS += -MD
+CFLAGS += -mcmodel=medany
+CFLAGS += -ffreestanding -fno-common -nostdlib -mno-relax
+CFLAGS += -I.
 LDFLAGS = -z max-page-size=4096
 
 LINKER_SCRIPT=virt.ld

@@ -7,6 +7,9 @@
 #define NPROC 4
 
 #define TRAMPOLINE (PHYSTOP - PGSIZE)
-#define KSTACK(p) (TRAMPOLINE - ((p) + 1) * 2 * PGSIZE)
+// #define KSTACK(p) (TRAMPOLINE - ((p) + 1) * 2 * PGSIZE)
 
 #define TRAPFRAME (TRAMPOLINE - PGSIZE)
+
+#define PGROUNDUP(sz) (((sz) + PGSIZE - 1) & ~(PGSIZE - 1))
+#define PGROUNDDOWN(a) (((a)) & ~(PGSIZE - 1))
