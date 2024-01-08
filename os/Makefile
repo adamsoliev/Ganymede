@@ -46,6 +46,9 @@ initcode: initcode.S
 %.o: %.S kernel.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
+qemu: all
+	$(RUN)
+
 clean:
 	rm -f $(OBJS) $(KERNEL_IMAGE) *.asm initcode initcode.out *.d
 

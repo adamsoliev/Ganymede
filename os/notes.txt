@@ -1,5 +1,4 @@
 Scratch
-  1. add uart/console
   2. add paging
   3. add syscalls
   4. 1st process makes a syscall; exec loads 'init', which will initialize shell

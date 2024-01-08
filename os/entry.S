@@ -233,7 +233,8 @@ uservec:
     csrw sscratch, a0
 
     # each process has a separate p->trapframe memory area
-    li a0, TRAPFRAME
+    # li a0, TRAPFRAME
+    li a0, 0x87ffa000
     
     # save the user registers in TRAPFRAME
     sd ra, 40(a0)

@@ -100,6 +100,7 @@ unsigned long r_sstatus();
 void w_sstatus(unsigned long x);
 unsigned long r_sepc();
 void w_sepc(unsigned long x);
+unsigned long r_scause();
 
 // string
 char *safestrcpy(char *s, const char *t, int n);
@@ -117,7 +118,14 @@ struct proc proct[NPROC];
 struct proc *cur_proc;
 struct context cur_context;
 
-unsigned char initcode[] = {0x13, 0x03, 0x70, 0x01, 0x6f, 0xf0, 0xdf, 0xff};
+// unsigned char initcode[] = {0x13, 0x03, 0x70, 0x01, 0x6f, 0xf0, 0xdf, 0xff};
+// clang-format off
+unsigned char initcode[] = {
+        0x13, 0x07, 0x70, 0x01,
+        0x17, 0x05, 0x00, 0x00, 0x13, 0x05, 0x45, 0x01, 0x93, 0x08, 0x10, 0x00, 0x73, 0x00, 0x00, 0x00, 
+        0x6f, 0xf0, 0x1f, 0xff, 0x55, 0x73, 0x65, 0x72, 0x20, 0x31, 0x0a, 0x00, 0x00, 0x00, 0x01, 0x00
+};
+// clang-format on
 
 // memory allocation
 void *kalloc(void);
@@ -127,6 +135,7 @@ void freerange(void *pa_start, void *pa_end);
 // uart
 void uartinit(void);
 void print(const char *str);
+void printptr(unsigned long x);
 int uartgetc(void);
 void uartputc(int c);
 
@@ -200,6 +209,9 @@ void userinit(void) {
 
         p->pid = 1;
         p->trapframe = (struct trapframe *)kalloc();
+        print("trapframe:");
+        printptr((unsigned long)p->trapframe);
+        print("\n");
 
         // set up new context to start executing at usertrapret,
         // which returns to user space.
@@ -209,8 +221,11 @@ void userinit(void) {
         // copy initcode's instructions to mem starting at STARTADDR
         // pc has to be set to that address too
         char *STARTADDR = kalloc();  // for user code, data and stack
+        print("STARTADDR:");
+        printptr((unsigned long)STARTADDR);
+        print("\n");
         char *copy = STARTADDR;
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < (int)sizeof(initcode); i++) {
                 *copy = initcode[i];
                 copy++;
         }
@@ -259,9 +274,18 @@ void usertrap(void) {
         // save user program counter.
         p->trapframe->epc = r_sepc();
 
-        // acknowledge the software interrupt by clearing
-        // the SSIP bit in sip.
-        w_sip(r_sip() & ~2);
+        if (r_scause() == 8) {
+                // syscall
+                p->trapframe->epc += 4;
+                w_sstatus(r_sstatus() | (1 << 1));
+                // int num = p->trapframe->a7;           // 1 is print
+                unsigned long a0 = p->trapframe->a0;  // str address for printing
+                print((const char *)a0);
+        } else {
+                // acknowledge the software interrupt by clearing
+                // the SSIP bit in sip.
+                w_sip(r_sip() & ~2);
+        }
 
         // give up the CPU since this is a timer interrupt
         yield();
@@ -330,6 +354,11 @@ unsigned long r_sepc() {
         return x;
 }
 void w_sepc(unsigned long x) { asm volatile("csrw sepc, %0" : : "r"(x)); }
+unsigned long r_scause() {
+        unsigned long x;
+        asm volatile("csrr %0, scause" : "=r"(x));
+        return x;
+}
 
 ////////////////////////////////
 // STRING
@@ -428,4 +457,14 @@ void print(const char *str) {
                 str++;
         }
         return;
+}
+
+static char digits[] = "0123456789abcdef";
+
+void printptr(unsigned long x) {
+        int i;
+        uartputc('0');
+        uartputc('x');
+        for (i = 0; i < (sizeof(unsigned long) * 2); i++, x <<= 4)
+                uartputc(digits[x >> (sizeof(unsigned long) * 8 - 4)]);
 }
