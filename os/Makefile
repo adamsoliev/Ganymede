@@ -47,7 +47,7 @@ initcode: initcode.S
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(OBJS) $(KERNEL_IMAGE) *.asm initcode initcode.out 
+	rm -f $(OBJS) $(KERNEL_IMAGE) *.asm initcode initcode.out *.d
 
 debug: all
 	@echo "*** Now run 'gdb-multiarch $(KERNEL_IMAGE)' in another window"
