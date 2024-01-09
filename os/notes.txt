@@ -305,9 +305,54 @@ gle page table that describes the kernel’s address space
   Buffer cache    - cache blocks and synchronize access to them
   Disk            - read/write blocks on virtio hard drive
 
+  | name/fd | inode | icache | logging | buffer cache |  disk  |
+  |                                                   |        |
+  +--------------------- memory ----------------------+- disk -+
+
+
+  disk layout
+  +---+---+---------------+------------+---+------------------+
+  |   |   |               |            |   |                  |
+  +---+---+---------------+------------+---+------------------+
+    0   1       2-31           32-44    45        rest
+
+    0     - boot
+    1     - describes file system
+    2-31  - logging
+    32-44 - inodes
+    45    - bitmap
+    rest  - data
+  
+
+  on-disk inode
+    +-------------+             +-------------+
+    |   'fields'  |       +---> |   block12   |
+    +-------------+       |     +-------------+
+    |   block0    |       |     |    ...      |
+    +-------------+       |     +-------------+
+    |    ...      |       |     |   block267  |
+    +-------------+       |     +-------------+
+    |   block11   |       |     
+    +-------------+       |     * 256 blocks in the above list
+    |   indir b # | ------+
+    +-------------+
+
+
+  max file size: (256 + 12) * 1024 bytes = 268 KB
+
+
+  path name lookup ('/y/string'): 
+    start from root inode and scan its blocks for 'y'
+    once found, note inode's # and scan its blocks for 'string'
+
 ----------------------------------------------------------------
 9. CONCURRENCY REVISITED
 ----------------------------------------------------------------
+
+
+
+
+
 
 
 

@@ -1,7 +1,6 @@
 .section .text
 .globl start      
 start: 
-        li a4, 23
         la a0, userStr
         li a7, 1
         ecall
