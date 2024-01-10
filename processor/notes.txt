@@ -1,6 +1,16 @@
 Testing
 https://www.reddit.com/r/FPGA/comments/kl1q3i/soft_cpus_how_to_debug_and_test_in_a_sane_way/
 
+Processor speed
+  time to run 'X' program = (# of insts in 'X') x (# of insts/cycle) x (cycle time)
+
+  how long does it take for the below processor to execute 1B instrs?  
+    processor with 4 cores; runs at 2 GHz and can execute 2 instr/cycle
+    (e.g., pipelined and 1-way superscalar)
+
+    time = (1 * 10^9) * (2) * (1/(2 * 10^9)) = 1 second (note Hz = 1/s)
+
+
 Memory hierarchy 
 + ----------------- + ----------- + --------------- + -------------- +
 |                   |    Latency  |    Throughput   |   Price / GB   |
