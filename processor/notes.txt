@@ -8,7 +8,8 @@ Processor speed
     processor with 4 cores; runs at 2 GHz and can execute 2 instr/cycle
     (e.g., pipelined and 1-way superscalar)
 
-    time = (1 * 10^9) * (2) * (1/(2 * 10^9)) = 1/4 seconds (note Hz = 1/s)
+    time (1 core) = (1 * 10^9) * (2) * (1/(2 * 10^9)) = 1 second (note Hz = 1/s)
+    time (4 cores) = 1/4 seconds (in practice, this takes longer than 1/4 seconds for variety of reasons)
 
 
 Memory hierarchy 
