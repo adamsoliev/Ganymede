@@ -41,11 +41,23 @@ initcode: initcode.S
 	$(LD) $(LDFLAGS) -N -e start -Ttext 0 -o initcode.out initcode.o
 	$(OBJCOPY) -S -O binary initcode.out initcode
 
-%.o: %.c kernel.h
+%.o: %.c kernel.h defs.h param.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
-%.o: %.S kernel.h
+%.o: %.S kernel.h defs.h param.h
 	$(CC) $(CFLAGS) -c $< -o $@
+
+ULIB = usys.o 
+
+_%.o: _%.c 
+	$(CC) $(CFLAGS) -c $< -o $@
+
+_%: _%.o $(ULIB)
+	$(LD) $(LDFLAGS) -T user.ld -o $@ $^
+	$(OBJDUMP) -S $@ > $*.asm
+
+usys.o: usys.S
+	$(CC) $(CFLAGS) -c -o usys.o usys.S
 
 mkfs/mkfs: mkfs/mkfs.c kernel.h param.h
 	gcc -Werror -Wall -I. -o mkfs/mkfs mkfs/mkfs.c
@@ -60,7 +72,7 @@ qemu: all fs.img
 	$(RUN)
 
 clean:
-	rm -f $(OBJS) $(KERNEL_IMAGE) *.asm initcode initcode.out *.d $(UPROG) \
+	rm -f $(OBJS) $(KERNEL_IMAGE) *.asm initcode initcode.out *.d *.o $(UPROG) \
 	mkfs/mkfs fs.img
 
 debug: all fs.img
