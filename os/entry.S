@@ -1,4 +1,3 @@
-#include "kernel.h"
 
 .section .text
 .global _entry

@@ -23,8 +23,9 @@ OBJS = \
 QEMU=qemu-system-riscv64
 MACH=virt
 MEM=128M
-RUN=$(QEMU) -nographic -machine $(MACH) -m $(MEM)
-RUN+=-bios none -kernel $(KERNEL_IMAGE)
+RUN=$(QEMU) -machine $(MACH) -bios none -kernel $(KERNEL_IMAGE) -m $(MEM) -nographic 
+# RUN+= -global virtio-mmio.force-legacy=false
+RUN+= -drive file=fs.img,if=none,format=raw,id=x0
 
 # QEMU (debug)
 GDB_PORT=1234
@@ -46,13 +47,23 @@ initcode: initcode.S
 %.o: %.S kernel.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
-qemu: all
+mkfs/mkfs: mkfs/mkfs.c kernel.h param.h
+	gcc -Werror -Wall -I. -o mkfs/mkfs mkfs/mkfs.c
+
+UPROG=\
+	_sh\
+
+fs.img: mkfs/mkfs $(UPROG)
+	mkfs/mkfs fs.img $(UPROG)
+
+qemu: all fs.img
 	$(RUN)
 
 clean:
-	rm -f $(OBJS) $(KERNEL_IMAGE) *.asm initcode initcode.out *.d
+	rm -f $(OBJS) $(KERNEL_IMAGE) *.asm initcode initcode.out *.d $(UPROG) \
+	mkfs/mkfs fs.img
 
-debug: all
+debug: all fs.img
 	@echo "*** Now run 'gdb-multiarch $(KERNEL_IMAGE)' in another window"
 	@echo "*** Once in, run 'target remote localhost:$(GDB_PORT)'"
 	$(RUN) -gdb tcp::$(GDB_PORT) -S
