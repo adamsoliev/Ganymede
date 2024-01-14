@@ -1,8 +1,18 @@
-Scratch
-  2. add paging
-  3. add syscalls
-  4. 1st process makes a syscall; exec loads 'init', which will initialize shell
-
+https://osblog.stephenmarz.com/index.html
+Adventures of OS
+  bootloader  
+  assembly -> C code
+  uart/mmio -> read/write
+  page-grained memory allocation
+  mmu/paging
+  interrupts/traps
+  external interrupts/PLIC
+  process memory/trapframe/init (1st process)
+  syscall
+  run processes/scheduling
+  VirtIO protocol/block driver
+  filesystems
+  userspace processes/elf
 
 XV6
 
