@@ -17,6 +17,7 @@ OBJS = \
 	entry.o \
 	kernel.o \
 	uart.o \
+	printf.o \
 
 # QEMU
 QEMU=qemu-system-riscv64

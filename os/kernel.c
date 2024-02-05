@@ -1,13 +1,5 @@
 #include "defs.h"
 
-void printf(const char *str) {
-        while (*str != '\0') {
-                uartputc(*str);
-                str++;
-        }
-        return;
-}
-
 int main() {
         uartinit();
 
@@ -18,13 +10,14 @@ int main() {
         while (1) {
                 int c = uartgetc();
                 if (c != -1) {
-                        if (c == '\r') uartputc('\n');
+                        if (c == '\r')
+                                printf("%c", '\n');
                         else if (c == 0x7f) {
-                                uartputc('\b');
-                                uartputc(' ');
-                                uartputc('\b');
-                        }
-                        else uartputc(c);
+                                printf("\b");
+                                printf(" ");
+                                printf("\b");
+                        } else
+                                printf("%c", c);
                 }
         }
         return 0;

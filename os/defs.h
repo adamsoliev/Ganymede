@@ -4,3 +4,6 @@ void uartinit(void);
 int uartgetc(void);
 void uartputc(int c);
 
+
+void printf(char *fmt, ...);
+void panic(char *s);
