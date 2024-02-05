@@ -17,9 +17,11 @@ KERNEL_IMAGE=kernel
 
 OBJS = \
 	$K/entry.o \
+	$K/start.o \
 	$K/kernel.o \
 	$K/uart.o \
 	$K/printf.o \
+	$K/console.o \
 
 # QEMU
 QEMU=qemu-system-riscv64
@@ -40,10 +42,6 @@ $K/$(KERNEL_IMAGE): $(OBJS) $K/defs.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
 %.o: %.S $K/defs.h 
-	$(CC) $(CFLAGS) -c $< -o $@
-
-
-_%.o: _%.c 
 	$(CC) $(CFLAGS) -c $< -o $@
 
 qemu: all 
