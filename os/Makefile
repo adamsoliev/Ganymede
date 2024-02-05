@@ -1,3 +1,5 @@
+K=kernel
+
 # Build
 CC=riscv64-unknown-elf-gcc
 LD=riscv64-unknown-elf-ld
@@ -10,34 +12,34 @@ CFLAGS += -ffreestanding -fno-common -nostdlib -mno-relax
 CFLAGS += -I.
 LDFLAGS = -z max-page-size=4096
 
-LINKER_SCRIPT=virt.ld
+LINKER_SCRIPT=kernel.ld
 KERNEL_IMAGE=kernel
 
 OBJS = \
-	entry.o \
-	kernel.o \
-	uart.o \
-	printf.o \
+	$K/entry.o \
+	$K/kernel.o \
+	$K/uart.o \
+	$K/printf.o \
 
 # QEMU
 QEMU=qemu-system-riscv64
 MACH=virt
 MEM=128M
-RUN=$(QEMU) -machine $(MACH) -bios none -kernel $(KERNEL_IMAGE) -m $(MEM) -nographic 
+RUN=$(QEMU) -machine $(MACH) -bios none -kernel $K/$(KERNEL_IMAGE) -m $(MEM) -nographic 
 
 # QEMU (debug)
 GDB_PORT=1234
 
-all: $(KERNEL_IMAGE)
+all: $K/$(KERNEL_IMAGE)
 
-$(KERNEL_IMAGE): $(OBJS) defs.h
-	$(LD) $(LDFLAGS) -T virt.ld -o $@ $(OBJS) 
-	$(OBJDUMP) -S kernel > kernel.asm
+$K/$(KERNEL_IMAGE): $(OBJS) $K/defs.h
+	$(LD) $(LDFLAGS) -T $K/kernel.ld -o $@ $(OBJS) 
+	$(OBJDUMP) -S $K/kernel > $K/kernel.asm
 
-%.o: %.c defs.h 
+%.o: %.c $K/defs.h 
 	$(CC) $(CFLAGS) -c $< -o $@
 
-%.o: %.S defs.h 
+%.o: %.S $K/defs.h 
 	$(CC) $(CFLAGS) -c $< -o $@
 
 
@@ -48,7 +50,7 @@ qemu: all
 	$(RUN)
 
 clean:
-	rm -f $(OBJS) $(KERNEL_IMAGE) *.asm *.d *.o $(UPROG)
+	rm -rf $(OBJS) $K/$(KERNEL_IMAGE) $K/*.asm $K/*.d $K/*.o
 
 debug: all
 	@echo "*** Now run 'gdb-multiarch $(KERNEL_IMAGE)' in another window"
