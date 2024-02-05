@@ -9,7 +9,6 @@ OUTPUT_ARCH( "riscv" )
    .text : {
      *(.text .text.*)
      . = ALIGN(0x1000);
-     PROVIDE(etext = .);
    } 
 
    .rodata : {
@@ -34,7 +33,6 @@ OUTPUT_ARCH( "riscv" )
    }
 
    PROVIDE(end = .);
-   PROVIDE(_stack = . + 0x80000);
  }
 
  /*

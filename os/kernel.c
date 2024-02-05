@@ -1,5 +1,8 @@
 #include "defs.h"
 
+// only > 128 works, not sure why
+__attribute__ ((aligned (128))) char stack0[4096];
+
 int main() {
         uartinit();
 
