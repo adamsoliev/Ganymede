@@ -4,6 +4,7 @@ KERNEL_IMAGE=kernel
 OBJS = \
 	entry.o \
 	main.o \
+	uart.o \
 
 CC=riscv64-unknown-elf-gcc
 CFLAGS = -Wall -Werror -fno-omit-frame-pointer -ggdb -gdwarf-2
