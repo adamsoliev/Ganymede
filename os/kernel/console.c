@@ -18,7 +18,8 @@ int console_read(char *buf, int len) {
                                         if (i) printf("\b \b");
                                         i = i ? i - 2 : i - 1;
                                 } else {
-                                        printf("%c", c);
+                                        // printf("%c", c);
+                                        uartputc(c);
                                 }
                                 break;
                         }

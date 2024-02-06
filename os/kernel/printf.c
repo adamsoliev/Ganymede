@@ -37,7 +37,7 @@ static void printptr(unsigned long x) {
                 uartputc(digits[x >> (sizeof(unsigned long) * 8 - 4)]);
 }
 
-// Print to the console. only understands %d, %x, %p, %s, %c
+// Print to the console. only understands %d, %x, %p, %s
 void printf(char *fmt, ...) {
         va_list ap;
         int i, c;
@@ -61,7 +61,7 @@ void printf(char *fmt, ...) {
                                 if ((s = va_arg(ap, char *)) == 0) s = "(null)";
                                 for (; *s; s++) uartputc(*s);
                                 break;
-                        case 'c': uartputc(va_arg(ap, int)); break;
+                        // case 'c': uartputc(va_arg(ap, int)); break;
                         case '%': uartputc('%'); break;
                         default:
                                 // Print unknown % sequence to draw attention.

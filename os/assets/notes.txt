@@ -1,0 +1,486 @@
+https://osblog.stephenmarz.com/index.html
+Adventures of OS
+  bootloader  
+  assembly -> C code
+  uart/mmio -> read/write
+  page-grained memory allocation
+  mmu/paging
+  interrupts/traps
+  external interrupts/PLIC
+  process memory/trapframe/init (1st process)
+  syscall
+  run processes/scheduling
+  VirtIO protocol/block driver
+  filesystems
+  userspace processes/elf
+
+XV6
+
+----------------------------------------------------------------
+1. OS INTERFACES (abstractions that STOOD THE TEST OF TIME)
+----------------------------------------------------------------
+Process 
+  user-space memory (instrs, data, stack) and per-process state private to kernel
+
+File descriptor
+  int representing a kernel-managed object that a process reads/writes;
+  that object is often referred to as a 'file' (could be file|dir|device|pipe)
+
+  the xv6 kernel uses the file descriptor as an index into a per-process table, 
+  so that every process has a private space of file descriptors starting at zero
+  
+Pipes
+  kernel buffer exposed to processes as a pair of file descriptors, 
+  one for reading and one for writing; pipes provide a way for processes to communicate
+
+File system
+  data files and directories, which contain named references to data files and other dirs
+
+  struct inode (file|dir|device)
+    file    - inode with data
+    dir     - inode with a sequence of dirent structs, each of which
+              {
+                int inum;     // ref to file's inode (unique to each file)
+                char name[x]; // file's name (also called 'link')
+              }
+    device  - inode with device address 
+
+  inode is in-memory copy of dinode, which is on disk
+
+----------------------------------------------------------------
+2. OS ORGANIZATION
+----------------------------------------------------------------
+fundamentally, xv6 should provide multiplexing, isolation, and interaction 
+between proc_x vs proc_y and between processes vs kernel
+  
+RISC-V has user, supervisor and machine modes; xv6 uses/extends this to achieve
+above goals
+
+Process - unit of isolation
+  The mechanisms used by the kernel to implement processes include 
+  the user/supervisor mode flag, address spaces, and time-slicing of threads
+
+  kernel maintains many pieces of state for each process in a struct proc
+
+  xv6 uses per-process page table to give each process its own address space (p->pagetable)
+    +-------------------+ 0x3fffffffff (2^38 - 1)
+    | trampoline        |
+    +-------------------+
+    | trapframe         |
+    +-------------------+
+    |                   |
+    | heap              |
+    |                   |
+    +-------------------+
+    | user stack        |
+    +-------------------+
+    | user text & data  |
+    +-------------------+ 0
+
+  xv6 uses trampoline/trapframe to transition into the kernel and back; 
+  former contains the code to transition in and out of the kernel;
+  latter is necessary to save/restore the state of the user process
+
+  each process has two stacks: a user stack (in user address space) and 
+  a kernel stack (in kernel address space); ustack for process' instrs;
+  p->kstack for kernel to handle process' syscalls or interrupts that happen 
+  while the process is executing
+
+  starting xv6
+    boot loader in ROM loads kernel into memory at 0x80000000
+        first set of instrs in .text of kernel are specified by linker ENTRY command (_entry)
+    -----------------
+    machine mode
+    -----------------
+    _entry 
+        set up stack
+        call C code at start
+    start
+        set mstatus
+        set mepc to main's address
+        set satp to 0 (turn off virtual address translation)
+        delegate all interrupts/exceptions to supervisor mode
+        program clock chip for timer interrupts
+        call mret (which jumps to address at mepc)
+    -----------------
+    supervisor mode
+    -----------------
+    main
+        initialize devices and subsystems
+        create the 1st process and make it 'RUNNABLE'
+        scheduler picks that process up and runs it, entering user mode
+    -----------------
+    user mode
+    -----------------
+        make a syscall exec with args 
+    -----------------
+    supervisor mode
+    -----------------
+        in kernel, handle exec syscall, which replaces memory/regs of 
+        current process with a new program ('/init')
+    -----------------
+    user mode
+    -----------------
+        return to user space in '/init' process
+        '/init' creates a new console device with file descriptors 0,1,2 opened
+        '/init' starts shell on the console
+    system is up
+
+----------------------------------------------------------------
+3. PAGE TABLES
+----------------------------------------------------------------
+risc-v instructions (both user and kernel) manipulate virtual addresses; ram is 
+indexed with physical addresses; risc-v page table hw does VA -> PA for loads/stores
+
+xv6 runs on sv39 risc-v (27 index bits + 12 offset bits); risc-v hw translates 
+va -> pa by walking the three-level tree of page tables (each 9 bits of 27 index bits 
+for each level of 512-entries (2^9) page tables);
+
+  virtual address                physical address
+  +----------------------+       +----------------------+
+  | ext | index | offset |   =>  |      PPN    | offset |
+  +----------------------+       +----------------------+
+  
+        44          10                     44         10                      44        10          
+  +----------------------+ 511       +----------------------+ 511        +----------------------+ 511  
+  |              |       |           |              |       |            |              |       |      
+  +----------------------+           +----------------------+            +----------------------+    
+  |              |       |           |              |       |            |              |       |      
+  +----------------------+           +----------------------+            +----------------------+    
+  |     PPN      | Flags |  --+      |              |       |            |     PPN      | Flags |      
+  +----------------------+    |      +----------------------+            +----------------------+      
+  |              |       |    |      |      PPN     | Flags |   --+      |              |       |      
+  +----------------------+    |      +----------------------+     |      +----------------------+      
+  |              |       |    |      |              |       |     |      |              |       |      
+  +----------------------+ 0  +----> +----------------------+ 0   +----> +----------------------+ 0    
+  ^     Page directory                     Page directory                      Page directory              
+  |
+  satp
+
+xv6 maintains one page table per process, describing each process’s user address space, plus a sin-
+gle page table that describes the kernel’s address space
+
+----------------------------------------------------------------
+4. TRAPS AND SYSCALLS
+----------------------------------------------------------------
+  syscall (user), exception (kernel|user), interrupt (kernel|user)
+
+  convenient to have separate code path for three distinct cases
+    traps from user space     (syscall|exception|interrupt)
+    traps from kernel space   (exception|interrupt)
+    timer interrupts          (kernel|user)
+  
+  risc-v trap (generic term for above) machinery (for traps handled in supervisor mode)
+    stvec     address of trap handler
+    sepc      where pc is saved before jumping to trap handler
+    scause    reason for trap
+    sscratch  helper register to save user registers
+    sstatus   sip bit - whether device interrupts are on/off; spp bit - whether trap came from user/supervisor mode
+
+  in a trap, risc-v hw will (note that CPU does minimal work possible)
+    disable interrupts by clearing the sie bit in sstatus
+    copy the pc to sepc
+    save the current mode (user or supervisor) in the spp bit in sstatus
+    set scause to reflect the trap’s cause
+    set the mode to supervisor
+    copy stvec to the pc
+    start executing at the new pc
+
+  in user space
+    uservec -> usertrap -> usertrapret -> userret 
+    (save user state, load necessary kernel state, handle trap, return to user
+    space, restore user state and resume)
+
+    when forcing a trap, riscv hw doesn't switch page tables, so trap handler needs 
+    a common mapping (in user and kernel page tables) to go in/out of kernel
+    when it is in user space; thus, trampoline is mapped at the top of every 
+    process' and kernel's page table
+
+    right below trampoline, each process has trapframe page to save/restore
+    necessary state (gen regs, kstack, cpuhardid, &usertrap, &kptable);
+    TRAPFRAME (va in user page table) and p->trapframe (pa) refer to this page
+
+  in kernel space
+    kernelvec -> kerneltrap 
+    (again, save kernel state, handle trap and restore kernel state)
+
+  timer interrupts
+    risc-v requires that timer interrupts be taken in machine mode. Since 
+    xv6 kernel operates in supervisor mode, basic strategy for timer interrupts 
+    is for handler to ask riscv to raise 'software interrupt' 
+    and immediately return; riscv delivers software interrupts to kernel 
+    with ordinary trap mechanism
+
+----------------------------------------------------------------
+5. INTERRUPTS AND DEVICE DRIVERS
+----------------------------------------------------------------
+  consoleinit - configure UART hardware to generate interrupts (on receive and transmit)
+  consoleread - wait for inputs to arrive (via interrupts) & be buffered in
+  cons.buf; copy that to user space; return to user process
+
+    shell -> read() -> fileread() -> devsw[CONSOLE].read() -> consoleread() -> wait until waken by consoleintr
+    (uservec | kernelvec) -> (usertrap | kerneltrap) -> devintr -> uartintr -> consoleintr -> collect input and wake up consoleread if there is one
+    
+    shell -> write() -> filewrite() -> devsw[CONSOLE].write() -> consolewrite() -> uartputc() -> uartstart() 
+                                                                                  uartintr() -> uartstart() 
+  NS16450 UART
+  https://www.lammertbies.nl/comm/info/serial-uart
+
+----------------------------------------------------------------
+6. LOCKING
+----------------------------------------------------------------
+  Kernel data structures need to be protected from concurrent changes, such as in
+    Multiprocessor parallelism
+    Thread switching
+    Interrupts
+  
+  Lock is a simple correct solution but is bad for performance
+
+  In some cases multiple locks are needed to protect a code path. In such cases,
+  lock acquire/release ordering matters. Otherwise, deadlocks might arise. By 
+  defintion, these lock chains need to be global and honoring such a global ordering
+  might be difficult programmatically. 
+
+  Re-entrant locks??
+
+  Protecting data that is used by both threads and interrupt handlers should be 
+  done with care; otherwise, the thread holding a lock for data might be 
+  interrupted and the corresponding interrupt handler might also try to acquire the 
+  same lock. That lock won't be released because it can only be released by the
+  thread but that thread won't continue running unless the interrupt handler returns; 
+  the handler won't return because it can't acquire the lock - deadlock. 
+
+  Memory ordering should be turn-off around critical sections protected by locks
+
+  Sleeplock is used in longer waiting cases; it allows yielding and interrupts, 
+  allowing CPU to be used efficiently while the process waits (e.g., for disk I/O). 
+  Important implementation detail about sleeplocks is just before going to sleep,
+  CPU is yielded atomically and lock is released. 
+
+  Spinlocks (for short critical sections)
+  Sleeplocks (for lengthy operations)
+
+----------------------------------------------------------------
+7. SCHEDULING
+----------------------------------------------------------------
+  thread - one serial execution
+    pc, regs, stack
+
+  xv6 multiplexes in 
+    sleep/wakeup mechamism
+    timer interrupts
+  
+  context switching - save one set of regs and restore another set (each called context) 
+    in xv6 case, it will do so through middleman - scheduler; so, replace current
+    context with context of scheduler; scheduler finds another process to run and
+    calls swtch, which replaces scheduler context with newly found process';
+    notice implicit jumps here - when xv6 replaces context (ra,sp,etc), it returns on new stack
+    (user stack #1 -> kstack #1 -> scheduler context of the core -> kstack #2 -> user stack #2)
+  
+  sleep/wakeup
+
+    Typical usage of sleep/wakeup
+    -----------------------------------------------------------------------------------
+    Thread1
+    ------------
+    acquire(cond_lock);
+    while (cond) 
+      sleep(&cond, &cond_lock);  // &cond is an address and just used as a channel
+    release(cond_lock);
+
+    Thread2
+    ------------
+    acquire(cond_lock);
+    cond += change;
+    wakeup(&cond);
+    release(cond_lock);
+    -----------------------------------------------------------------------------------
+    
+    going into sleep, we need to have condition_lock. To put the current process to sleep (change its state), 
+    we acquire the process_lock inside sleep; right after, we release the condition_lock, 
+    so that some other thread can acquire that condition_lock and change the condition. 
+    That thread then waits spinning, waiting to acquire the process_lock that sleep holds. Once 
+    sleep finishes and releases the process_lock, wakeup can proceed and acquire the process_lock
+    and wake up the process. This mechanism is important to avoid coordination issues, including lost wakeups.
+
+
+----------------------------------------------------------------
+8. FILE SYSTEM
+----------------------------------------------------------------
+  File descriptor - abstract many Unix resources using the file system interface
+  Pathname        - provide hierarchical path names & resolve them using recursive lookup
+  Directory       - implement each dir as a special kind of inode
+  Inode           - provide individual files (inode with unique i-number & some blocks holding the file's data)
+  Logging         - wrap updates to several blocks in a transaction
+  Buffer cache    - cache blocks and synchronize access to them
+  Disk            - read/write blocks on virtio hard drive
+
+  | name/fd | inode | icache | logging | buffer cache |  disk  |
+  |                                                   |        |
+  +--------------------- memory ----------------------+- disk -+
+
+
+  disk layout
+  +---+---+---------------+------------+---+------------------+
+  |   |   |               |            |   |                  |
+  +---+---+---------------+------------+---+------------------+
+    0   1       2-31           32-44    45        rest
+
+    0     - boot
+    1     - describes file system
+    2-31  - logging
+    32-44 - inodes
+    45    - bitmap
+    rest  - data
+  
+
+  on-disk inode
+    +-------------+             +-------------+
+    |   'fields'  |       +---> |   block12   |
+    +-------------+       |     +-------------+
+    |   block0    |       |     |    ...      |
+    +-------------+       |     +-------------+
+    |    ...      |       |     |   block267  |
+    +-------------+       |     +-------------+
+    |   block11   |       |     
+    +-------------+       |     * 256 blocks in the above list
+    |   indir b # | ------+
+    +-------------+
+
+
+  max file size: (256 + 12) * 1024 bytes = 268 KB
+
+
+  path name lookup ('/y/string'): 
+    start from root inode and scan its blocks for 'y'
+    once found, note inode's # and scan its blocks for 'string'
+
+----------------------------------------------------------------
+9. CONCURRENCY REVISITED
+----------------------------------------------------------------
+
+
+
+
+
+
+
+
+1. U-mode
+  a. syscall | exception | interrupt
+  b. timer interrupt
+2. S-mode
+  a. exception | interrupt
+  b. timer interrupt
+
+1a
++---+-----------------------------------------------
+| U | running                               resume
+|   |   |                                     ^
++---+---v-------------------------------------|-----
+| S | uservec -> usertrap -> usertrapret -> userret
++---+-----------------------------------------------
+| M | 
++---+-----------------------------------------------
+  uservec                                         usertrapret
+    save user regs into TF                          turn off intrs
+    load kstack, &usertrap, &kptable from TF        set stvec to uservec
+    install kptable                                 save kstack, &usertrap, &kptable into TF
+  usertrap                                          set sstatus.SPP to U-mode
+    set stvec to kernelvec (we are in S-mode)       set sepc to saved TF->epc
+    save sepc into TF->epc                          userret(p->pagetable)
+    if (syscall)                                  userret
+      incr TF->epc by 4                             install uptable
+      turn on intrs                                 restore user regs from TF
+      syscall()                                     sret
+    else if (devinstr)
+      route to device
+    else 
+      error
+
+1b
++---+------------------------------------------------------------
+| U | running                                           resume
+|   |     |                                                ^
++---+-----|------------------------------------------------|-----
+| S |     |      uservec -> usertrap -> usertrapret -> userret
+|   |     |      ^
++---+-----v------|-----------------------------------------------
+| M |     timervec
++---+------------------------------------------------------------
+  timervec
+    reset mtimecmp
+    raise 'software interrupt'
+    mret 
+  *implicit here that when time interrupted in U-mode, we save user pc in mepc and
+  restore it in mret; since mstatus.MPP points to S-mode, we 'software trap' into
+  S-mode, saving restored user pc in sepc and jumping to stvec
+
+  uservec                                         usertrapret
+    save user regs into TF                          turn off intrs
+    load kstack, &usertrap, &kptable from TF        set stvec to uservec
+    install kptable                                 save kstack, &usertrap, &kptable into TF
+  usertrap                                          set sstatus.SPP to U-mode
+    set stvec to kernelvec (we are in S-mode)       set sepc to saved TF->epc
+    save sepc into TF->epc                          userret(p->pagetable)
+    if (syscall)                                  userret
+      incr TF->epc by 4                             install uptable
+      turn on intrs                                 restore user regs from TF
+      syscall()                                     sret
+    else if (devinstr)
+      clear sip.SSIP acknowledging software interrupt
+    else 
+      error
+    yield
+
+
+RISC-V Priviliged
+  -------------------------------------------------
+  MACHINE-LEVEL ISA
+  -------------------------------------------------
+  misa                  - M ISA reg
+  mvendorid             - M vendor ID reg
+  marchid               - M architecture ID reg
+  mimpid                - M implementation ID reg
+  mhartid               - M hart ID reg
+  mstatus and mstatush  - M status regs
+  mtvec                 - M trap-vector base-address reg
+  medeleg and mideleg   - M trap delegation regs
+  mip and mie           - M interrupt regs
+  mcounteren            - M counter-enable reg
+  mcountinhibit         - M counter-inhibit CSR
+  mscratch              - M scratch reg
+  mepc                  - M exception pc
+  mcause                - M cause reg
+  mtval                 - M trap value reg
+  mconfigptr            - M configuration pointer reg
+  menvcfg and menvcfgh  - M env conf regs
+  mseccfg               - M security conf reg
+  mtime and mtimecmp    - M timer regs
+
+
+  -------------------------------------------------
+  SUPERVISOR-LEVEL ISA
+  -------------------------------------------------
+  sstatus               - S status reg
+  stvec                 - S trap-vector base-address reg
+  sip and sie           - S interrupt regs
+  scounteren            - S counter-enable reg
+  sscratch              - S scratch reg
+  sepc                  - S exception pc
+  scause                - S cause reg
+  stval                 - S trap value reg
+  senvcfg               - S env conf reg
+  satp                  - S address translation and protection reg
+
+
+kmem.freelist     
+@0x80001370       @0x80003000       @0x80004000       @0x80005000
++---------+       +---------+       +---------+       +---------+
+| | | | | |       | | | | | |       | | | | | |       | | | | | |   ...   (64-bit pointers)
++---------+       +---------+       +---------+       +---------+
+     |                ^                |   ^              |  ^
+     |                |                |   |              |  |
+     |                +----------------+   +--------------+  |
+     +-------------------------------------------------------+
+

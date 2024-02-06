@@ -22,12 +22,13 @@ OBJS = \
 	$K/uart.o \
 	$K/printf.o \
 	$K/console.o \
+	$K/kernelvec.o \
 
 # QEMU
 QEMU=qemu-system-riscv64
 MACH=virt
 MEM=128M
-RUN=$(QEMU) -machine $(MACH) -bios none -kernel $K/$(KERNEL_IMAGE) -m $(MEM) -nographic 
+RUN=$(QEMU) -machine $(MACH) -cpu rv64 -smp 1 -s -bios none -kernel $K/$(KERNEL_IMAGE) -m $(MEM) -nographic 
 
 # QEMU (debug)
 GDB_PORT=1234
