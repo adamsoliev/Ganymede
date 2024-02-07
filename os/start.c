@@ -4,7 +4,7 @@ __attribute__((aligned(128))) char stack0[4096];
 int main(void);
 void timervec();
 
-unsigned long scratch[32];
+unsigned long tscratch[32];
 
 // core local interruptor (CLINT), which contains the timer
 #define CLINT 0x2000000L
@@ -25,25 +25,20 @@ void start() {
 
         // timer interrupt (for now, without any side effects and S-mode involvement)
         int interval = 10000000;  // cycles; about one second in qemu.
-        *(unsigned long*)CLINT_MTIMECMP = *(unsigned long*)CLINT_MTIME + interval;
+        *(unsigned long *)CLINT_MTIMECMP = *(unsigned long *)CLINT_MTIME + interval;
         asm volatile("csrs mstatus, %0" ::"r"(0b1 << 3));  // mstatus.MIE
         asm volatile("csrs mie, %0" ::"r"(0b1 << 7));      // mie.MTIE
         asm volatile("csrw mtvec, %0" ::"r"(timervec));
 
-        asm volatile("csrw mscratch, %0" ::"r"(&scratch));
+        unsigned long *scratch = &tscratch[0];
+        asm volatile("csrw mscratch, %0" ::"r"((unsigned long)scratch));
 
         // switch to supervisor
         asm volatile("mret");
 }
 
 void timertrap() {
-        // uartputc('t');
-        // uartputc('i');
-        // uartputc('m');
-        // uartputc('e');
-        // uartputc('r');
-        // uartputc('\n');
         printf("timer interval\n");
-        int interval = 10000000;  
-        *(unsigned long*)CLINT_MTIMECMP = *(unsigned long*)CLINT_MTIME + interval;
+        int interval = 10000000;
+        *(unsigned long *)CLINT_MTIMECMP = *(unsigned long *)CLINT_MTIME + interval;
 }

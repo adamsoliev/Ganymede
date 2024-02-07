@@ -14,6 +14,9 @@ Adventures of OS
   filesystems
   userspace processes/elf
 
+GDB
+p/x *0x2004000
+
 RISC-V Priviliged
 ------------------------------------- GENERAL NOTES -------------------------------------
 mstatus 

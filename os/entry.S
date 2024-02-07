@@ -50,6 +50,8 @@ timervec:
         # call the C trap handler in start.c
         call timertrap
 
+        la a0, tscratch
+
         # restore registers.
         ld ra, 0(a0)
         ld sp, 8(a0)
