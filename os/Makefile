@@ -5,6 +5,7 @@ OBJS = \
 	start.o \
 	main.o \
 	uart.o \
+	console.o \
 
 ifndef TOOLPREFIX
 TOOLPREFIX := $(shell if riscv64-unknown-elf-objdump -i 2>&1 | grep 'elf64-big' >/dev/null 2>&1; \

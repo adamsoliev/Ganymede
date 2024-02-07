@@ -4,6 +4,8 @@ __attribute__((aligned(128))) char stack0[4096];
 int main(void);
 void timervec();
 
+unsigned long scratch[32];
+
 // core local interruptor (CLINT), which contains the timer
 #define CLINT 0x2000000L
 #define CLINT_MTIMECMP (CLINT + 0x4000)
@@ -28,17 +30,20 @@ void start() {
         asm volatile("csrs mie, %0" ::"r"(0b1 << 7));      // mie.MTIE
         asm volatile("csrw mtvec, %0" ::"r"(timervec));
 
+        asm volatile("csrw mscratch, %0" ::"r"(&scratch));
+
         // switch to supervisor
         asm volatile("mret");
 }
 
 void timertrap() {
-        uartputc('t');
-        uartputc('i');
-        uartputc('m');
-        uartputc('e');
-        uartputc('r');
-        uartputc('\n');
+        // uartputc('t');
+        // uartputc('i');
+        // uartputc('m');
+        // uartputc('e');
+        // uartputc('r');
+        // uartputc('\n');
+        printf("timer interval\n");
         int interval = 10000000;  
         *(unsigned long*)CLINT_MTIMECMP = *(unsigned long*)CLINT_MTIME + interval;
 }
