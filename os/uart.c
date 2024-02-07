@@ -29,3 +29,10 @@ int uartgetc(void) {
         } else
                 return -1;
 }
+
+void print(char *c) {
+        while (*c != 0) {
+                uartputc(*c);
+                c++;
+        }
+}
