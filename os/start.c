@@ -38,7 +38,12 @@ void start() {
 }
 
 void timertrap() {
-        printf("timer interval\n");
+        uartputc('t');
+        uartputc('i');
+        uartputc('m');
+        uartputc('e');
+        uartputc('r');
+        uartputc('\n');
         int interval = 10000000;
         *(unsigned long *)CLINT_MTIMECMP = *(unsigned long *)CLINT_MTIME + interval;
 }
