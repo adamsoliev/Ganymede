@@ -2,6 +2,7 @@ KERNEL_IMAGE=kernel
 
 OBJS = \
 	entry.o \
+	start.o \
 	main.o \
 	uart.o \
 
