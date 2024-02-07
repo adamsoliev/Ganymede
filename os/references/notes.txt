@@ -14,6 +14,54 @@ Adventures of OS
   filesystems
   userspace processes/elf
 
+RISC-V Priviliged
+------------------------------------- GENERAL NOTES -------------------------------------
+mstatus 
+        keeps track of and controls the hart’s current operating state
+        sstatus - a restricted view of mstatus
+        MIE & SIE  - global interrupt enable
+                lower-privilege mode interrupts are always off no matter 'wIE' bit for the lower-privilege mode
+                higher-privilege mode interrupts are always on no matter 'wIE' bit for the higher-privilege mode
+                        higher-privilege-level code can use separate per-interrupt enable
+                        bits to disable selected higher-privilege-mode interrupts 
+                        before ceding control to a lower-privilege mode
+
+        MPP, MPIE, MIE, MRET
+        SPP, SPIE, SIE, SRET
+mtvec
+
+medeleg and mideleg
+        by default, all traps at any privilege level are handled in machine mode; delegation can happen in two ways
+                through MRET
+                medeleg and mideleg
+
+        setting a bit in medeleg or mideleg will delegate the corresponding trap, 
+        when occurring in S-mode or U-mode, to the S-mode trap handler
+                when a trap occurs in this case,
+                        scause -> trap cause 
+                        sepc -> virtual address of the instruction that took the trap
+                        stval -> exception-specific datum
+                        SPP of mstatus -> active privilege mode at the time of the trap 
+                        SPIE of mstatus -> value of the SIE field at the time of the trap
+                        SIE of mstatus -> cleared.
+
+        Traps never transition from a more-privileged mode to a less-privileged mode, but are allowed to be taken horizontally
+
+        Delegated interrupts result in the interrupt being masked at the delegator privilege level
+
+mip and mie
+        Restricted views of the mip and mie registers appear as the sip and sie registers for supervisor level
+
+        mip.MEIP and mie.MEIE | mip.SEIP and mie.SEIE
+        mip.MTIP and mie.MTIE | mip.STIP and mie.STIE
+        mip.MSIP and mie.MSIE | mip.SSIP and mie.SSIE
+mepc
+mcause
+mtval
+
+mtime and mtimecmp
+------------------------------------- END -------------------------------------
+
 XV6
 
 ----------------------------------------------------------------
