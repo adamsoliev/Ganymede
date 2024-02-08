@@ -42,7 +42,7 @@ $(KERNEL_IMAGE): $(OBJS)
 
 
 QEMU=qemu-system-riscv64
-RUN=$(QEMU) -machine virt -cpu rv64 -smp 1 -bios none -kernel $(KERNEL_IMAGE) -m 128M -nographic 
+RUN=$(QEMU) -machine virt -cpu rv64 -smp 1 -bios none -kernel $(KERNEL_IMAGE) -m 17M -nographic 
 
 qemu: all 
 	$(RUN)

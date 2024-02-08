@@ -5,7 +5,7 @@
 #include "defs.h"
 
 #define KERNBASE 0x80000000L
-#define PHYSTOP (KERNBASE + 1024 * 1024)
+#define PHYSTOP (KERNBASE + 17 * 1024 * 1024)
 
 #define PGSIZE 4096  // bytes per page
 
@@ -31,13 +31,13 @@ void freerange(void *pa_start, void *pa_end) {
         char *p;
         p = (char *)PGROUNDUP((unsigned long)pa_start);
         for (; p + PGSIZE <= (char *)pa_end; p += PGSIZE) {
-                print("page\n");
+                // print("page\n");
                 kfree(p);
         }
 }
 
 void kfree(void *pa) {
-        print("kfree\n");
+        // print("kfree\n");
         struct run *r;
 
         if (((unsigned long)pa % PGSIZE) != 0 || (char *)pa < end || (unsigned long)pa >= PHYSTOP)
