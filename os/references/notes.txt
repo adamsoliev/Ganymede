@@ -1,5 +1,5 @@
+------------------------------------- ADVENTURES OF OS -------------------------------------
 https://osblog.stephenmarz.com/index.html
-Adventures of OS
   bootloader  
   assembly -> C code
   uart/mmio -> read/write
@@ -14,11 +14,35 @@ Adventures of OS
   filesystems
   userspace processes/elf
 
-GDB
-p/x *0x2004000
 
-RISC-V Priviliged
-------------------------------------- GENERAL NOTES -------------------------------------
+------------------------------------- GDB -------------------------------------
+p/x *0x2004000
+p/x *0x200BFF8
+
+------------------------------------- RISC-V PRIVILIGED -------------------------------------
+-------------------------------------------------
+MACHINE-LEVEL ISA
+-------------------------------------------------
+misa                  - M ISA reg
+mvendorid             - M vendor ID reg
+marchid               - M architecture ID reg
+mimpid                - M implementation ID reg
+mhartid               - M hart ID reg
+mstatus and mstatush  - M status regs
+mtvec                 - M trap-vector base-address reg
+medeleg and mideleg   - M trap delegation regs
+mip and mie           - M interrupt regs
+mcounteren            - M counter-enable reg
+mcountinhibit         - M counter-inhibit CSR
+mscratch              - M scratch reg
+mepc                  - M exception pc
+mcause                - M cause reg
+mtval                 - M trap value reg
+mconfigptr            - M configuration pointer reg
+menvcfg and menvcfgh  - M env conf regs
+mseccfg               - M security conf reg
+mtime and mtimecmp    - M timer regs
+
 mstatus 
         keeps track of and controls the hart’s current operating state
         sstatus - a restricted view of mstatus
@@ -63,10 +87,23 @@ mcause
 mtval
 
 mtime and mtimecmp
-------------------------------------- END -------------------------------------
 
-XV6
+-------------------------------------------------
+SUPERVISOR-LEVEL ISA
+-------------------------------------------------
+sstatus               - S status reg
+stvec                 - S trap-vector base-address reg
+sip and sie           - S interrupt regs
+scounteren            - S counter-enable reg
+sscratch              - S scratch reg
+sepc                  - S exception pc
+scause                - S cause reg
+stval                 - S trap value reg
+senvcfg               - S env conf reg
+satp                  - S address translation and protection reg
 
+
+------------------------------------- RISC-V XV6 -------------------------------------
 ----------------------------------------------------------------
 1. OS INTERFACES (abstractions that STOOD THE TEST OF TIME)
 ----------------------------------------------------------------
@@ -413,10 +450,7 @@ gle page table that describes the kernel’s address space
 
 
 
-
-
-
-
+------------------------------------- RISC-V XV6 CODE -------------------------------------
 1. U-mode
   a. syscall | exception | interrupt
   b. timer interrupt
@@ -485,53 +519,12 @@ gle page table that describes the kernel’s address space
     yield
 
 
-RISC-V Priviliged
-  -------------------------------------------------
-  MACHINE-LEVEL ISA
-  -------------------------------------------------
-  misa                  - M ISA reg
-  mvendorid             - M vendor ID reg
-  marchid               - M architecture ID reg
-  mimpid                - M implementation ID reg
-  mhartid               - M hart ID reg
-  mstatus and mstatush  - M status regs
-  mtvec                 - M trap-vector base-address reg
-  medeleg and mideleg   - M trap delegation regs
-  mip and mie           - M interrupt regs
-  mcounteren            - M counter-enable reg
-  mcountinhibit         - M counter-inhibit CSR
-  mscratch              - M scratch reg
-  mepc                  - M exception pc
-  mcause                - M cause reg
-  mtval                 - M trap value reg
-  mconfigptr            - M configuration pointer reg
-  menvcfg and menvcfgh  - M env conf regs
-  mseccfg               - M security conf reg
-  mtime and mtimecmp    - M timer regs
-
-
-  -------------------------------------------------
-  SUPERVISOR-LEVEL ISA
-  -------------------------------------------------
-  sstatus               - S status reg
-  stvec                 - S trap-vector base-address reg
-  sip and sie           - S interrupt regs
-  scounteren            - S counter-enable reg
-  sscratch              - S scratch reg
-  sepc                  - S exception pc
-  scause                - S cause reg
-  stval                 - S trap value reg
-  senvcfg               - S env conf reg
-  satp                  - S address translation and protection reg
-
-
-kmem.freelist     
-@0x80001370       @0x80003000       @0x80004000       @0x80005000
-+---------+       +---------+       +---------+       +---------+
-| | | | | |       | | | | | |       | | | | | |       | | | | | |   ...   (64-bit pointers)
-+---------+       +---------+       +---------+       +---------+
-     |                ^                |   ^              |  ^
-     |                |                |   |              |  |
-     |                +----------------+   +--------------+  |
-     +-------------------------------------------------------+
-
+kmem.freelist with 3 free pages 
+     @0x80001370        @0x80003000          @0x80004000          @0x80005000
++---------------+       +------------+       +--------------+     +--------------+
+| | |kmem.fl| | |       |Null| | | | |       |r.next| | | | |     |r.next| | | | |   
++---------------+       +------------+       +--------------+     +--------------+
+     |                   ^                    | ^                  | ^
+     |                   |                    | |                  | |
+     |                   +--------------------+ +------------------+ |
+     +---------------------------------------------------------------+
