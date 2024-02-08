@@ -36,3 +36,11 @@ void print(char *c) {
                 c++;
         }
 }
+
+void panic(char *c) {
+        print("\x1B[1;31m[PANIC] ");
+        print(c);
+        print("\x1B[1;0m");
+        while (1)
+                ;
+}

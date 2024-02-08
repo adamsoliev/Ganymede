@@ -1,6 +1,6 @@
 #include "defs.h"
 
-__attribute__((aligned(128))) char stack0[4096];
+__attribute__((aligned(512))) char stack0[4096];
 int main(void);
 void timervec();
 
