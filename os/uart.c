@@ -1,5 +1,6 @@
+#include "defines.h"
+
 // https://www.lammertbies.nl/comm/info/serial-uart
-#define UART0 0x10000000L
 #define IER 1  // interrupt enable
 #define FCR 2  // fifo control
 #define LCR 3  // line control

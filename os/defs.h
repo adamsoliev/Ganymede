@@ -1,3 +1,5 @@
+#include "defines.h"
+
 // uart.c
 void uartinit();
 void uartputc(int c);

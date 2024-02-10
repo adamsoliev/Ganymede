@@ -41,5 +41,5 @@ void start() {
 
 void timertrap() {
         print("timer interval\n");
-        *(unsigned long *)CLINT_MTIMECMP = *(unsigned long *)CLINT_MTIME + INTERVAL;
+        *(unsigned long *)CLINT_MTIMECMP += INTERVAL;
 }

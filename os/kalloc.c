@@ -4,14 +4,6 @@
 
 #include "defs.h"
 
-#define KERNBASE 0x80000000L
-#define PHYSTOP (KERNBASE + 17 * 1024 * 1024)
-
-#define PGSIZE 4096  // bytes per page
-
-#define PGROUNDUP(sz) (((sz) + PGSIZE - 1) & ~(PGSIZE - 1))
-#define PGROUNDDOWN(a) (((a)) & ~(PGSIZE - 1))
-
 void freerange(void *pa_start, void *pa_end);
 
 extern char end[];  // first address after kernel.
