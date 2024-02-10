@@ -13,3 +13,6 @@ void freerange(void *pa_start, void *pa_end);
 void kfree(void *pa);
 void *kalloc(void);
 void *memset(void *dst, int c, unsigned int n);
+
+// vm.c
+void kvminit();
