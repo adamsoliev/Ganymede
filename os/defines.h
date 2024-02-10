@@ -30,3 +30,7 @@
 // use riscv's sv39 page table scheme.
 #define SATP_SV39 (8L << 60)
 #define MAKE_SATP(pagetable) (SATP_SV39 | (((unsigned long)pagetable) >> 12))
+
+// map kernel stacks beneath the trampoline,
+// each surrounded by invalid guard pages.
+#define KSTACK(p) ((MAXVA - PGSIZE) - ((p) + 1) * 2 * PGSIZE)

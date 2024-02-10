@@ -22,6 +22,8 @@ void kvminit() {
                PHYSTOP - (unsigned long)etext,
                PTE_R | PTE_W);
 
+        proc_mapstack(kptable);
+
         // turn on paging
         asm volatile("sfence.vma zero, zero");
         asm volatile("csrw satp, %0" : : "r"(MAKE_SATP(kptable)));

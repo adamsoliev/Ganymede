@@ -1,5 +1,8 @@
 #include "defines.h"
 
+// main.c
+void proc_mapstack(unsigned long *ptable);
+
 // uart.c
 void uartinit();
 void uartputc(int c);
@@ -16,3 +19,4 @@ void *memset(void *dst, int c, unsigned int n);
 
 // vm.c
 void kvminit();
+void kvmmap(unsigned long *ptable, unsigned long va, unsigned long pa, unsigned long sz, int perm);
