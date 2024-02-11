@@ -52,13 +52,26 @@ void proc_mapstack(unsigned long *ptable) {
         }
 }
 
+void kernelvec();
+
+void kerneltrap() {
+        print("kerneltrap\n");
+        asm volatile("csrc sip, %0" ::"r"(2));
+}
+
 int main(void) {
         uartinit();  // uart
         kinit();     // kernel physical allocator
         kvminit();   // kernel virtual memory
         procinit();  // process table
 
+        // kernel vector trap
+        asm volatile("csrw stvec, %0" : : "r"(kernelvec));
+
         while (1) {
+                // enable S-mode interrupts
+                asm volatile("csrw sstatus, %0" : : "r"(1 << 1));
+
                 for (int i = 0; i < 100000000; i++)
                         ;
                 print("HELLO WORLD!\n");

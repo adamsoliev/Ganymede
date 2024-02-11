@@ -5,7 +5,8 @@ __attribute__((aligned(16))) char stack0[4096];
 int main(void);
 void timervec();
 
-unsigned long tscratch[32];
+unsigned long tmscratch[32];
+unsigned long tsscratch[32];
 
 // core local interruptor (CLINT), which contains the timer
 #define CLINT 0x2000000L
@@ -26,14 +27,23 @@ void start() {
         asm volatile("csrw pmpaddr0, %0" ::"r"(0x3fffffffffffffULL));
         asm volatile("csrw pmpcfg0, %0" ::"r"(0xf));
 
+        // delegate software interrupts to S-mode
+        asm volatile("csrw mideleg, %0" : : "r"(0xff));  // MTIE, STIE, MSIE, SSIE
+        asm volatile("csrw medeleg, %0" : : "r"(0xff));  // MTIE, STIE, MSIE, SSIE
+        // enable software interrupts in S-mode
+        asm volatile("csrw sie, %0" ::"r"(1 << 1));  // sie.STIE sie.SSIE
+
         // timer interrupt (for now, without any side effects and S-mode involvement)
         *(unsigned long *)CLINT_MTIMECMP = *(unsigned long *)CLINT_MTIME + INTERVAL;
         asm volatile("csrs mstatus, %0" ::"r"(0b1 << 3));  // mstatus.MIE
         asm volatile("csrs mie, %0" ::"r"(0b1 << 7));      // mie.MTIE
         asm volatile("csrw mtvec, %0" ::"r"(timervec));
 
-        unsigned long *scratch = &tscratch[0];
-        asm volatile("csrw mscratch, %0" ::"r"((unsigned long)scratch));
+        unsigned long *mscratch = &tmscratch[0];
+        asm volatile("csrw mscratch, %0" ::"r"((unsigned long)mscratch));
+
+        unsigned long *sscratch = &tsscratch[0];
+        asm volatile("csrw sscratch, %0" ::"r"((unsigned long)sscratch));
 
         // switch to supervisor
         asm volatile("mret");
@@ -42,4 +52,5 @@ void start() {
 void timertrap() {
         print("timer interval\n");
         *(unsigned long *)CLINT_MTIMECMP += INTERVAL;
+        asm volatile("csrw sip, %0" ::"r"(2));
 }
