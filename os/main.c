@@ -2,11 +2,11 @@
 
 int main(void) {
         uartinit();  // uart
-        kinit();     // kernel physical allocator
+        kinit();     // kernel physical memory allocator
         kvminit();   // kernel virtual memory
         procinit();  // process table
 
-        trapinit();  // install kernel vector trap
+        trapinit();  // kernel trap vector 
 
         while (1) {
                 intr_on();

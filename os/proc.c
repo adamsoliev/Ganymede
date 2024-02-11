@@ -1,5 +1,7 @@
 #include "defs.h"
 
+#define NPROC 5
+
 // Saved registers for kernel context switches.
 struct context {
         unsigned long ra;
@@ -19,8 +21,6 @@ struct context {
         unsigned long s10;
         unsigned long s11;
 };
-
-#define NPROC 5
 
 enum procstate { UNUSED, USED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 

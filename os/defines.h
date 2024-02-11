@@ -7,15 +7,7 @@
 
 #define INTERVAL 10000000
 
-#define KERNBASE 0x80000000L
-#define PHYSTOP (KERNBASE + 17 * 1024 * 1024)
-
-#define PGSIZE 4096  // bytes per page
-#define PGSHIFT 12   // bits of offset within a page
-
-#define PGROUNDUP(sz) (((sz) + PGSIZE - 1) & ~(PGSIZE - 1))
-#define PGROUNDDOWN(a) (((a)) & ~(PGSIZE - 1))
-
+// ------------------- RISC-V -------------------
 #define PTE_V (1L << 0)  // valid
 #define PTE_R (1L << 1)
 #define PTE_W (1L << 2)
@@ -32,12 +24,22 @@
 #define PXSHIFT(level) (PGSHIFT + (9 * (level)))
 #define PX(level, va) ((((unsigned long)(va)) >> PXSHIFT(level)) & PXMASK)
 
-#define MAXVA (1L << (9 + 9 + 9 + 12 - 1))
-
 // use riscv's sv39 page table scheme.
 #define SATP_SV39 (8L << 60)
 #define MAKE_SATP(pagetable) (SATP_SV39 | (((unsigned long)pagetable) >> 12))
 
-// map kernel stacks beneath the trampoline,
+// ------------------- MEMORY -------------------
+#define KERNBASE 0x80000000L
+#define PHYSTOP (KERNBASE + 17 * 1024 * 1024)
+
+#define PGSIZE 4096  // bytes per page
+#define PGSHIFT 12   // bits of offset within a page
+
+#define PGROUNDUP(sz) (((sz) + PGSIZE - 1) & ~(PGSIZE - 1))
+#define PGROUNDDOWN(a) (((a)) & ~(PGSIZE - 1))
+
+#define MAXVA (1L << (9 + 9 + 9 + 12 - 1))
+
+// map kernel stacks beneath the highest page,
 // each surrounded by invalid guard pages.
 #define KSTACK(p) ((MAXVA - PGSIZE) - ((p) + 1) * 2 * PGSIZE)

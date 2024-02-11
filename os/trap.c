@@ -4,10 +4,14 @@ void kernelvec();
 
 void kerneltrap() {
         print("kerneltrap\n");
+        // acknowledge software interrupt
         asm volatile("csrc sip, %0" ::"r"(2));
 }
 
-void trapinit() { asm volatile("csrw stvec, %0" : : "r"(kernelvec)); }
+void trapinit() {
+        // install kernel trap vec
+        asm volatile("csrw stvec, %0" : : "r"(kernelvec));
+}
 
 void intr_on() {
         // enable S-mode interrupts
@@ -16,6 +20,6 @@ void intr_on() {
 
 void timertrap() {
         print("timer interval\n");
-        *(unsigned long *)CLINT_MTIMECMP += INTERVAL;
-        asm volatile("csrw sip, %0" ::"r"(2));
+        *(unsigned long *)CLINT_MTIMECMP += INTERVAL;  // update mtimecmp
+        asm volatile("csrw sip, %0" ::"r"(2));         // raise S-mode software interrupt
 }

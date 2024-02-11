@@ -30,9 +30,11 @@ void start() {
         asm volatile("csrs mie, %0" ::"r"(1 << 7));      // mie.MTIE
         asm volatile("csrw mtvec, %0" ::"r"(timervec));
 
+        // set up scratch area for M-mode trap handling
         unsigned long *mscratch = &tmscratch[0];
         asm volatile("csrw mscratch, %0" ::"r"((unsigned long)mscratch));
 
+        // set up scratch area for S-mode trap handling
         unsigned long *sscratch = &tsscratch[0];
         asm volatile("csrw sscratch, %0" ::"r"((unsigned long)sscratch));
 
