@@ -1,6 +1,5 @@
 #include "defs.h"
 
-// TODO: investigate why smaller values aren't working
 __attribute__((aligned(16))) char stack0[4096];
 int main(void);
 void timervec();
@@ -17,8 +16,8 @@ unsigned long tsscratch[32];
 
 void start() {
         // set prev to supervisor
-        asm volatile("csrc mstatus, %0" ::"r"(0b11 << 11));
-        asm volatile("csrs mstatus, %0" ::"r"(0b01 << 11));
+        asm volatile("csrc mstatus, %0" ::"r"(3 << 11));
+        asm volatile("csrs mstatus, %0" ::"r"(1 << 11));
 
         // supervisor entry
         asm volatile("csrw mepc, %0" ::"r"(main));
@@ -28,15 +27,14 @@ void start() {
         asm volatile("csrw pmpcfg0, %0" ::"r"(0xf));
 
         // delegate software interrupts to S-mode
-        asm volatile("csrw mideleg, %0" : : "r"(0xff));  // MTIE, STIE, MSIE, SSIE
-        asm volatile("csrw medeleg, %0" : : "r"(0xff));  // MTIE, STIE, MSIE, SSIE
+        asm volatile("csrw mideleg, %0" : : "r"(0xff));  // MSIE, SSIE
         // enable software interrupts in S-mode
-        asm volatile("csrw sie, %0" ::"r"(1 << 1));  // sie.STIE sie.SSIE
+        asm volatile("csrw sie, %0" ::"r"(1 << 1));  // sie.SSIE
 
-        // timer interrupt (for now, without any side effects and S-mode involvement)
+        // timer interrupt
         *(unsigned long *)CLINT_MTIMECMP = *(unsigned long *)CLINT_MTIME + INTERVAL;
-        asm volatile("csrs mstatus, %0" ::"r"(0b1 << 3));  // mstatus.MIE
-        asm volatile("csrs mie, %0" ::"r"(0b1 << 7));      // mie.MTIE
+        asm volatile("csrs mstatus, %0" ::"r"(1 << 3));  // mstatus.MIE
+        asm volatile("csrs mie, %0" ::"r"(1 << 7));      // mie.MTIE
         asm volatile("csrw mtvec, %0" ::"r"(timervec));
 
         unsigned long *mscratch = &tmscratch[0];

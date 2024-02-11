@@ -59,18 +59,23 @@ void kerneltrap() {
         asm volatile("csrc sip, %0" ::"r"(2));
 }
 
+void trapinit() { asm volatile("csrw stvec, %0" : : "r"(kernelvec)); }
+
+void s_intr_on() {
+        // enable S-mode interrupts
+        asm volatile("csrw sstatus, %0" : : "r"(1 << 1));  // SIE
+}
+
 int main(void) {
         uartinit();  // uart
         kinit();     // kernel physical allocator
         kvminit();   // kernel virtual memory
         procinit();  // process table
 
-        // kernel vector trap
-        asm volatile("csrw stvec, %0" : : "r"(kernelvec));
+        trapinit();  // install kernel vector trap
 
         while (1) {
-                // enable S-mode interrupts
-                asm volatile("csrw sstatus, %0" : : "r"(1 << 1));
+                s_intr_on();
 
                 for (int i = 0; i < 100000000; i++)
                         ;

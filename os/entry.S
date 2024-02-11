@@ -11,11 +11,9 @@ spin:
 .globl kernelvec
 .align 4
 kernelvec:
-        # make room to save registers.
-        # addi sp, sp, -256
         csrrw a0, sscratch, a0
 
-        # save the registers.
+        # save the registers
         sd ra, 0(sp)
         sd sp, 8(sp)
         sd gp, 16(sp)
@@ -48,12 +46,11 @@ kernelvec:
         sd t5, 232(sp)
         sd t6, 240(sp)
 
-        # call the C trap handler in trap.c
         call kerneltrap
 
         la a0, tsscratch
 
-        # restore registers.
+        # restore registers
         ld ra, 0(sp)
         ld sp, 8(sp)
         ld gp, 16(sp)
@@ -87,9 +84,8 @@ kernelvec:
         ld t6, 240(sp)
 
         csrrw a0, sscratch, a0
-        # addi sp, sp, 256
 
-        # return to whatever we were doing in the kernel.
+        # return to the kernel
         sret
 
 
@@ -97,10 +93,9 @@ kernelvec:
 .globl timervec
 .align 4
 timervec:
-    # make room to save registers.
     csrrw a0, mscratch, a0
 
-    # save the registers.
+    # save the registers
     sd ra, 0(a0)
     sd sp, 8(a0)
     sd gp, 16(a0)
@@ -133,12 +128,11 @@ timervec:
     sd t5, 232(a0)
     sd t6, 240(a0)
 
-    # call the C trap handler in start.c
     call timertrap
 
     la a0, tmscratch
 
-    # restore registers.
+    # restore registers
     ld ra, 0(a0)
     ld sp, 8(a0)
     ld gp, 16(a0)
@@ -173,5 +167,5 @@ timervec:
 
     csrrw a0, mscratch, a0
 
-    # return to whatever we were doing in the kernel
+    # return to the kernel
     mret
