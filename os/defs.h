@@ -20,3 +20,10 @@ void *memset(void *dst, int c, unsigned int n);
 // vm.c
 void kvminit();
 void kvmmap(unsigned long *ptable, unsigned long va, unsigned long pa, unsigned long sz, int perm);
+
+// proc.c
+void procinit(void);
+
+// trap.c
+void trapinit();
+void intr_on();

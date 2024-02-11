@@ -1,5 +1,12 @@
 #define UART0 0x10000000L
 
+// core local interruptor (CLINT), which contains the timer
+#define CLINT 0x2000000L
+#define CLINT_MTIMECMP (CLINT + 0x4000)
+#define CLINT_MTIME (CLINT + 0xBFF8)  // cycles since boot
+
+#define INTERVAL 10000000
+
 #define KERNBASE 0x80000000L
 #define PHYSTOP (KERNBASE + 17 * 1024 * 1024)
 

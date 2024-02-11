@@ -7,13 +7,6 @@ void timervec();
 unsigned long tmscratch[32];
 unsigned long tsscratch[32];
 
-// core local interruptor (CLINT), which contains the timer
-#define CLINT 0x2000000L
-#define CLINT_MTIMECMP (CLINT + 0x4000)
-#define CLINT_MTIME (CLINT + 0xBFF8)  // cycles since boot
-
-#define INTERVAL 10000000
-
 void start() {
         // set prev to supervisor
         asm volatile("csrc mstatus, %0" ::"r"(3 << 11));
@@ -45,10 +38,4 @@ void start() {
 
         // switch to supervisor
         asm volatile("mret");
-}
-
-void timertrap() {
-        print("timer interval\n");
-        *(unsigned long *)CLINT_MTIMECMP += INTERVAL;
-        asm volatile("csrw sip, %0" ::"r"(2));
 }
