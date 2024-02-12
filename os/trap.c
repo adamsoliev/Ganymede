@@ -15,11 +15,11 @@ void trapinit() {
 
 void intr_on() {
         // enable S-mode interrupts
-        asm volatile("csrw sstatus, %0" : : "r"(1 << 1));  // SIE
+        asm volatile("csrs sstatus, %0" : : "r"(1 << 1));  // SIE
 }
 
 void timertrap() {
         print("timer interval\n");
         *(unsigned long *)CLINT_MTIMECMP += INTERVAL;  // update mtimecmp
-        asm volatile("csrw sip, %0" ::"r"(2));         // raise S-mode software interrupt
+        asm volatile("csrs sip, %0" ::"r"(1 << 1));    // raise S-mode software interrupt
 }

@@ -1,7 +1,3 @@
-// Physical memory allocator, for user processes,
-// kernel stacks, page-table pages,
-// and pipe buffers. Allocates whole 4096-byte pages.
-
 #include "defs.h"
 
 void freerange(void *pa_start, void *pa_end);
@@ -23,13 +19,11 @@ void freerange(void *pa_start, void *pa_end) {
         char *p;
         p = (char *)PGROUNDUP((unsigned long)pa_start);
         for (; p + PGSIZE <= (char *)pa_end; p += PGSIZE) {
-                // print("page\n");
                 kfree(p);
         }
 }
 
 void kfree(void *pa) {
-        // print("kfree\n");
         struct run *r;
 
         if (((unsigned long)pa % PGSIZE) != 0 || (char *)pa < end || (unsigned long)pa >= PHYSTOP)
@@ -56,8 +50,7 @@ void *kalloc(void) {
 
 void *memset(void *dst, int c, unsigned int n) {
         char *cdst = (char *)dst;
-        int i;
-        for (i = 0; i < n; i++) {
+        for (int i = 0; i < n; i++) {
                 cdst[i] = c;
         }
         return dst;

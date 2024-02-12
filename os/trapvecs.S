@@ -1,8 +1,7 @@
-
 .globl kernelvec
 .align 4
 kernelvec:
-        csrrw a0, sscratch, a0
+        addi sp, sp, -256
 
         # save the registers
         sd ra, 0(sp)
@@ -14,7 +13,7 @@ kernelvec:
         sd t2, 48(sp)
         sd s0, 56(sp)
         sd s1, 64(sp)
-        # sd a0, 72(sp)
+        sd a0, 72(sp)
         sd a1, 80(sp)
         sd a2, 88(sp)
         sd a3, 96(sp)
@@ -39,8 +38,6 @@ kernelvec:
 
         call kerneltrap
 
-        la a0, tsscratch
-
         # restore registers
         ld ra, 0(sp)
         ld sp, 8(sp)
@@ -51,7 +48,7 @@ kernelvec:
         ld t2, 48(sp)
         ld s0, 56(sp)
         ld s1, 64(sp)
-        # ld a0, 72(sp)
+        ld a0, 72(sp)
         ld a1, 80(sp)
         ld a2, 88(sp)
         ld a3, 96(sp)
@@ -74,7 +71,7 @@ kernelvec:
         ld t5, 232(sp)
         ld t6, 240(sp)
 
-        csrrw a0, sscratch, a0
+        addi sp, sp, 256
 
         # return to the kernel
         sret
