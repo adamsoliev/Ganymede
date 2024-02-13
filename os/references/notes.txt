@@ -18,6 +18,21 @@ https://osblog.stephenmarz.com/index.html
 p/x *0x2004000
 p/x *0x200BFF8
 
+------------------------------------- PHYSICAL MEMORY LAYOUT -------------------------------------
+PHYSTOP         0x81100000
+
+kptable         0x810ff000
+
+kmem.freelist   0x810fe000
+
+1st alloc page  0x80003000
+end             0x80002620
+etext           0x80001000
+KERNBASE        0x80000000
+
+UART            0x10000000
+
+
 ------------------------------------- RISC-V PRIVILIGED -------------------------------------
 -------------------------------------------------
 MACHINE-LEVEL ISA

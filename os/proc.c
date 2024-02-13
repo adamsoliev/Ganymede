@@ -1,6 +1,6 @@
 #include "defs.h"
 
-#define NPROC 5
+#define NPROC 2
 
 // Saved registers for kernel context switches.
 struct context {
@@ -22,7 +22,7 @@ struct context {
         unsigned long s11;
 };
 
-enum procstate { UNUSED, USED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
+enum procstate { UNUSED, RUNNABLE, RUNNING };
 
 // Per-process state
 struct proc {
@@ -37,17 +37,10 @@ struct proc {
 struct proc proc[NPROC];
 
 void procinit(void) {
-        for (struct proc *p = proc; p < &proc[NPROC]; p++) {
+        for (struct proc* p = proc; p < &proc[NPROC]; p++) {
                 p->state = UNUSED;
-                p->kstack = KSTACK((int)(p - proc));
-        }
-}
-
-void proc_mapstack(unsigned long *ptable) {
-        for (struct proc *p = proc; p < &proc[NPROC]; p++) {
-                char *pa = kalloc();
-                if (pa == 0) panic("proc_mapstack: kalloc\n");
-                unsigned long va = KSTACK((int)(p - proc));
-                kvmmap(ptable, va, (unsigned long)pa, PGSIZE, PTE_R | PTE_W);
+                unsigned long pa = (unsigned long)kalloc();
+                // grows down
+                p->kstack = pa + PGSIZE;
         }
 }
