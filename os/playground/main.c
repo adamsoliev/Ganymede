@@ -11,7 +11,14 @@ void put(char c) {
 }
 
 void printptr(uint64 num) {
-        if (num == 0) return;
+        if (num == 0) {
+                put('(');
+                put('n');
+                put('i');
+                put('l');
+                put(')');
+                return;
+        }
         put('0');
         put('x');
         // print a char for every 4 bits, starting from MSB
@@ -22,15 +29,24 @@ void printptr(uint64 num) {
 
 // supports positive numbers and 10, 16 bases
 void printint(int num, int base) {
-        if (num < 0) return;
         if (base != 10 && base != 16) return;
 
-        char buf[20];
-        int i = 0;
-        while (num > 0) {
-                buf[i++] = digits[num % base];
-                num /= base;
+        char buf[16];
+        int i = 0, sign = 0;
+        unsigned int n;
+
+        if (sign = num < 0) {
+                n = -num;
+        } else {
+                n = num;
         }
+
+        do {
+                buf[i++] = digits[n % base];
+        } while ((n /= base) != 0);
+
+        if (sign) buf[i++] = '-';
+
         while (--i >= 0) {
                 put(buf[i]);
         }
@@ -51,7 +67,7 @@ void printf_custom(char *format, ...) {
                 }
                 c = format[++i];
                 if (c == 'd' || c == 'x') {
-                        int x = va_arg(argptr, int);
+                        uint64 x = va_arg(argptr, uint64);
                         printint(x, c == 'd' ? 10 : 16);
                 } else if (c == 's') {
                         char *s = va_arg(argptr, char *);
@@ -95,6 +111,45 @@ int main() {
 
         printf_custom("%p\n", &num);
         printf("%p\n", &num);
+
+        printf_custom("%d\n", 0);
+        printf("%d\n", 0);
+
+        printf_custom("%p\n", NULL);
+        printf("%p\n", NULL);
+
+        // int overflow
+        printf_custom("%d\n", 9223372036854775807);
+        printf("%d\n", 9223372036854775807);
+
+        // int overflow
+        printf_custom("%d\n", 4294967295);
+        printf("%d\n", 4294967295);
+
+        // int overflow by 1
+        printf_custom("%d\n", 2147483648);
+        printf("%d\n", 2147483648);
+
+        // int underflow by 1
+        printf_custom("%d\n", -2147483649);
+        printf("%d\n", -2147483649);
+
+        // int max
+        printf_custom("%d\n", 2147483647);
+        printf("%d\n", 2147483647);
+
+        // int min
+        printf_custom("%d\n", -2147483648);
+        printf("%d\n", -2147483648);
+
+        printf_custom("%d\n", 217867);
+        printf("%d\n", 217867);
+
+        printf_custom("%d\n", 277);
+        printf("%d\n", 277);
+
+        printf_custom("%d\n", 77);
+        printf("%d\n", 77);
 
         return 0;
 }
