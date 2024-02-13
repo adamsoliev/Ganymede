@@ -1,3 +1,8 @@
+------------------------------------- NEXT -------------------------------------
+  external interrupts via PLIC
+  user-mode and processes
+  formatted printf
+
 ------------------------------------- ADVENTURES OF OS -------------------------------------
 https://osblog.stephenmarz.com/index.html
   bootloader  

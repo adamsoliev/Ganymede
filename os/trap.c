@@ -1,4 +1,5 @@
 #include "defs.h"
+#include "types.h"
 
 void kernelvec();
 
@@ -7,13 +8,13 @@ extern struct proc *cur_proc;
 void kerneltrap() {
         print("kerneltrap\n");
 
-        unsigned long sstatus, scause, sepc;
+        uint64 sstatus, scause, sepc;
         asm volatile("csrr %0, sstatus" : "=r"(sstatus));
         asm volatile("csrr %0, scause" : "=r"(scause));
         asm volatile("csrr %0, sepc" : "=r"(sepc));
 
         // acknowledge software interrupt
-        asm volatile("csrc sip, %0" ::"r"(2));
+        asm volatile("csrc sip, %0" ::"r"(1 << 1));
         if (cur_proc != 0 && cur_proc->state == RUNNING) {
                 intr_on();
                 yield();
@@ -35,6 +36,6 @@ void intr_on() {
 
 void timertrap() {
         print("timer interval\n");
-        *(unsigned long *)CLINT_MTIMECMP += INTERVAL;  // update mtimecmp
+        *(uint64 *)CLINT_MTIMECMP += INTERVAL;  // update mtimecmp
         asm volatile("csrs sip, %0" ::"r"(1 << 1));    // raise S-mode software interrupt
 }

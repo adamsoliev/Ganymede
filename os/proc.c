@@ -1,12 +1,13 @@
 #include "defs.h"
+#include "types.h"
 
 struct proc proc[NPROC];
 
 void procinit(void) {
         for (struct proc *p = proc; p < &proc[NPROC]; p++) {
                 p->state = UNUSED;
-                unsigned long pa = (unsigned long)kalloc();
-                // grows down
+                uint64 pa = (uint64)kalloc();
+                // grows down | messes up someone's kernel stack if overflows
                 p->kstack = pa + PGSIZE;
         }
 }
@@ -39,10 +40,10 @@ found:
         memset(&p->context, 0, sizeof(p->context));
         if (pid == 1) {
                 p->pid = 1;
-                p->context.ra = (unsigned long)proc1;
+                p->context.ra = (uint64)proc1;
         } else {
                 p->pid = 2;
-                p->context.ra = (unsigned long)proc2;
+                p->context.ra = (uint64)proc2;
         }
         p->context.sp = p->kstack + PGSIZE;
 }

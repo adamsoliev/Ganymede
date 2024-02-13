@@ -1,11 +1,12 @@
 #include "defs.h"
+#include "types.h"
 
-unsigned long *walk(unsigned long *ptable, unsigned long va, int alloc);
-void kvmmap(unsigned long *ptable, unsigned long va, unsigned long pa, unsigned long sz, int perm);
+uint64 *walk(uint64 *ptable, uint64 va, int alloc);
+void kvmmap(uint64 *ptable, uint64 va, uint64 pa, uint64 sz, int perm);
 
 extern char etext[];
 
-unsigned long *kptable;
+uint64 *kptable;
 
 void kvminit() {
         kptable = kalloc();
@@ -14,13 +15,9 @@ void kvminit() {
         // uart registers
         kvmmap(kptable, UART0, UART0, PGSIZE, PTE_R | PTE_W);
         // kernel code
-        kvmmap(kptable, KERNBASE, KERNBASE, (unsigned long)etext - KERNBASE, PTE_R | PTE_X);
+        kvmmap(kptable, KERNBASE, KERNBASE, (uint64)etext - KERNBASE, PTE_R | PTE_X);
         // kernel data and rest of memory
-        kvmmap(kptable,
-               (unsigned long)etext,
-               (unsigned long)etext,
-               PHYSTOP - (unsigned long)etext,
-               PTE_R | PTE_W);
+        kvmmap(kptable, (uint64)etext, (uint64)etext, PHYSTOP - (uint64)etext, PTE_R | PTE_W);
 
         // turn on paging
         asm volatile("sfence.vma zero, zero");
@@ -28,11 +25,11 @@ void kvminit() {
         asm volatile("sfence.vma zero, zero");
 }
 
-void kvmmap(unsigned long *ptable, unsigned long va, unsigned long pa, unsigned long sz, int perm) {
-        unsigned long *pte;
+void kvmmap(uint64 *ptable, uint64 va, uint64 pa, uint64 sz, int perm) {
+        uint64 *pte;
         if (sz == 0) panic("kvmmap: size\n");
-        unsigned int starta = PGROUNDDOWN(va);
-        unsigned int lasta = PGROUNDDOWN(va + sz - 1);
+        uint64 starta = PGROUNDDOWN(va);
+        uint64 lasta = PGROUNDDOWN(va + sz - 1);
         for (;;) {
                 if ((pte = walk(ptable, starta, 1)) == 0) panic("kvmap: walk\n");
                 if (*pte & PTE_V) panic("kvmap: remap\n");
@@ -43,14 +40,14 @@ void kvmmap(unsigned long *ptable, unsigned long va, unsigned long pa, unsigned 
         }
 }
 
-unsigned long *walk(unsigned long *ptable, unsigned long va, int alloc) {
+uint64 *walk(uint64 *ptable, uint64 va, int alloc) {
         if (va >= MAXVA) panic("walk\n");
         for (int level = 2; level > 0; level--) {
-                unsigned long *pte = &ptable[PX(level, va)];
+                uint64 *pte = &ptable[PX(level, va)];
                 if (*pte & PTE_V)
-                        ptable = (unsigned long *)PTE2PA(*pte);
+                        ptable = (uint64 *)PTE2PA(*pte);
                 else {
-                        if (!alloc || (ptable = (unsigned long *)kalloc()) == 0) return 0;
+                        if (!alloc || (ptable = (uint64 *)kalloc()) == 0) return 0;
                         memset(ptable, 0, PGSIZE);
                         *pte = PA2PTE(ptable) | PTE_V;
                 }

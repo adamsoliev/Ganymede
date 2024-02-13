@@ -1,4 +1,5 @@
 #include "defines.h"
+#include "types.h"
 
 // uart.c
 void uartinit();
@@ -16,7 +17,7 @@ void *memset(void *dst, int c, unsigned int n);
 
 // vm.c
 void kvminit();
-void kvmmap(unsigned long *ptable, unsigned long va, unsigned long pa, unsigned long sz, int perm);
+void kvmmap(uint64 *ptable, uint64 va, uint64 pa, uint64 sz, int perm);
 
 // proc.c
 void procinit(void);

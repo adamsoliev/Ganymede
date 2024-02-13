@@ -1,11 +1,11 @@
 #include "defs.h"
+#include "types.h"
 
 __attribute__((aligned(16))) char stack0[4096];
 int main(void);
 void timervec();
 
-unsigned long tmscratch[32];
-// unsigned long tsscratch[32];
+uint64 tmscratch[32];
 
 void start() {
         // set prev to supervisor
@@ -28,14 +28,14 @@ void start() {
         asm volatile("csrw pmpcfg0, %0" ::"r"(0xf));
 
         // timer interrupt
-        *(unsigned long *)CLINT_MTIMECMP = *(unsigned long *)CLINT_MTIME + INTERVAL;
+        *(uint64 *)CLINT_MTIMECMP = *(uint64 *)CLINT_MTIME + INTERVAL;
         asm volatile("csrs mstatus, %0" ::"r"(1 << 3));  // mstatus.MIE
         asm volatile("csrs mie, %0" ::"r"(1 << 7));      // mie.MTIE
         asm volatile("csrw mtvec, %0" ::"r"(timervec));
 
         // set up scratch area for M-mode trap handling
-        unsigned long *mscratch = &tmscratch[0];
-        asm volatile("csrw mscratch, %0" ::"r"((unsigned long)mscratch));
+        uint64 *mscratch = &tmscratch[0];
+        asm volatile("csrw mscratch, %0" ::"r"((uint64)mscratch));
 
         // switch to supervisor
         asm volatile("mret");
