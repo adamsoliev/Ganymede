@@ -2,10 +2,25 @@
 
 void kernelvec();
 
+extern struct proc *cur_proc;
+
 void kerneltrap() {
         print("kerneltrap\n");
+
+        unsigned long sstatus, scause, sepc;
+        asm volatile("csrr %0, sstatus" : "=r"(sstatus));
+        asm volatile("csrr %0, scause" : "=r"(scause));
+        asm volatile("csrr %0, sepc" : "=r"(sepc));
+
         // acknowledge software interrupt
         asm volatile("csrc sip, %0" ::"r"(2));
+        if (cur_proc != 0 && cur_proc->state == RUNNING) {
+                intr_on();
+                yield();
+        }
+
+        asm volatile("csrw sstatus, %0" ::"r"(sstatus));
+        asm volatile("csrw sepc   , %0" ::"r"(sepc));
 }
 
 void trapinit() {

@@ -20,18 +20,13 @@ p/x *0x200BFF8
 
 ------------------------------------- PHYSICAL MEMORY LAYOUT -------------------------------------
 PHYSTOP         0x81100000
-
 kptable         0x810ff000
-
 kmem.freelist   0x810fe000
-
 1st alloc page  0x80003000
 end             0x80002620
 etext           0x80001000
 KERNBASE        0x80000000
-
 UART            0x10000000
-
 
 ------------------------------------- RISC-V PRIVILIGED -------------------------------------
 -------------------------------------------------
@@ -43,9 +38,13 @@ marchid               - M architecture ID reg
 mimpid                - M implementation ID reg
 mhartid               - M hart ID reg
 mstatus and mstatush  - M status regs
+  SD MBE SBE SXL[1:0] UXL[1:0] TSR TW TVM MXR SUM MPRV XS[1:0] FS[1:0] MPP[1:0] VS[1:0] SPP MPIE UBE SPIE MIE SIE 
+  63 37  36   35-34    33-32   22  21 20  19 18    17   16-15   14-13   12-11    10 9    8   7    6   5    3   1
 mtvec                 - M trap-vector base-address reg
 medeleg and mideleg   - M trap delegation regs
 mip and mie           - M interrupt regs
+  MEIE SEIE MTIE STIE MSIE SSIE
+   11   9    7    5    3    1
 mcounteren            - M counter-enable reg
 mcountinhibit         - M counter-inhibit CSR
 mscratch              - M scratch reg

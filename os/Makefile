@@ -10,6 +10,7 @@ OBJS = \
 	proc.o \
 	trap.o \
 	trapvecs.o \
+	swtch.o \
 
 
 ifndef TOOLPREFIX

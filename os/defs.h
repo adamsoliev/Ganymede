@@ -1,8 +1,5 @@
 #include "defines.h"
 
-// main.c
-void proc_mapstack(unsigned long *ptable);
-
 // uart.c
 void uartinit();
 void uartputc(int c);
@@ -24,7 +21,12 @@ void kvmmap(unsigned long *ptable, unsigned long va, unsigned long pa, unsigned 
 // proc.c
 void procinit(void);
 void allocproc(int pid);
+void scheduler(void);
+void yield(void);
 
 // trap.c
 void trapinit();
 void intr_on();
+
+// swtch.S
+void swtch(struct context *, struct context *);
