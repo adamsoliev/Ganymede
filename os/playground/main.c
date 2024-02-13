@@ -14,28 +14,28 @@ void printint(int xx, int base) {
   char buf[20];
   int i = 0;
   while (xx > 0) {
-    int ld = xx % base;
+    buf[i++] = digits[xx % base];
     xx /= base;
-    buf[i++] = digits[ld];
   }
   while (--i >= 0) {
     put(buf[i]);
   }
-  
 }
 
-// supports %d, %x, %s
-void printf_custom(char *fmt, ...) {
-  va_list argptr;
-  va_start(argptr, fmt);
+// supports %d, %x, %s, %c
+void printf_custom(char *format, ...) {
+  if (format == 0) return;
 
-  for (int i = 0; fmt[i] != 0; i++) {
-    char c = fmt[i];
+  va_list argptr;
+  va_start(argptr, format);
+
+  for (int i = 0; format[i] != 0; i++) {
+    char c = format[i];
     if (c != '%') {
       put(c);
       continue;
     }
-    c = fmt[++i];
+    c = format[++i];
     if (c == 'd' || c == 'x') {
       int x = va_arg(argptr, int);
       printint(x, c == 'd' ? 10 : 16);
@@ -57,8 +57,8 @@ void printf_custom(char *fmt, ...) {
 }
 
 int main() {
-  printf_custom("0x%d\n", 29);
-  printf("0x%d\n", 29);
+  printf_custom("%d\n", 29);
+  printf("%d\n", 29);
 
   printf_custom("0x%x\n", 29);
   printf("0x%x\n", 29);
