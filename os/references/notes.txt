@@ -1,7 +1,10 @@
 ------------------------------------- NEXT -------------------------------------
-  external interrupts via PLIC
-  user-mode and processes
   formatted printf
+  user-mode and print syscall (two test processes that print stuff) 
+  all interrupts 
+  all exceptions
+  all syscall
+  filesystem
 
 ------------------------------------- ADVENTURES OF OS -------------------------------------
 https://osblog.stephenmarz.com/index.html
