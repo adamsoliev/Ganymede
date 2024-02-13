@@ -23,6 +23,7 @@ void kvmmap(unsigned long *ptable, unsigned long va, unsigned long pa, unsigned 
 
 // proc.c
 void procinit(void);
+void allocproc(int pid);
 
 // trap.c
 void trapinit();

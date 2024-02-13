@@ -6,7 +6,10 @@ int main(void) {
         kvminit();   // kernel virtual memory
         procinit();  // process table
 
-        trapinit();  // kernel trap vector 
+        trapinit();  // kernel trap vector
+
+        allocproc(1);
+        allocproc(2);
 
         while (1) {
                 intr_on();
