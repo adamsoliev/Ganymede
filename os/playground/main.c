@@ -27,7 +27,7 @@ void printptr(uint64 num) {
         }
 }
 
-// supports positive numbers and 10, 16 bases
+// supports bases 10 and 16
 void printint(int num, int base) {
         if (base != 10 && base != 16) return;
 
@@ -85,7 +85,6 @@ void printf_custom(char *format, ...) {
                         put(c);
                 }
         }
-
         va_end(argptr);
 }
 

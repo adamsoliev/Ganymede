@@ -11,6 +11,7 @@ OBJS = \
 	trap.o \
 	trapvecs.o \
 	swtch.o \
+	printf.o \
 
 
 ifndef TOOLPREFIX

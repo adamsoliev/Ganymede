@@ -30,4 +30,7 @@ void trapinit();
 void intr_on();
 
 // swtch.S
-void swtch(struct context *, struct context *);
+void swtch(struct context *old, struct context *new);
+
+// printf.c
+void printf(char *format, ...);
