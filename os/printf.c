@@ -3,7 +3,7 @@
 #include "defs.h"
 #include "types.h"
 
-char digits[] = "0123456789abcdef";
+static char digits[] = "0123456789abcdef";
 
 void printptr(uint64 num) {
         if (num == 0) {
