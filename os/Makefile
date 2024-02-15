@@ -1,17 +1,18 @@
+K=kernel
 KERNEL_IMAGE=kernel
 
 OBJS = \
-	entry.o \
-	start.o \
-	main.o \
-	uart.o \
-	kalloc.o \
-	vm.o \
-	proc.o \
-	trap.o \
-	trapvecs.o \
-	swtch.o \
-	printf.o \
+	$K/entry.o \
+	$K/start.o \
+	$K/main.o \
+	$K/uart.o \
+	$K/kalloc.o \
+	$K/vm.o \
+	$K/proc.o \
+	$K/trap.o \
+	$K/trapvecs.o \
+	$K/swtch.o \
+	$K/printf.o \
 
 
 ifndef TOOLPREFIX
@@ -35,11 +36,11 @@ LD=$(TOOLPREFIX)ld
 LDFLAGS = -z max-page-size=4096
 OBJDUMP=$(TOOLPREFIX)objdump
 
-all: $(KERNEL_IMAGE)
+all: $K/$(KERNEL_IMAGE)
 
-$(KERNEL_IMAGE): $(OBJS)
-	$(LD) $(LDFLAGS) -T kernel.ld -o $@ $(OBJS) 
-	$(OBJDUMP) -S kernel > kernel.asm
+$K/$(KERNEL_IMAGE): $(OBJS)
+	$(LD) $(LDFLAGS) -T $K/kernel.ld -o $@ $(OBJS) 
+	$(OBJDUMP) -S $K/kernel > $K/kernel.asm
 
 %.o: %.c 
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -49,17 +50,17 @@ $(KERNEL_IMAGE): $(OBJS)
 
 
 QEMU=qemu-system-riscv64
-RUN=$(QEMU) -machine virt -cpu rv64 -smp 1 -bios none -kernel $(KERNEL_IMAGE) -m 17M -nographic 
+RUN=$(QEMU) -machine virt -cpu rv64 -smp 1 -bios none -kernel $K/$(KERNEL_IMAGE) -m 17M -nographic 
 
 qemu: all 
 	$(RUN)
 
 clean:
-	rm -rf $(OBJS) $(KERNEL_IMAGE) *.asm *.d *.o
+	rm -rf $(OBJS) $K/$(KERNEL_IMAGE) */*.asm */*.d */*.o
 
 GDB_PORT=1234
 
 debug: all
-	@echo "*** Now run 'gdb-multiarch $(KERNEL_IMAGE)' in another window"
+	@echo "*** Now run 'gdb-multiarch $K/$(KERNEL_IMAGE)' in another window"
 	@echo "*** Once in, run 'target remote localhost:$(GDB_PORT)'"
 	$(RUN) -gdb tcp::$(GDB_PORT) -S
