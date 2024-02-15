@@ -10,5 +10,6 @@ processor/test/mem_instr
 */*.o
 */*.asm
 */*.gdb_history
+*/*.gdbinit
 
 

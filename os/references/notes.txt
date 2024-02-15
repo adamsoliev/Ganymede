@@ -1,10 +1,54 @@
 ------------------------------------- NEXT -------------------------------------
-  formatted printf
   user-mode and print syscall (two test processes that print stuff) 
   all interrupts 
   all exceptions
   all syscall
   filesystem
+  userapps
+
+
+allocate process (trapframe, empty pagetable, context)
+copy user code/data into a new page
+prepare trapframe
+scheduler selects/context switches 
+usertrapret
+
+USER -> KERNEL
+  uservec => usertrap 
+
+KERNEL -> USER
+  usertrapret => userret
+
+  uservec
+    save user regs
+    init kernel stack pointer
+    init kernel page table
+    load address of usertrap
+    usertrap
+  
+  usertrap
+    install kernelvec
+    save user PC
+    handling depending on interrupt/exception type
+    if (timerintr) yield
+    usertrapret
+
+  usertrapret
+    turn off interrupts
+    install uservec
+    set up kernel stack pointer
+    set up kernel page table
+    store address of usertrap
+    set SPP and SPIE
+    set SEPC
+    load address of user page table
+    userret(upt address)
+
+  userret
+    install user page table
+    load user regs
+    sret
+
 
 ------------------------------------- ADVENTURES OF OS -------------------------------------
 https://osblog.stephenmarz.com/index.html
