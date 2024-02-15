@@ -1,4 +1,3 @@
-
 .globl proc2
 proc2:
         addi    sp,sp,-32

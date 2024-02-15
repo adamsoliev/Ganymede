@@ -1,4 +1,6 @@
 K=kernel
+U=user
+
 KERNEL_IMAGE=kernel
 
 OBJS = \
@@ -35,12 +37,25 @@ CFLAGS += -ffreestanding -fno-common -nostdlib -mno-relax
 LD=$(TOOLPREFIX)ld
 LDFLAGS = -z max-page-size=4096
 OBJDUMP=$(TOOLPREFIX)objdump
+OBJCOPY=$(TOOLPREFIX)objcopy
 
 all: $K/$(KERNEL_IMAGE)
 
-$K/$(KERNEL_IMAGE): $(OBJS)
+$K/$(KERNEL_IMAGE): $(OBJS) $U/proc1 $U/proc2
 	$(LD) $(LDFLAGS) -T $K/kernel.ld -o $@ $(OBJS) 
 	$(OBJDUMP) -S $K/kernel > $K/kernel.asm
+
+$U/proc1: $U/proc1.S
+	$(CC) $(CFLAGS) -march=rv64g -nostdinc -c $U/proc1.S -o $U/proc1.o
+	$(LD) $(LDFLAGS) -N -e start -Ttext 0 -o $U/proc1.out $U/proc1.o
+	$(OBJCOPY) -S -O binary $U/proc1.out $U/proc1
+	$(OBJDUMP) -S $U/proc1.o > $U/proc1.asm
+
+$U/proc2: $U/proc2.S
+	$(CC) $(CFLAGS) -march=rv64g -nostdinc -c $U/proc2.S -o $U/proc2.o
+	$(LD) $(LDFLAGS) -N -e start -Ttext 0 -o $U/proc2.out $U/proc2.o
+	$(OBJCOPY) -S -O binary $U/proc2.out $U/proc2
+	$(OBJDUMP) -S $U/proc2.o > $U/proc2.asm
 
 %.o: %.c 
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -56,7 +71,7 @@ qemu: all
 	$(RUN)
 
 clean:
-	rm -rf $(OBJS) $K/$(KERNEL_IMAGE) */*.asm */*.d */*.o
+	rm -rf $(OBJS) $K/$(KERNEL_IMAGE) */*.asm */*.d */*.o */*.out $U/proc1 $U/proc2
 
 GDB_PORT=1234
 
