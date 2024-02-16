@@ -1,7 +1,14 @@
 #include "types.h"
+#include "defines.h"
+#include "proc.h"
 #include "defs.h"
 
 struct proc proc[NPROC];
+
+struct context cur_context;
+struct proc *cur_proc;
+
+extern char trampoline[];
 
 void procinit(void) {
         for (struct proc *p = proc; p < &proc[NPROC]; p++) {
@@ -31,30 +38,12 @@ unsigned char process2[] = {
         0x72, 0x6f, 0x63, 0x65, 0x73, 0x73, 0x20, 0x32, 0x21, 0x0a, 0x00,
 };
 
-void proc1() {
-        while (1) {
-                for (int i = 0; i < 100000000; i++)
-                        ;
-                print("PROC1\n");
-        }
-}
-
-void proc2() {
-        while (1) {
-                for (int i = 0; i < 100000000; i++)
-                        ;
-                print("PROC2\n");
-        }
-}
-
-extern char trampoline[];
-
 uint64 *proc_pagetable(struct proc *p) {
         uint64 *upt = kalloc();
         memset(upt, 0, PGSIZE);
 
         kvmmap(upt, TRAMPOLINE, (uint64)trampoline, PGSIZE, PTE_R | PTE_X);
-        kvmmap(upt, TRAPFRAME, (uint64)p->trapframe, PGSIZE, PTE_R | PTE_W);
+        kvmmap(upt, TRAPFRAME, (uint64)(p->trapframe), PGSIZE, PTE_R | PTE_W);
         return upt;
 }
 
@@ -66,23 +55,37 @@ void allocproc(int pid) {
         return;
 
 found:
+        if (pid == 1) {
+                p->pid = 1;
+        } else {
+                p->pid = 2;
+        }
+
+        // set up user process trapframe and pagetable
         p->trapframe = kalloc();
         p->pagetable = proc_pagetable(p);
 
+        // set up user process state and context
         p->state = RUNNABLE;
         memset(&p->context, 0, sizeof(p->context));
-        if (pid == 1) {
-                p->pid = 1;
-                p->context.ra = (uint64)proc1;
-        } else {
-                p->pid = 2;
-                p->context.ra = (uint64)proc2;
-        }
+        p->context.ra = (uint64)usertrapret;
         p->context.sp = p->kstack + PGSIZE;
-}
 
-struct context cur_context;
-struct proc *cur_proc;
+        // allocate a page for user code/data and copy them
+        char *mem = kalloc();
+        memset(mem, 0, PGSIZE);
+        kvmmap(p->pagetable, 0, (uint64)mem, PGSIZE, PTE_W | PTE_R | PTE_X | PTE_U);
+        if (pid == 1) {
+                memmove(mem, process1, sizeof(process1));
+        } else {
+                memmove(mem, process2, sizeof(process2));
+        }
+        p->sz = PGSIZE;
+
+        // prepare for the first return from kernel
+        p->trapframe->epc = 0;
+        p->trapframe->sp = PGSIZE;
+}
 
 void scheduler(void) {
         while (1) {

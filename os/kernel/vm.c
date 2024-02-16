@@ -1,15 +1,17 @@
 #include "types.h"
 #include "defs.h"
+#include "defines.h"
 
 uint64 *walk(uint64 *ptable, uint64 va, int alloc);
 void kvmmap(uint64 *ptable, uint64 va, uint64 pa, uint64 sz, int perm);
 
 extern char etext[];
+extern char trampoline[];
 
 uint64 *kptable;
 
 void kvminit() {
-        kptable = kalloc();
+        kptable = kalloc();  // 0x810ff000
         memset(kptable, 0, PGSIZE);
 
         // uart registers
@@ -18,6 +20,12 @@ void kvminit() {
         kvmmap(kptable, KERNBASE, KERNBASE, (uint64)etext - KERNBASE, PTE_R | PTE_X);
         // kernel data and rest of memory
         kvmmap(kptable, (uint64)etext, (uint64)etext, PHYSTOP - (uint64)etext, PTE_R | PTE_W);
+        // trampoline
+        // uint64 *temp1 = kalloc();
+        uint64 *temp2 = kalloc();
+        // kvmmap(kptable, TRAMPOLINE + PGSIZE, (uint64)temp1, PGSIZE, PTE_R | PTE_X);
+        kvmmap(kptable, TRAMPOLINE, (uint64)trampoline, PGSIZE, PTE_R | PTE_X);  // 0x810f1ff8
+        kvmmap(kptable, TRAMPOLINE - PGSIZE, (uint64)temp2, PGSIZE, PTE_R | PTE_X);
 
         // turn on paging
         asm volatile("sfence.vma zero, zero");
@@ -53,4 +61,18 @@ uint64 *walk(uint64 *ptable, uint64 va, int alloc) {
                 }
         }
         return &ptable[PX(0, va)];
+}
+
+uint64 walkaddr(uint64 *pagetable, uint64 va) {
+        uint64 *pte;
+        uint64 pa;
+
+        if (va >= MAXVA) return 0;
+
+        pte = walk(pagetable, va, 0);
+        if (pte == 0) return 0;
+        if ((*pte & PTE_V) == 0) return 0;
+        if ((*pte & PTE_U) == 0) return 0;
+        pa = PTE2PA(*pte);
+        return pa;
 }

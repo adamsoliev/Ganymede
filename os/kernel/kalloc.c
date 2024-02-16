@@ -1,5 +1,6 @@
 #include "types.h"
 #include "defs.h"
+#include "defines.h"
 
 void freerange(void *pa_start, void *pa_end);
 
@@ -53,5 +54,23 @@ void *memset(void *dst, int c, unsigned int n) {
         for (int i = 0; i < n; i++) {
                 cdst[i] = c;
         }
+        return dst;
+}
+
+void *memmove(void *dst, const void *src, unsigned int n) {
+        const char *s;
+        char *d;
+
+        if (n == 0) return dst;
+
+        s = src;
+        d = dst;
+        if (s < d && s + n > d) {
+                s += n;
+                d += n;
+                while (n-- > 0) *--d = *--s;
+        } else
+                while (n-- > 0) *d++ = *s++;
+
         return dst;
 }

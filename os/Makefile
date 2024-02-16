@@ -66,7 +66,9 @@ $U/proc2: $U/proc2.S
 
 
 QEMU=qemu-system-riscv64
-RUN=$(QEMU) -machine virt -cpu rv64 -smp 1 -bios none -kernel $K/$(KERNEL_IMAGE) -m 17M -nographic 
+RUN=$(QEMU) -machine virt -cpu rv64 -smp 1 -bios none -kernel $K/$(KERNEL_IMAGE) -m 128M -nographic 
+RUN += -global virtio-mmio.force-legacy=false
+
 
 qemu: all 
 	$(RUN)
