@@ -1,5 +1,5 @@
-#include "defs.h"
 #include "types.h"
+#include "defs.h"
 
 void kernelvec();
 
@@ -36,6 +36,6 @@ void intr_on() {
 
 void timertrap() {
         print("timer interval\n");
-        *(uint64 *)CLINT_MTIMECMP += INTERVAL;  // update mtimecmp
-        asm volatile("csrs sip, %0" ::"r"(1 << 1));    // raise S-mode software interrupt
+        *(uint64 *)CLINT_MTIMECMP += INTERVAL;       // update mtimecmp
+        asm volatile("csrs sip, %0" ::"r"(1 << 1));  // raise S-mode software interrupt
 }

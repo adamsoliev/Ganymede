@@ -1,5 +1,5 @@
-#include "defs.h"
 #include "types.h"
+#include "defs.h"
 
 uint64 *walk(uint64 *ptable, uint64 va, int alloc);
 void kvmmap(uint64 *ptable, uint64 va, uint64 pa, uint64 sz, int perm);

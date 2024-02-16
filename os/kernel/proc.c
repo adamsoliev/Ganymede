@@ -1,5 +1,5 @@
-#include "defs.h"
 #include "types.h"
+#include "defs.h"
 
 struct proc proc[NPROC];
 
@@ -47,6 +47,17 @@ void proc2() {
         }
 }
 
+extern char trampoline[];
+
+uint64 *proc_pagetable(struct proc *p) {
+        uint64 *upt = kalloc();
+        memset(upt, 0, PGSIZE);
+
+        kvmmap(upt, TRAMPOLINE, (uint64)trampoline, PGSIZE, PTE_R | PTE_X);
+        kvmmap(upt, TRAPFRAME, (uint64)p->trapframe, PGSIZE, PTE_R | PTE_W);
+        return upt;
+}
+
 void allocproc(int pid) {
         struct proc *p;
         for (p = proc; p < &proc[NPROC]; p++) {
@@ -55,6 +66,9 @@ void allocproc(int pid) {
         return;
 
 found:
+        p->trapframe = kalloc();
+        p->pagetable = proc_pagetable(p);
+
         p->state = RUNNABLE;
         memset(&p->context, 0, sizeof(p->context));
         if (pid == 1) {

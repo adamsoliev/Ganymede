@@ -1,0 +1,2 @@
+.globl trampoline
+trampoline:

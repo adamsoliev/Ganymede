@@ -1,5 +1,5 @@
-#include "defs.h"
 #include "types.h"
+#include "defs.h"
 
 __attribute__((aligned(16))) char stack0[4096];
 int main(void);
