@@ -15,7 +15,7 @@ void procinit(void) {
                 p->state = UNUSED;
                 uint64 pa = (uint64)kalloc();
                 // grows down | messes up someone's kernel stack if overflows
-                p->kstack = pa + PGSIZE;
+                p->kstack = pa;
         }
 }
 

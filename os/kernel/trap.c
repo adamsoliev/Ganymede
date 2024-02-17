@@ -90,13 +90,21 @@ void usertrap() {
         usertrapret();
 }
 
+extern uint64 *kptable;
+
 void usertrapret() {
         intr_off();
 
         // install uservec (virtual address)
         uint64 trampoline_uservec = TRAMPOLINE + (uservec - trampoline);
         asm volatile("csrw stvec, %0" : : "r"(trampoline_uservec));
-        // 0x3ffffff000
+        // >>> p/x *0x3fffffd000
+        // Cannot access memory at address 0x3fffffd000
+        // >>> p/x $satp
+        // $3 = 0x80000000000810ff
+
+        uint64 value2 = walkaddr(kptable, TRAMPOLINE);
+        printf("value2: %p\n", value2);
 
         // set up kernel info
         uint64 *ksatp;

@@ -30,7 +30,7 @@
 
 // ------------------- MEMORY -------------------
 #define KERNBASE 0x80000000L
-#define PHYSTOP (KERNBASE + 128 * 1024 * 1024)
+#define PHYSTOP (KERNBASE + 17 * 1024 * 1024)
 
 #define PGSIZE 4096  // bytes per page
 #define PGSHIFT 12   // bits of offset within a page
@@ -39,7 +39,7 @@
 #define PGROUNDDOWN(a) (((a)) & ~(PGSIZE - 1))
 
 #define MAXVA (1L << (9 + 9 + 9 + 12 - 1))
-#define TRAMPOLINE (MAXVA - PGSIZE)
+#define TRAMPOLINE (MAXVA - PGSIZE * 3)
 
 // map kernel stacks beneath the highest page,
 // each surrounded by invalid guard pages.
