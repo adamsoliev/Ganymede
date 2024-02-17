@@ -11,7 +11,7 @@ extern char trampoline[];
 uint64 *kptable;
 
 void kvminit() {
-        kptable = kalloc();  // 0x810ff000
+        kptable = kalloc();
         memset(kptable, 0, PGSIZE);
 
         // uart registers
@@ -22,7 +22,6 @@ void kvminit() {
         kvmmap(kptable, (uint64)etext, (uint64)etext, PHYSTOP - (uint64)etext, PTE_R | PTE_W);
         // trampoline
         kvmmap(kptable, TRAMPOLINE, (uint64)trampoline, PGSIZE, PTE_R | PTE_X);
-        // 0x3fffffd000
 
         // turn on paging
         asm volatile("sfence.vma zero, zero");
@@ -31,11 +30,6 @@ void kvminit() {
 
         uint64 value = walkaddr(kptable, TRAMPOLINE);
         printf("value: %p\n", value);
-
-        // >>> p/x *0x3fffffd000
-        // $1 = 0x14051073
-        // >>> p/x $satp
-        // $2 = 0x80000000000810ff
 }
 
 void kvmmap(uint64 *ptable, uint64 va, uint64 pa, uint64 sz, int perm) {
@@ -67,13 +61,6 @@ uint64 *walk(uint64 *ptable, uint64 va, int alloc) {
         }
         return &ptable[PX(0, va)];
 }
-
-/*
-0x3fffffd000 => 0x80002000
-0x810ff000 (kptable) => level = 2, pte = 0x810ff7f8 => ptable = 0x810f2000
-0x810f2000 (ptable)  => level = 1, pte = 0x810f2ff8 => ptable = 0x810f1000
-0x810f1000 (ptable)  => level = 0, pte = 0x810f1fe8 => value  = 0x2000080b
-*/
 
 uint64 walkaddr(uint64 *pagetable, uint64 va) {
         uint64 *pte;

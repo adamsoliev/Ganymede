@@ -19,7 +19,6 @@ void kerneltrap() {
         // acknowledge software interrupt
         asm volatile("csrc sip, %0" ::"r"(1 << 1));
         if (cur_proc != 0 && cur_proc->state == RUNNING) {
-                // intr_on();
                 yield();
         }
 
@@ -98,17 +97,10 @@ void usertrapret() {
         // install uservec (virtual address)
         uint64 trampoline_uservec = TRAMPOLINE + (uservec - trampoline);
         asm volatile("csrw stvec, %0" : : "r"(trampoline_uservec));
-        // >>> p/x *0x3fffffd000
-        // Cannot access memory at address 0x3fffffd000
-        // >>> p/x $satp
-        // $3 = 0x80000000000810ff
-
-        uint64 value2 = walkaddr(kptable, TRAMPOLINE);
-        printf("value2: %p\n", value2);
 
         // set up kernel info
         uint64 *ksatp;
-        asm volatile("csrr %0, satp" : "=r"(ksatp));  // 0x80000000000810ff
+        asm volatile("csrr %0, satp" : "=r"(ksatp));
         cur_proc->trapframe->kernel_satp = (uint64)ksatp;
         cur_proc->trapframe->kernel_sp = cur_proc->kstack + PGSIZE;
         cur_proc->trapframe->kernel_trap = (uint64)usertrap;
@@ -120,8 +112,8 @@ void usertrapret() {
         // user entry
         asm volatile("csrw sepc, %0" ::"r"(cur_proc->trapframe->epc));
 
-        uint64 usatp = MAKE_SATP(cur_proc->pagetable);  // 0x80000000000810ef
+        uint64 usatp = MAKE_SATP(cur_proc->pagetable);
 
-        uint64 trampoline_userret = TRAMPOLINE + (userret - trampoline);  // 0x3ffffff09c
+        uint64 trampoline_userret = TRAMPOLINE + (userret - trampoline);
         ((void (*)(uint64))trampoline_userret)(usatp);
 }

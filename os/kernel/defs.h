@@ -1,6 +1,3 @@
-// #include "defines.h"
-// #include "types.h"
-
 struct context;
 
 // uart.c
