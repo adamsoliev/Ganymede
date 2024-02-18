@@ -66,7 +66,6 @@ uint64 walkaddr(uint64 *pagetable, uint64 va) {
         if (va >= MAXVA) return 0;
 
         pte = walk(pagetable, va, 0);
-        // printf("pte addr: %p, pte value: %p ", pte, *pte);
         if (pte == 0) return 0;
         if ((*pte & PTE_V) == 0) return 0;
         // if ((*pte & PTE_U) == 0) return 0;

@@ -92,8 +92,6 @@ void usertrap() {
         usertrapret();
 }
 
-extern uint64 *kptable;
-
 void usertrapret() {
         intr_off();
 
