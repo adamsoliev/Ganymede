@@ -64,6 +64,7 @@ int copyin(uint64 *pagetable, char *dst, uint64 srcva, uint64 len) {
 }
 
 void usertrap() {
+        printf("usertrap\n");
         // install kernelvec
         asm volatile("csrw stvec, %0" : : "r"(kernelvec));
 
@@ -76,12 +77,14 @@ void usertrap() {
         asm volatile("csrr %0, scause" : "=r"(scause));
 
         if (scause == 8) {  // syscall
+                printf("syscall\n");
                 cur_proc->trapframe->epc += 4;
                 intr_on();
                 char str[11];
                 copyin(cur_proc->pagetable, str, cur_proc->trapframe->a0, 11);
                 printf("%s", str);
         } else if (scause & 1) {
+                printf("timer interrupt\n");
                 // acknowledge software interrupt
                 asm volatile("csrc sip, %0" ::"r"(1 << 1));
                 yield();
@@ -93,6 +96,9 @@ extern uint64 *kptable;
 
 void usertrapret() {
         intr_off();
+
+        for (int i = 0; i < 1e7; i++)
+                ;
 
         // install uservec (virtual address)
         uint64 trampoline_uservec = TRAMPOLINE + (uservec - trampoline);
