@@ -27,9 +27,6 @@ void kvminit() {
         asm volatile("sfence.vma zero, zero");
         asm volatile("csrw satp, %0" : : "r"(MAKE_SATP(kptable)));
         asm volatile("sfence.vma zero, zero");
-
-        uint64 value = walkaddr(kptable, TRAMPOLINE);
-        printf("value: %p\n", value);
 }
 
 void kvmmap(uint64 *ptable, uint64 va, uint64 pa, uint64 sz, int perm) {
@@ -69,7 +66,7 @@ uint64 walkaddr(uint64 *pagetable, uint64 va) {
         if (va >= MAXVA) return 0;
 
         pte = walk(pagetable, va, 0);
-        printf("pte addr: %p, pte value: %p ", pte, *pte);
+        // printf("pte addr: %p, pte value: %p ", pte, *pte);
         if (pte == 0) return 0;
         if ((*pte & PTE_V) == 0) return 0;
         // if ((*pte & PTE_U) == 0) return 0;

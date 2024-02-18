@@ -20,9 +20,10 @@ void start() {
         asm volatile("csrw satp, %0" : : "r"(0));
 
         // delegate software interrupts to S-mode
-        asm volatile("csrw mideleg, %0" : : "r"(0xff));  // MSIE, SSIE
+        asm volatile("csrw mideleg, %0" : : "r"(0xffff));  // MSIE, SSIE
+        asm volatile("csrw medeleg, %0" : : "r"(0xffff));  // MSIE, SSIE
         // enable software interrupts in S-mode
-        asm volatile("csrw sie, %0" ::"r"(1 << 1));  // sie.SSIE
+        asm volatile("csrw sie, %0" ::"r"((1 << 1) | (1 << 5) | (1 << 9)));  // sie.SSIE
 
         // configure physical memory protection to give supervisor access to all memory
         asm volatile("csrw pmpaddr0, %0" ::"r"(0x3fffffffffffffULL));

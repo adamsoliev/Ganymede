@@ -26,8 +26,8 @@ enum procstate { UNUSED, RUNNABLE, RUNNING };
 struct proc {
         enum procstate state;         // Process state
         int pid;                      // Process ID
-        uint64 kstack;         // Virtual address of kernel stack
-        uint64 sz;             // Size of process memory (bytes)
+        uint64 kstack;                // Virtual address of kernel stack
+        uint64 sz;                    // Size of process memory (bytes)
         uint64 *pagetable;            // User page table
         struct trapframe *trapframe;  // Data page for trampoline.S
         struct context context;       // Swtch() here to run process
@@ -35,10 +35,11 @@ struct proc {
 };
 
 struct trapframe {
-        /*   0 */ uint64 kernel_satp;  // kernel page table
-        /*   8 */ uint64 kernel_sp;    // top of process's kernel stack
-        /*  16 */ uint64 kernel_trap;  // usertrap()
-        /*  24 */ uint64 epc;          // saved user program counter
+        /*   0 */ uint64 kernel_satp;    // kernel page table
+        /*   8 */ uint64 kernel_sp;      // top of process's kernel stack
+        /*  16 */ uint64 kernel_trap;    // usertrap()
+        /*  24 */ uint64 epc;            // saved user program counter
+        /*  32 */ uint64 kernel_hartid;  // saved kernel tp
         /*  40 */ uint64 ra;
         /*  48 */ uint64 sp;
         /*  56 */ uint64 gp;

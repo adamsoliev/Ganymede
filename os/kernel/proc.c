@@ -13,9 +13,8 @@ extern char trampoline[];
 void procinit(void) {
         for (struct proc *p = proc; p < &proc[NPROC]; p++) {
                 p->state = UNUSED;
-                uint64 pa = (uint64)kalloc();
-                // grows down | messes up someone's kernel stack if overflows
-                p->kstack = pa;
+                // grows down | overflow/underflow cause HAVOC
+                p->kstack = (uint64)kalloc();
         }
 }
 
@@ -39,10 +38,12 @@ unsigned char process2[] = {
 };
 
 uint64 *proc_pagetable(struct proc *p) {
-        uint64 *upt = kalloc();
+        uint64 *upt = kalloc();  // 0x810ed000
         memset(upt, 0, PGSIZE);
 
+        // 0x3fffffd000 -> 0x80002000
         kvmmap(upt, TRAMPOLINE, (uint64)trampoline, PGSIZE, PTE_R | PTE_X);
+        // 0x3fffffc000 -> 0x810ee000
         kvmmap(upt, TRAPFRAME, (uint64)(p->trapframe), PGSIZE, PTE_R | PTE_W);
         return upt;
 }

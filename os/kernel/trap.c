@@ -81,8 +81,8 @@ void usertrap() {
                 char str[11];
                 copyin(cur_proc->pagetable, str, cur_proc->trapframe->a0, 11);
                 printf("%s", str);
-        } else if (scause & 1) {  // timer interrupt
-                // acknowledge
+        } else if (scause & 1) {
+                // acknowledge software interrupt
                 asm volatile("csrc sip, %0" ::"r"(1 << 1));
                 yield();
         }
