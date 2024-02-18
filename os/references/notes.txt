@@ -1,53 +1,7 @@
 ------------------------------------- NEXT -------------------------------------
-  user-mode and print syscall (two test processes that print stuff) 
-  all interrupts 
-  all exceptions
-  all syscall
+  traps (see below)
   filesystem
   userapps
-
-
-allocate process (trapframe, empty pagetable, context)
-copy user code/data into a new page
-prepare trapframe
-scheduler selects/context switches 
-usertrapret
-
-USER -> KERNEL
-  uservec => usertrap 
-
-KERNEL -> USER
-  usertrapret => userret
-
-  uservec
-    save user regs
-    init kernel stack pointer
-    init kernel page table
-    load address of usertrap
-    usertrap
-  
-  usertrap
-    install kernelvec
-    save user PC
-    handling depending on interrupt/exception type
-    if (timerintr) yield
-    usertrapret
-
-  usertrapret
-    turn off interrupts
-    install uservec
-    set up kernel stack pointer
-    set up kernel page table
-    store address of usertrap
-    set SPP and SPIE
-    set SEPC
-    load address of user page table
-    userret(upt address)
-
-  userret
-    install user page table
-    load user regs
-    sret
 
 
 ------------------------------------- ADVENTURES OF OS -------------------------------------
@@ -107,51 +61,6 @@ mconfigptr            - M configuration pointer reg
 menvcfg and menvcfgh  - M env conf regs
 mseccfg               - M security conf reg
 mtime and mtimecmp    - M timer regs
-
-mstatus 
-        keeps track of and controls the hart’s current operating state
-        sstatus - a restricted view of mstatus
-        MIE & SIE  - global interrupt enable
-                lower-privilege mode interrupts are always off no matter 'wIE' bit for the lower-privilege mode
-                higher-privilege mode interrupts are always on no matter 'wIE' bit for the higher-privilege mode
-                        higher-privilege-level code can use separate per-interrupt enable
-                        bits to disable selected higher-privilege-mode interrupts 
-                        before ceding control to a lower-privilege mode
-
-        MPP, MPIE, MIE, MRET
-        SPP, SPIE, SIE, SRET
-mtvec
-
-medeleg and mideleg
-        by default, all traps at any privilege level are handled in machine mode; delegation can happen in two ways
-                through MRET
-                medeleg and mideleg
-
-        setting a bit in medeleg or mideleg will delegate the corresponding trap, 
-        when occurring in S-mode or U-mode, to the S-mode trap handler
-                when a trap occurs in this case,
-                        scause -> trap cause 
-                        sepc -> virtual address of the instruction that took the trap
-                        stval -> exception-specific datum
-                        SPP of mstatus -> active privilege mode at the time of the trap 
-                        SPIE of mstatus -> value of the SIE field at the time of the trap
-                        SIE of mstatus -> cleared.
-
-        Traps never transition from a more-privileged mode to a less-privileged mode, but are allowed to be taken horizontally
-
-        Delegated interrupts result in the interrupt being masked at the delegator privilege level
-
-mip and mie
-        Restricted views of the mip and mie registers appear as the sip and sie registers for supervisor level
-
-        mip.MEIP and mie.MEIE | mip.SEIP and mie.SEIE
-        mip.MTIP and mie.MTIE | mip.STIP and mie.STIE
-        mip.MSIP and mie.MSIE | mip.SSIP and mie.SSIE
-mepc
-mcause
-mtval
-
-mtime and mtimecmp
 
 -------------------------------------------------
 SUPERVISOR-LEVEL ISA
@@ -239,46 +148,6 @@ Process - unit of isolation
   p->kstack for kernel to handle process' syscalls or interrupts that happen 
   while the process is executing
 
-  starting xv6
-    boot loader in ROM loads kernel into memory at 0x80000000
-        first set of instrs in .text of kernel are specified by linker ENTRY command (_entry)
-    -----------------
-    machine mode
-    -----------------
-    _entry 
-        set up stack
-        call C code at start
-    start
-        set mstatus
-        set mepc to main's address
-        set satp to 0 (turn off virtual address translation)
-        delegate all interrupts/exceptions to supervisor mode
-        program clock chip for timer interrupts
-        call mret (which jumps to address at mepc)
-    -----------------
-    supervisor mode
-    -----------------
-    main
-        initialize devices and subsystems
-        create the 1st process and make it 'RUNNABLE'
-        scheduler picks that process up and runs it, entering user mode
-    -----------------
-    user mode
-    -----------------
-        make a syscall exec with args 
-    -----------------
-    supervisor mode
-    -----------------
-        in kernel, handle exec syscall, which replaces memory/regs of 
-        current process with a new program ('/init')
-    -----------------
-    user mode
-    -----------------
-        return to user space in '/init' process
-        '/init' creates a new console device with file descriptors 0,1,2 opened
-        '/init' starts shell on the console
-    system is up
-
 ----------------------------------------------------------------
 3. PAGE TABLES
 ----------------------------------------------------------------
@@ -316,7 +185,9 @@ gle page table that describes the kernel’s address space
 ----------------------------------------------------------------
 4. TRAPS AND SYSCALLS
 ----------------------------------------------------------------
-  syscall (user), exception (kernel|user), interrupt (kernel|user)
+  syscall (user)
+  exception (kernel|user; e.g., divide by zero or invalid virtual address)
+  interrupt (kernel|user; device or timer interrupt)
 
   convenient to have separate code path for three distinct cases
     traps from user space     (syscall|exception|interrupt)
@@ -429,33 +300,6 @@ gle page table that describes the kernel’s address space
     calls swtch, which replaces scheduler context with newly found process';
     notice implicit jumps here - when xv6 replaces context (ra,sp,etc), it returns on new stack
     (user stack #1 -> kstack #1 -> scheduler context of the core -> kstack #2 -> user stack #2)
-  
-  sleep/wakeup
-
-    Typical usage of sleep/wakeup
-    -----------------------------------------------------------------------------------
-    Thread1
-    ------------
-    acquire(cond_lock);
-    while (cond) 
-      sleep(&cond, &cond_lock);  // &cond is an address and just used as a channel
-    release(cond_lock);
-
-    Thread2
-    ------------
-    acquire(cond_lock);
-    cond += change;
-    wakeup(&cond);
-    release(cond_lock);
-    -----------------------------------------------------------------------------------
-    
-    going into sleep, we need to have condition_lock. To put the current process to sleep (change its state), 
-    we acquire the process_lock inside sleep; right after, we release the condition_lock, 
-    so that some other thread can acquire that condition_lock and change the condition. 
-    That thread then waits spinning, waiting to acquire the process_lock that sleep holds. Once 
-    sleep finishes and releases the process_lock, wakeup can proceed and acquire the process_lock
-    and wake up the process. This mechanism is important to avoid coordination issues, including lost wakeups.
-
 
 ----------------------------------------------------------------
 8. FILE SYSTEM
@@ -514,74 +358,51 @@ gle page table that describes the kernel’s address space
 
 
 
+----------------------------------------------------------------
+MISC. GENERAL CODEBASE NOTES
+----------------------------------------------------------------
+userinit
+  allocate process (trapframe, empty pagetable, context)
+  copy user code/data into a new page
+  prepare trapframe
+  scheduler selects/context switches 
+  usertrapret
 
-------------------------------------- RISC-V XV6 CODE -------------------------------------
-1. U-mode
-  a. syscall | exception | interrupt
-  b. timer interrupt
-2. S-mode
-  a. exception | interrupt
-  b. timer interrupt
+USER -> KERNEL
+  uservec => usertrap 
 
-1a
-+---+-----------------------------------------------
-| U | running                               resume
-|   |   |                                     ^
-+---+---v-------------------------------------|-----
-| S | uservec -> usertrap -> usertrapret -> userret
-+---+-----------------------------------------------
-| M | 
-+---+-----------------------------------------------
-  uservec                                         usertrapret
-    save user regs into TF                          turn off intrs
-    load kstack, &usertrap, &kptable from TF        set stvec to uservec
-    install kptable                                 save kstack, &usertrap, &kptable into TF
-  usertrap                                          set sstatus.SPP to U-mode
-    set stvec to kernelvec (we are in S-mode)       set sepc to saved TF->epc
-    save sepc into TF->epc                          userret(p->pagetable)
-    if (syscall)                                  userret
-      incr TF->epc by 4                             install uptable
-      turn on intrs                                 restore user regs from TF
-      syscall()                                     sret
-    else if (devinstr)
-      route to device
-    else 
-      error
+KERNEL -> USER
+  usertrapret => userret
 
-1b
-+---+------------------------------------------------------------
-| U | running                                           resume
-|   |     |                                                ^
-+---+-----|------------------------------------------------|-----
-| S |     |      uservec -> usertrap -> usertrapret -> userret
-|   |     |      ^
-+---+-----v------|-----------------------------------------------
-| M |     timervec
-+---+------------------------------------------------------------
-  timervec
-    reset mtimecmp
-    raise 'software interrupt'
-    mret 
-  *implicit here that when time interrupted in U-mode, we save user pc in mepc and
-  restore it in mret; since mstatus.MPP points to S-mode, we 'software trap' into
-  S-mode, saving restored user pc in sepc and jumping to stvec
+uservec
+  save user regs
+  init kernel stack pointer
+  init kernel page table
+  load address of usertrap
+  usertrap
 
-  uservec                                         usertrapret
-    save user regs into TF                          turn off intrs
-    load kstack, &usertrap, &kptable from TF        set stvec to uservec
-    install kptable                                 save kstack, &usertrap, &kptable into TF
-  usertrap                                          set sstatus.SPP to U-mode
-    set stvec to kernelvec (we are in S-mode)       set sepc to saved TF->epc
-    save sepc into TF->epc                          userret(p->pagetable)
-    if (syscall)                                  userret
-      incr TF->epc by 4                             install uptable
-      turn on intrs                                 restore user regs from TF
-      syscall()                                     sret
-    else if (devinstr)
-      clear sip.SSIP acknowledging software interrupt
-    else 
-      error
-    yield
+usertrap
+  install kernelvec
+  save user PC
+  handling depending on interrupt/exception type
+  if (timerintr) yield
+  usertrapret
+
+usertrapret
+  turn off interrupts
+  install uservec
+  set up kernel stack pointer
+  set up kernel page table
+  store address of usertrap
+  set SPP and SPIE
+  set SEPC
+  load address of user page table
+  userret(upt address)
+
+userret
+  install user page table
+  load user regs
+  sret
 
 
 kmem.freelist with 3 free pages 
