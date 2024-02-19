@@ -71,7 +71,7 @@ sip and sie           - S interrupt regs
 scounteren            - S counter-enable reg
 sscratch              - S scratch reg
 sepc                  - S exception pc
-scause                - S cause reg
+scause                - S cause reg | Table 4.2
 stval                 - S trap value reg
 senvcfg               - S env conf reg
 satp                  - S address translation and protection reg

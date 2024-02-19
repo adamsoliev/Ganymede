@@ -16,10 +16,29 @@ void kerneltrap() {
         asm volatile("csrr %0, scause" : "=r"(scause));
         asm volatile("csrr %0, sepc" : "=r"(sepc));
 
-        // acknowledge software interrupt
-        asm volatile("csrc sip, %0" ::"r"(1 << 1));
-        if (cur_proc != 0 && cur_proc->state == RUNNING) {
-                yield();
+        /* INTERRUPTS */
+        if (scause == 0x8000000000000001L) {
+                printf("S-mode software interrupt\n");
+                asm volatile("csrc sip, %0" ::"r"(1 << 1));
+                if (cur_proc != 0 && cur_proc->state == RUNNING) yield();
+        } else if (scause == 0x8000000000000005L) {
+                panic("S-mode timer interrupt\n");
+        } else if (scause == 0x8000000000000009L) {
+                panic("S-mode external interrupt\n");
+        }
+        /* EXCEPTIONS */
+        else if (scause == 0 || scause == 4 || scause == 6) {
+                panic("misaligned\n");
+        } else if (scause == 1 || scause == 5 || scause == 7) {
+                panic("access fault\n");
+        } else if (scause == 2) {
+                panic("illegal instruction\n");
+        } else if (scause == 3) {
+                panic("breakpoint\n");
+        } else if (scause == 8 || scause == 9) {
+                panic("ecall\n");
+        } else if (scause == 12 || scause == 13 || scause == 15) {
+                panic("page fault\n");
         }
 
         asm volatile("csrw sstatus, %0" ::"r"(sstatus));

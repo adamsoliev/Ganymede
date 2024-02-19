@@ -20,8 +20,8 @@ void start() {
         asm volatile("csrw satp, %0" : : "r"(0));
 
         // delegate all interrupts/exceptions to S-mode
-        asm volatile("csrw mideleg, %0" : : "r"(0xfff));
-        asm volatile("csrw medeleg, %0" : : "r"(0xfff));
+        asm volatile("csrw mideleg, %0" : : "r"(0xffff));
+        asm volatile("csrw medeleg, %0" : : "r"(0xffff));
         // enable software, external interrupts in S-mode
         asm volatile("csrw sie, %0" ::"r"((1 << 1) | (1 << 9)));
 
