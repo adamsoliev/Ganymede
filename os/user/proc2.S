@@ -6,8 +6,8 @@ proc2:
         addi    s0,sp,32
 .L4:
         li      a4, 0
-        li      a5,999424
-        addi    a5,a5,575
+        li      a5,99999744
+        addi    a5,a5,255
         lui     t1,%hi(.LC0)
         addi    t0,t1,%lo(.LC0)
         j       .L2

@@ -39,12 +39,6 @@ void intr_off() {
         asm volatile("csrc sstatus, %0" : : "r"(1 << 1));  // SIE
 }
 
-void timertrap() {
-        print("timer interval\n");
-        *(uint64 *)CLINT_MTIMECMP += INTERVAL;       // update mtimecmp
-        asm volatile("csrs sip, %0" ::"r"(1 << 1));  // raise S-mode software interrupt
-}
-
 int copyin(uint64 *pagetable, char *dst, uint64 srcva, uint64 len) {
         uint64 n, va0, pa0;
 
@@ -94,9 +88,6 @@ void usertrap() {
 
 void usertrapret() {
         intr_off();
-
-        for (int i = 0; i < 1e7; i++)
-                ;
 
         // install uservec (virtual address)
         uint64 trampoline_uservec = TRAMPOLINE + (uservec - trampoline);

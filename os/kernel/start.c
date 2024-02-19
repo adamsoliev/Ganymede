@@ -6,7 +6,7 @@ __attribute__((aligned(16))) char stack0[4096];
 int main(void);
 void timervec();
 
-uint64 tmscratch[32];
+uint64 scratch[5];
 
 void start() {
         // set prev to supervisor
@@ -36,7 +36,9 @@ void start() {
         asm volatile("csrw mtvec, %0" ::"r"(timervec));
 
         // set up scratch area for M-mode trap handling
-        uint64 *mscratch = &tmscratch[0];
+        uint64 *mscratch = &scratch[0];
+        mscratch[3] = CLINT_MTIMECMP;
+        mscratch[4] = INTERVAL;
         asm volatile("csrw mscratch, %0" ::"r"((uint64)mscratch));
 
         // switch to supervisor
