@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <assert.h>
 
 #include "kernel/types.h"
 
@@ -15,6 +16,12 @@
 #define NIBLOCKS 4
 #define NDBLOCKS 56
 
+// Inodes per block.
+#define IPB (BSIZE / sizeof(struct inode))
+
+// Block containing inode i
+#define IBLOCK(i, sb) (((i) / IPB) + sb.inodestart)
+
 struct superblock {
         uint magic;
         uint size;
@@ -22,6 +29,8 @@ struct superblock {
         uint ndblocks;    // number of data blocks
         uint inodestart;  // first inode block number
 };
+
+enum inode_type { TDIR = 1, TFILE = 2 };
 
 struct inode {
         uint inum;  // inode number
@@ -39,12 +48,12 @@ struct dirent {
 Disk layout:
 [ boot | sb | inodebitmap | dbitmap  | inodes | data ]
 [   1  |  1 |      1      |     1    |   4    |  56  ] => 64 blocks in total, each is 4KB (256 KB)
-
 */
 
 int fd;
 struct superblock sb;
 uint freeblock;
+uint freeinode = 1;
 char zeroes[BSIZE];
 
 // convert to riscv byte order
@@ -58,8 +67,11 @@ uint xint(uint x) {
         return y;
 }
 
+void rsect(uint sec, void *buf);
 void wsect(uint sec, void *buf);
+uint ialloc(uint type);
 void die(const char *s);
+void iappend(uint inum, void *xp, int n);
 
 int main(int argc, char *argv[]) {
         if (argc < 2) {
@@ -85,11 +97,123 @@ int main(int argc, char *argv[]) {
         memset(buf, 0, sizeof(buf));
         memmove(buf, &sb, sizeof(sb));
         wsect(1, buf);
+
+        uint rootino = ialloc(TDIR);
+        assert(rootino == 1);
+
+        struct dirent de;
+        bzero(&de, sizeof(de));
+        de.inum = xint(rootino);
+        strcpy(de.name, ".");
+        iappend(rootino, &de, sizeof(de));
+
+        bzero(&de, sizeof(de));
+        de.inum = xint(rootino);
+        strcpy(de.name, "..");
+        iappend(rootino, &de, sizeof(de));
+
+        int i, cc, fd1;
+        for (i = 2; i < argc; i++) {
+                char *name;
+                if (strncmp(argv[i], "user/", 5) == 0) {
+                        name = argv[i] + 5;
+                } else {
+                        name = argv[i];
+                }
+                assert(index(name, '/') == 0);
+
+                if ((fd1 = open(argv[i], 0)) < 0) die(argv[i]);
+
+                if (name[0] == '_') name += 1;
+
+                uint inum = ialloc(TFILE);
+
+                bzero(&de, sizeof(de));
+                de.inum = xint(inum);
+                strncpy(de.name, name, DIRNAMESZ);
+                iappend(rootino, &de, sizeof(de));
+
+                while ((cc = read(fd1, buf, sizeof(buf))) > 0) iappend(inum, buf, cc);
+                close(fd1);
+        }
+}
+
+void rsect(uint sec, void *buf) {
+        if (lseek(fd, sec * BSIZE, 0) != sec * BSIZE) die("lseek");
+        if (read(fd, buf, BSIZE) != BSIZE) die("read");
 }
 
 void wsect(uint sec, void *buf) {
         if (lseek(fd, sec * BSIZE, 0) != sec * BSIZE) die("lseek");
         if (write(fd, buf, BSIZE) != BSIZE) die("write");
+}
+
+void winode(uint inum, struct inode *in) {
+        char buf[BSIZE];
+        uint bn;
+        struct inode *ip;
+
+        bn = IBLOCK(inum, sb);
+        rsect(bn, buf);
+        ip = ((struct inode *)buf) + (inum % IPB);
+        *ip = *in;
+        wsect(bn, buf);
+}
+
+void rinode(uint inum, struct inode *in) {
+        char buf[BSIZE];
+        uint bn;
+        struct inode *ip;
+
+        bn = IBLOCK(inum, sb);
+        rsect(bn, buf);
+        ip = ((struct inode *)buf) + (inum % IPB);
+        *in = *ip;
+}
+
+uint ialloc(uint type) {
+        uint inum = freeinode++;
+        struct inode in;
+
+        bzero(&in, sizeof(in));
+        in.type = xint(type);
+        in.size = xint(0);
+        winode(inum, &in);
+        return inum;
+}
+
+/*
+Disk layout:
+[ boot | sb | inodebitmap | dbitmap  | inodes | data ]
+[   1  |  1 |      1      |     1    |   4    |  56  ] => 64 blocks in total, each is 4KB (256 KB)
+*/
+
+#define min(a, b) ((a) < (b) ? (a) : (b))
+
+void iappend(uint inum, void *xp, int n) {
+        struct inode in;
+        rinode(inum, &in);
+        uint off = xint(in.size);
+        while (n > 0) {
+                uint fbn = off / BSIZE;
+                assert(fbn < NDIRECT);
+                if (xint(in.addrs[fbn]) == 0) {
+                        in.addrs[fbn] = xint(freeblock++);
+                }
+                uint x = xint(in.addrs[fbn]);
+
+                char *p = (char *)xp;
+                char buf[BSIZE];
+                uint n1 = min(n, (fbn + 1) * BSIZE - off);
+                rsect(x, buf);
+                bcopy(p, buf + off - (fbn * BSIZE), n1);
+                wsect(x, buf);
+                n -= n1;
+                off += n1;
+                p += n1;
+        }
+        in.size = xint(off);
+        winode(inum, &in);
 }
 
 void die(const char *s) {
