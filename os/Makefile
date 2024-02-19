@@ -15,7 +15,7 @@ OBJS = \
 	$K/trapvecs.o \
 	$K/swtch.o \
 	$K/printf.o \
-	$K/trampoline.o \
+	# $K/trampoline.o \
 
 
 ifndef TOOLPREFIX
