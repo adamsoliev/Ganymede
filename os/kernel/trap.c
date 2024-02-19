@@ -75,12 +75,14 @@ void kerneltrap() {
                 printf("%s", str);
         } else if (scause == 12 || scause == 13 || scause == 15) {
                 panic("S-mode page fault exception\n");
+        } else {
+                panic("Unsupported interrupt/exception\n");
         }
 
         if (sstatus & (1 << 8)) {  // S-mode
                 asm volatile("csrw sstatus, %0" ::"r"(sstatus));
                 asm volatile("csrw sepc   , %0" ::"r"(sepc));
-        } else {
+        } else {  // U-mode
                 usertrapret();
         }
 }

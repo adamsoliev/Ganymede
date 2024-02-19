@@ -167,7 +167,7 @@ uservec:
         # make tp hold the current hartid, from p->trapframe->kernel_hartid
         ld tp, 32(a0)
 
-        # load the address of usertrap(), from p->trapframe->kernel_trap
+        # load the address of kerneltrap(), from p->trapframe->kernel_trap
         ld t0, 16(a0)
 
         # fetch the kernel page table address, from p->trapframe->kernel_satp.
@@ -183,7 +183,7 @@ uservec:
         # flush now-stale user entries from the TLB.
         sfence.vma zero, zero
 
-        # jump to usertrap(), which does not return
+        # jump to kerneltrap(), which does not return
         jr t0
 
 .globl userret

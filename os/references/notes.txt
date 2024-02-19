@@ -304,6 +304,19 @@ gle page table that describes the kernel’s address space
 ----------------------------------------------------------------
 8. FILE SYSTEM
 ----------------------------------------------------------------
+  data files and directories, which contain named references to data files and other dirs
+
+  struct inode (file|dir|device)
+    file    - inode with data
+    dir     - inode with a sequence of dirent structs, each of which
+              {
+                int inum;     // ref to file's inode (unique to each file)
+                char name[x]; // file's name (also called 'link')
+              }
+    device  - inode with device address 
+
+  inode is in-memory copy of dinode, which is on disk
+
   File descriptor - abstract many Unix resources using the file system interface
   Pathname        - provide hierarchical path names & resolve them using recursive lookup
   Directory       - implement each dir as a special kind of inode
@@ -316,7 +329,6 @@ gle page table that describes the kernel’s address space
   |                                                   |        |
   +--------------------- memory ----------------------+- disk -+
 
-
   disk layout
   +---+---+---------------+------------+---+------------------+
   |   |   |               |            |   |                  |
@@ -324,12 +336,11 @@ gle page table that describes the kernel’s address space
     0   1       2-31           32-44    45        rest
 
     0     - boot
-    1     - describes file system
+    1     - superblock (describes file system)
     2-31  - logging
     32-44 - inodes
     45    - bitmap
     rest  - data
-  
 
   on-disk inode
     +-------------+             +-------------+
@@ -344,9 +355,7 @@ gle page table that describes the kernel’s address space
     |   indir b # | ------+
     +-------------+
 
-
   max file size: (256 + 12) * 1024 bytes = 268 KB
-
 
   path name lookup ('/y/string'): 
     start from root inode and scan its blocks for 'y'
