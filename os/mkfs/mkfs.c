@@ -69,9 +69,12 @@ uint xint(uint x) {
 
 void rsect(uint sec, void *buf);
 void wsect(uint sec, void *buf);
+void rinode(uint inum, struct inode *in);
+void winode(uint inum, struct inode *in);
 uint ialloc(uint type);
-void die(const char *s);
+void balloc(int used);
 void iappend(uint inum, void *xp, int n);
+void die(const char *s);
 
 int main(int argc, char *argv[]) {
         if (argc < 2) {
@@ -136,6 +139,16 @@ int main(int argc, char *argv[]) {
                 while ((cc = read(fd1, buf, sizeof(buf))) > 0) iappend(inum, buf, cc);
                 close(fd1);
         }
+
+        struct inode in;
+        rinode(rootino, &in);
+        uint off = xint(in.size);
+        off = ((off / BSIZE) + 1) * BSIZE;
+        in.size = xint(off);
+        winode(rootino, &in);
+
+        balloc(freeblock);
+        exit(0);
 }
 
 void rsect(uint sec, void *buf) {
@@ -182,11 +195,18 @@ uint ialloc(uint type) {
         return inum;
 }
 
-/*
-Disk layout:
-[ boot | sb | inodebitmap | dbitmap  | inodes | data ]
-[   1  |  1 |      1      |     1    |   4    |  56  ] => 64 blocks in total, each is 4KB (256 KB)
-*/
+void balloc(int used) {
+        uchar buf[BSIZE];
+
+        printf("balloc: first %d blocks have been allocated\n", used);
+        assert(used < BSIZE * 8);
+        bzero(buf, BSIZE);
+        for (int i = 0; i < used; i++) {
+                buf[i / 8] = buf[i / 8] | (0x1 << (i % 8));
+        }
+        printf("balloc: write bitmap block at sector %d\n", 2);
+        wsect(2, buf);
+}
 
 #define min(a, b) ((a) < (b) ? (a) : (b))
 
