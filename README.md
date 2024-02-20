@@ -22,6 +22,7 @@
 2. Processor
 
    - [From Blinker to RISC-V](https://github.com/BrunoLevy/learn-fpga/tree/master/FemtoRV/TUTORIALS/FROM_BLINKER_TO_RISCV)
+   - [Muntjac](https://github.com/lowRISC/muntjac)
 
 3. Operating System
    - [xv6-riscv](https://github.com/mit-pdos/xv6-riscv)
