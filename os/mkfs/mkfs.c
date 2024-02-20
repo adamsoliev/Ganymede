@@ -13,7 +13,7 @@
 #define BSIZE 4096
 
 #define FSSIZE 64
-#define NIBLOCKS 4
+#define NIBLOCKS 5
 #define NDBLOCKS 56
 
 // Inodes per block.
@@ -46,8 +46,9 @@ struct dirent {
 
 /*
 Disk layout:
-[ boot | sb | inodebitmap | dbitmap  | inodes | data ]
-[   1  |  1 |      1      |     1    |   4    |  56  ] => 64 blocks in total, each is 4KB (256 KB)
+[ boot | sb | bitmap | inodes | data ]
+[   1  |  1 |   1    |   5    |  56  ] => 64 blocks in total, each is 4KB (256 KB)
+    *bitmap can technically support 4096 * 8 data blocks (128 MB)
 */
 
 int fd;
@@ -88,9 +89,9 @@ int main(int argc, char *argv[]) {
         sb.size = xint(FSSIZE);
         sb.ninodes = NIBLOCKS;
         sb.ndblocks = NDBLOCKS;
-        sb.inodestart = 4;
+        sb.inodestart = 3;
 
-        freeblock = 4 + NIBLOCKS;
+        freeblock = 3 + NIBLOCKS;
 
         for (int i = 0; i < FSSIZE; i++) {
                 wsect(i, zeroes);
@@ -124,9 +125,6 @@ int main(int argc, char *argv[]) {
                         name = argv[i];
                 }
                 assert(index(name, '/') == 0);
-
-                if ((fd1 = open(argv[i], 0)) < 0) die(argv[i]);
-
                 if (name[0] == '_') name += 1;
 
                 uint inum = ialloc(TFILE);
@@ -136,6 +134,7 @@ int main(int argc, char *argv[]) {
                 strncpy(de.name, name, DIRNAMESZ);
                 iappend(rootino, &de, sizeof(de));
 
+                if ((fd1 = open(argv[i], 0)) < 0) die(argv[i]);
                 while ((cc = read(fd1, buf, sizeof(buf))) > 0) iappend(inum, buf, cc);
                 close(fd1);
         }

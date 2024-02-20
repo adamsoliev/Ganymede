@@ -15,7 +15,6 @@ OBJS = \
 	$K/trapvecs.o \
 	$K/swtch.o \
 	$K/printf.o \
-	# $K/trampoline.o \
 
 
 ifndef TOOLPREFIX
@@ -66,12 +65,15 @@ $U/proc2: $U/proc2.S
 
 mkfs/mkfs: mkfs/mkfs.c $K/types.h
 	@gcc -Werror -Wall -I. -o mkfs/mkfs mkfs/mkfs.c
+
+fs.img: mkfs/mkfs $U/proc1 $U/proc2
 	@./mkfs/mkfs fs.img $U/proc1 $U/proc2
 
 QEMU=qemu-system-riscv64
-RUN=$(QEMU) -machine virt -cpu rv64 -smp 1 -bios none -kernel $K/$(KERNEL_IMAGE) -m 17M -nographic 
+RUN=$(QEMU) -machine virt -cpu rv64 -smp 1 -bios none -kernel $K/$(KERNEL_IMAGE) -m 17M 
+RUN += -drive file=fs.img,if=none,format=raw,id=x0
 
-qemu: all 
+qemu: all fs.img
 	$(RUN)
 
 clean:
@@ -80,7 +82,7 @@ clean:
 
 GDB_PORT=1234
 
-debug: all
+debug: all fs.img
 	@echo "*** Now run 'gdb-multiarch $K/$(KERNEL_IMAGE)' in another window"
 	@echo "*** Once in, run 'target remote localhost:$(GDB_PORT)'"
 	$(RUN) -gdb tcp::$(GDB_PORT) -S
