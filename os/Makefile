@@ -70,7 +70,7 @@ fs.img: mkfs/mkfs $U/proc1 $U/proc2
 	@./mkfs/mkfs fs.img $U/proc1 $U/proc2
 
 QEMU=qemu-system-riscv64
-RUN=$(QEMU) -machine virt -cpu rv64 -smp 1 -bios none -kernel $K/$(KERNEL_IMAGE) -m 17M 
+RUN=$(QEMU) -machine virt -cpu rv64 -smp 1 -bios none -kernel $K/$(KERNEL_IMAGE) -m 17M -nographic
 RUN += -drive file=fs.img,if=none,format=raw,id=x0
 
 qemu: all fs.img

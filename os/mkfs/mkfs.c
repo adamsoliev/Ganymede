@@ -85,6 +85,7 @@ int main(int argc, char *argv[]) {
         fd = open(argv[1], O_RDWR | O_CREAT | O_TRUNC, 0666);
         if (fd < 0) exit(1);
 
+        // superblock
         sb.magic = 0x10203040;
         sb.size = xint(FSSIZE);
         sb.ninodes = NIBLOCKS;
@@ -102,6 +103,7 @@ int main(int argc, char *argv[]) {
         memmove(buf, &sb, sizeof(sb));
         wsect(1, buf);
 
+        // root inode/dir
         uint rootino = ialloc(TDIR);
         assert(rootino == 1);
 
@@ -127,18 +129,24 @@ int main(int argc, char *argv[]) {
                 assert(index(name, '/') == 0);
                 if (name[0] == '_') name += 1;
 
+                // alloc child inode
                 uint inum = ialloc(TFILE);
 
+                // update parent dir
                 bzero(&de, sizeof(de));
                 de.inum = xint(inum);
                 strncpy(de.name, name, DIRNAMESZ);
                 iappend(rootino, &de, sizeof(de));
 
+                // update child data
                 if ((fd1 = open(argv[i], 0)) < 0) die(argv[i]);
-                while ((cc = read(fd1, buf, sizeof(buf))) > 0) iappend(inum, buf, cc);
+                while ((cc = read(fd1, buf, sizeof(buf))) > 0) {
+                        iappend(inum, buf, cc);
+                }
                 close(fd1);
         }
 
+        // wrong
         struct inode in;
         rinode(rootino, &in);
         uint off = xint(in.size);
@@ -146,6 +154,7 @@ int main(int argc, char *argv[]) {
         in.size = xint(off);
         winode(rootino, &in);
 
+        // bitmap
         balloc(freeblock);
         exit(0);
 }
@@ -167,7 +176,7 @@ void winode(uint inum, struct inode *in) {
 
         bn = IBLOCK(inum, sb);
         rsect(bn, buf);
-        ip = ((struct inode *)buf) + (inum % IPB);
+        ip = ((struct inode *)buf) + (inum % IPB) - 1;
         *ip = *in;
         wsect(bn, buf);
 }
@@ -179,7 +188,7 @@ void rinode(uint inum, struct inode *in) {
 
         bn = IBLOCK(inum, sb);
         rsect(bn, buf);
-        ip = ((struct inode *)buf) + (inum % IPB);
+        ip = ((struct inode *)buf) + (inum % IPB) - 1;
         *in = *ip;
 }
 
@@ -189,6 +198,7 @@ uint ialloc(uint type) {
 
         bzero(&in, sizeof(in));
         in.type = xint(type);
+        in.inum = inum;
         in.size = xint(0);
         winode(inum, &in);
         return inum;
