@@ -1,8 +1,8 @@
 ------------------------------------- NEXT -------------------------------------
-  traps (see below)
-  filesystem
-  userapps
-
+  write simple virtio blk device driver
+  write simple file system to access proc1 and proc2
+  write simple exec to load proc1 and proc2
+  ensure they print
 
 ------------------------------------- ADVENTURES OF OS -------------------------------------
 https://osblog.stephenmarz.com/index.html
@@ -360,6 +360,24 @@ gle page table that describes the kernel’s address space
   path name lookup ('/y/string'): 
     start from root inode and scan its blocks for 'y'
     once found, note inode's # and scan its blocks for 'string'
+
+
+  https://brennan.io/2020/03/22/sos-block-device/
+  virtio-blk 
+    initialization
+      check magic #, id, etc
+      reset device
+      set acknowledge & driver status bits
+      negotite features
+      set up queue
+      tell device we are ready
+
+    descriptor (contains address of data and its length, some flags, and next)
+
+    virtqueue
+      array of descriptors
+      available array           // for sending    (driver creates a descriptor, puts that into avail array and lets device know by writing to a device reg)
+      used array                // for receiving  (device writes descriptor and its total length to used array and sends interrupt)
 
 ----------------------------------------------------------------
 9. CONCURRENCY REVISITED
