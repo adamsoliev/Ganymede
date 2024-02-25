@@ -11,5 +11,6 @@ processor/test/mem_instr
 */*.asm
 */*.gdb_history
 */*.gdbinit
+*/Digraph*
 
 
