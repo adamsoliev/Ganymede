@@ -9,6 +9,7 @@ signal.signal(signal.SIGINT, signal.SIG_DFL)
 import math
 import numpy as np
 import matplotlib.pyplot as plt
+import torch
 from graphviz import Digraph
 
 def trace(root):
@@ -56,18 +57,34 @@ class Value:
         return f"Value(data={self.data})"
 
     def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
         out = Value(self.data + other.data, (self, other), '+')
         def _backward():
             self.grad += 1.0 * out.grad
             other.grad += 1.0 * out.grad
         out._backward = _backward
         return out
-
+    
     def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
         out = Value(self.data * other.data, (self, other), '*')
         def _backward():
             self.grad += other.data * out.grad
             other.grad += self.data * out.grad
+        out._backward = _backward
+        return out
+    
+    def __rmul__(self, other):
+        return self * other
+
+    def __radd__(self, other):
+        return self + other
+    
+    def exp(self):
+        x = self.data
+        out = Value(math.exp(x), (self, ), 'exp')
+        def _backward():
+            self.grad += out.data * out.grad
         out._backward = _backward
         return out
 
@@ -95,25 +112,40 @@ class Value:
         for node in reversed(topo):
             node._backward()
 
-def main():
-    # inputs
-    x1 = Value(2.0, label='x1')
-    x2 = Value(0.0, label='x2')
-    # weights
-    w1 = Value(-3.0, label='w1')
-    w2 = Value(1.0, label='w2')
-    # bias
-    b = Value(6.881373587, label='b')
-    # x1 * w1 + x2 * w2 + b
-    x1w1 = x1 * w1; x1w1.label = 'x1w1'
-    x2w2 = x2 * w2; x2w2.label = 'x2w2'
-    x1w1x2w2 = x1w1 + x2w2; x1w1x2w2.label = 'x1w1x2w2'
-    n = x1w1x2w2 + b; n.label = 'n'
-    o = n.tanh(); o.label = 'o'
-    o.backward()
+import random
 
-    dot = draw_dot(o)
-    dot.view()
+class Neuron:
+    def __init__(self, nin):
+        self.w = [Value(random.uniform(-1, 1)) for _ in range(nin)]
+        self.b = Value(random.uniform(-1, 1))
+    
+    def __call__(self, x):
+        act = sum(wi * xi for wi, xi in zip(self.w, x)) + self.b
+        out = act.tanh()
+        return out
+
+def main():
+    x = [2.0, 3,0, 9.0]
+    n = Neuron(3)
+    print(n(x))
+    # inputs
+    # x1 = Value(2.0, label='x1')
+    # x2 = Value(0.0, label='x2')
+    # # weights
+    # w1 = Value(-3.0, label='w1')
+    # w2 = Value(1.0, label='w2')
+    # # bias
+    # b = Value(6.881373587, label='b')
+    # # x1 * w1 + x2 * w2 + b
+    # x1w1 = x1 * w1; x1w1.label = 'x1w1'
+    # x2w2 = x2 * w2; x2w2.label = 'x2w2'
+    # x1w1x2w2 = x1w1 + x2w2; x1w1x2w2.label = 'x1w1x2w2'
+    # n = x1w1x2w2 + b; n.label = 'n'
+    # o = n.tanh(); o.label = 'o'
+    # o.backward()
+
+    # dot = draw_dot(o)
+    # dot.view()
 
     # a = Value(-2.0, label='a')
     # b = Value(3.0, label='b')
@@ -123,6 +155,23 @@ def main():
     # f.backward()
     # dot1 = draw_dot(f)
     # dot1.view()
+
+    """ ABOVE IMPLEMENTED IN PYTORCH """
+    # x1 = torch.Tensor([2.0]).double()         ; x1.requires_grad = True 
+    # x2 = torch.Tensor([0.0]).double()         ; x2.requires_grad = True     
+    # w1 = torch.Tensor([-3.0]).double()        ; w1.requires_grad = True         
+    # w2 = torch.Tensor([1.0]).double()         ; w2.requires_grad = True 
+    # b = torch.Tensor([6.881373587]).double()  ; b.requires_grad = True     
+    # n = x1 * w1 + x2 * w2 + b
+    # o = torch.tanh(n)
+
+    # print(o.data.item())
+    # o.backward()
+    # print("------------")
+    # print("x1 ", x1.grad.item())
+    # print("x2 ", x2.grad.item())
+    # print("w1 ", w1.grad.item())
+    # print("w2 ", w2.grad.item())
 
 if __name__ == '__main__':
     main()
