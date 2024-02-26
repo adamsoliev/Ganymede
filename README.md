@@ -8,7 +8,7 @@
 
 3. [RISC-V OS](os/)
 
-4. ML framework (running in the above system)
+4. [ML framework](mlframework/)
 
 ## References
 
