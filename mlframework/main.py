@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 """
 first implement deep neural networks with numpy, no framework at all
 if interested in machine learning, the scikit-learn docs actually make for great notes
@@ -193,21 +195,43 @@ class MLP:
         return params
 
 def main():
-    x = [2.57, 3.93, -1.29]
+    # x = [2.57, 3.93, -1.29]
     nn = MLP(3, [4, 4, 1])
-    dot = draw_dot(nn(x))
-    dot.view()
+    # nn(x)
+    # print(nn.parameters())
+    # dot = draw_dot(nn(x))
+    # dot.view()
 
-    # xs = [
-    #     [2.0, 3.0, -1.0],
-    #     [3.0, -1.0, 0.5],
-    #     [0.5, 1.0, 1.0],
-    #     [1.0, 1.0, -1.0],
-    # ]
-    # ys = [1.0, -1.0, -1.0, 1.0]
-    # ypred = [nn(x) for x in xs]
+    xs = [
+        [2.0, 3.0, -1.0],
+        [3.0, -1.0, 0.5],
+        [0.5, 1.0, 1.0],
+        [1.0, 1.0, -1.0],
+    ]
+    ys = [1.0, -1.0, -1.0, 1.0]
+
+    # training loop
+    for k in range(30):
+        # forward pass
+        ypred = [nn(x) for x in xs]
+        loss = sum([(yout - ygt)**2 for ygt, yout in zip(ys, ypred)])
+
+        # backward pass
+        loss.backward()
+
+        # update
+        for p in nn.parameters():
+            p.data += -0.05 * p.grad
+        
+        print(k, loss.data)
+
+    print(ypred)
+
+    # dot = draw_dot(loss)
+    # dot.view()
+
     # print(ypred)
-
+    # print(loss)
 
 if __name__ == '__main__':
     main()
