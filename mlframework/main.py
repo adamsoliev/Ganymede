@@ -74,11 +74,28 @@ class Value:
         out._backward = _backward
         return out
     
+    def __pow__(self, other):
+        assert isinstance(other, (int, float)), "only supporting int/float powers for now"
+        out = Value(self.data**other, (self,), f'**{other}')
+        def _backward():
+            self.grad += other * (self.data ** (other - 1)) * out.grad
+        out._backward = _backward
+        return out
+
     def __rmul__(self, other):
         return self * other
 
     def __radd__(self, other):
         return self + other
+    
+    def __truediv__(self, other): # self / other
+        return self * other**-1
+
+    def __neg__(self): # -self
+        return self * -1
+
+    def __sub__(self, other): # self - other
+        return self + (-other)
     
     def exp(self):
         x = self.data
@@ -114,6 +131,11 @@ class Value:
 
 import random
 
+"""
+# of inputs (nin) and corresponding # of weights
+sum of (xi * wi) + bias
+activation function applied to above
+"""
 class Neuron:
     def __init__(self, nin):
         self.w = [Value(random.uniform(-1, 1)) for _ in range(nin)]
@@ -123,64 +145,54 @@ class Neuron:
         act = sum(wi * xi for wi, xi in zip(self.w, x)) + self.b
         out = act.tanh()
         return out
+    
+    def parameters(self):
+        return self.w + [self.b]
+
+"""
+# of inputs to each neuron (nin) and # of neurons (nout) in this layer
+on a call, triggers forward pass of each neuron
+"""
+class Layer:
+    def __init__(self, nin, nout):
+        self.neurons = [Neuron(nin) for _ in range(nout)]
+    
+    def __call__(self, x):
+        outs = [n(x) for n in self.neurons]
+        return outs[0] if len(outs) == 1 else outs
+    
+    def parameters(self):
+        params = []
+        for neuron in self.neurons:
+            ps = neuron.parameters()
+            params.extend(ps)
+        return params
+
+"""
+# of inputs (nin) and list of layer sizes (nouts) 
+"""
+class MLP:
+    def __init__(self, nin, nouts):
+        sz = [nin] + nouts
+        self.layers =[Layer(sz[i], sz[i + 1]) for i in range(len(nouts))]
+    
+    def __call__(self, x):
+        for layer in self.layers:
+            x = layer(x)
+        return x
+    
+    def parameters(self):
+        params = []
+        for layer in self.layers:
+            ps = layer.parameters()
+            params.extend(ps)
+        return params
 
 def main():
-    x = [2.0, 3,0, 9.0]
-    n = Neuron(3)
-    print(n(x))
-    # inputs
-    # x1 = Value(2.0, label='x1')
-    # x2 = Value(0.0, label='x2')
-    # # weights
-    # w1 = Value(-3.0, label='w1')
-    # w2 = Value(1.0, label='w2')
-    # # bias
-    # b = Value(6.881373587, label='b')
-    # # x1 * w1 + x2 * w2 + b
-    # x1w1 = x1 * w1; x1w1.label = 'x1w1'
-    # x2w2 = x2 * w2; x2w2.label = 'x2w2'
-    # x1w1x2w2 = x1w1 + x2w2; x1w1x2w2.label = 'x1w1x2w2'
-    # n = x1w1x2w2 + b; n.label = 'n'
-    # o = n.tanh(); o.label = 'o'
-    # o.backward()
-
-    # dot = draw_dot(o)
-    # dot.view()
-
-    # a = Value(-2.0, label='a')
-    # b = Value(3.0, label='b')
-    # d = a * b ; d.label = 'd'
-    # e = a + b ; e.label = 'e'
-    # f = d * e ; f.label = 'f'
-    # f.backward()
-    # dot1 = draw_dot(f)
-    # dot1.view()
-
-    """ ABOVE IMPLEMENTED IN PYTORCH """
-    # x1 = torch.Tensor([2.0]).double()         ; x1.requires_grad = True 
-    # x2 = torch.Tensor([0.0]).double()         ; x2.requires_grad = True     
-    # w1 = torch.Tensor([-3.0]).double()        ; w1.requires_grad = True         
-    # w2 = torch.Tensor([1.0]).double()         ; w2.requires_grad = True 
-    # b = torch.Tensor([6.881373587]).double()  ; b.requires_grad = True     
-    # n = x1 * w1 + x2 * w2 + b
-    # o = torch.tanh(n)
-
-    # print(o.data.item())
-    # o.backward()
-    # print("------------")
-    # print("x1 ", x1.grad.item())
-    # print("x2 ", x2.grad.item())
-    # print("w1 ", w1.grad.item())
-    # print("w2 ", w2.grad.item())
+    x = [2.0, 3,0, -1.0]
+    n = MLP(3, [4, 4, 1])
+    dot = draw_dot(n(x))
+    dot.view()
 
 if __name__ == '__main__':
     main()
-
-"""
-    into neuron:
-        (input * weight)s
-    in neuron
-        sum of (input * weight)s + bias
-    out of neuron
-        activation function applied to (sum of (input * weight)s + bias)
-"""
