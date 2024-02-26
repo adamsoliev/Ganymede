@@ -211,10 +211,14 @@ def main():
     ys = [1.0, -1.0, -1.0, 1.0]
 
     # training loop
-    for k in range(30):
+    for k in range(20):
         # forward pass
         ypred = [nn(x) for x in xs]
         loss = sum([(yout - ygt)**2 for ygt, yout in zip(ys, ypred)])
+
+        # zero grad
+        for p in nn.parameters():
+            p.grad = 0.0
 
         # backward pass
         loss.backward()
