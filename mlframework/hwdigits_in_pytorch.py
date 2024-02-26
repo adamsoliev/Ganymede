@@ -55,14 +55,26 @@ def main():
         samp = np.random.randint(0, X_train.shape[0], size=(BS))
         X = torch.tensor(X_train[samp].reshape((-1, 28*28))).float()
         Y = torch.tensor(Y_train[samp]).long()
-        model.zero_grad()
+
+        # forward pass
         out = model(X)
+
+        # zero grad
+        model.zero_grad()
+
+        # loss
         cat = torch.argmax(out, dim=1)
         accuracy = (cat == Y).float().mean()
         loss = loss_function(out, Y)
         loss = loss.mean()
+
+        # backward pass
         loss.backward()
+
+        # update
         optim.step()
+
+        # debug
         loss, accuracy = loss.item(), accuracy.item()
         losses.append(loss)
         accuracies.append(accuracy)
