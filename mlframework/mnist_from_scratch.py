@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 
+# reference https://github.com/geohot/ai-notebooks/blob/master/mnist_from_scratch.ipynb
+
 import signal
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
