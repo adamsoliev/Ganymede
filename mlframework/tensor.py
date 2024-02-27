@@ -28,6 +28,8 @@ class Tensor:
             return [len(self.data), len(self.data[0])]
     
     def add(self, other):
+        assert isinstance(other, Tensor)
+
         if self.dim == 1:
             assert 0
 
@@ -42,6 +44,8 @@ class Tensor:
         return Tensor(result)
 
     def sub(self, other):
+        assert isinstance(other, Tensor)
+
         if self.dim == 1:
             assert 0
 
@@ -56,6 +60,8 @@ class Tensor:
         return Tensor(result)
 
     def equal(self, other):
+        assert isinstance(other, Tensor)
+
         if self.dim == 1:
             if (len(self.data) != len(other.data)): return False
             for i in range(len(self.data)):
@@ -71,6 +77,8 @@ class Tensor:
         return True
     
     def matmul(self, other):
+        assert isinstance(other, Tensor)
+
         if self.dim == 1:
             assert 0
 
@@ -87,7 +95,14 @@ class Tensor:
                 for k in range(col1):
                     result[i][j] += self.data[i][k] * other.data[k][j]
         return Tensor(result)
-        
+    
+    def transpose(self):
+        row1, col1 = self.size()
+        result = [[0] * row1 for _ in range(col1)]
+        for i in range(row1):
+            for k in range(col1):
+                result[k][i] = self.data[i][k]
+        return Tensor(result)
 
 # ------------- ctorch API -------------
 def tensor(data):
@@ -194,13 +209,30 @@ def test_equal():
 
     for i in range(0, len(lom), 2):
         cassert(lom[i], lom[i + 1])
+
+def test_transpose():
+    def cassert(in1, tin1):
+        t1 = tensor(in1)
+        t2 = tensor(tin1)
+        r1 = t1.transpose()
+        assert r1.equal(t2)
+
+    in1 = [[0.1, 1.2], [2.2, 3.1], [4.9, 5.2]]
+    tin1 = [[0.1, 2.2, 4.9], [1.2, 3.1, 5.2]]
+    cassert(in1, tin1)
+
+    in1 = [[9.2, 2.3, 7.9], [4.6, 2.7, 7.3]]
+    in2 = [[9.2, 4.6], [2.3, 2.7], [7.9, 7.3]]
+    cassert(in1, in2)
+
     
 # ------------- MAIN -------------
 def main():
-    test_matmul()
     test_add()
     test_sub()
     test_equal()
+    test_matmul()
+    test_transpose()
 
 if __name__ == '__main__':
     main()
