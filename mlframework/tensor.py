@@ -22,7 +22,6 @@ class Tensor:
         return formatted
     
     def size(self):
-        # return f"tensor.size([{len(self.data)}, {len(self.data[0])}])"
         if self.dim == 1:
             return [len(self.data)]
         elif self.dim == 2:
@@ -78,10 +77,25 @@ def flatten(t1):
             flattened.append(t1.data[i][j])
     return Tensor(flattened, 1)
 
+def equal(t1, t2):
+    return t1.equal(t2)
 
 # ------------- ctorch TEST -------------
+lom = [
+    [[0.1, 1.2], [2.2, 3.1], [4.9, 5.2]],
+    [[9.2, 2.3, 7.9], [4.6, 2.7, 7.3]],
+    [[2.2, 3.1], [4.9, 5.2]],
+    [[9.2, 2.3], [4.6, 2.7]],
+    [[2.2, 3.1], [4.9, 5.2]],
+    [[2.2, 3.1], [4.9, 5.2]],
+    [[0.0, 0.0], [0.0, 0.0]],
+    [[0.0, 0.0], [0.0, 0.0]],
+    [[-2.2, 3.1], [4.9, 5.2]],
+    [[2.2, 3.1], [-4.9, 5.2]]
+]
+
 def test_matmul():
-    def cassert(int1, int2):
+    def cassert(in1, in2):
         # pytorch
         a = torch.tensor(in1)
         b = torch.tensor(in2)
@@ -96,13 +110,12 @@ def test_matmul():
 
         for i, val in enumerate(f):
             assert round(val.item(), 4) == round(f1.data[i], 4)
-
-    in1 = [[0.1, 1.2], [2.2, 3.1], [4.9, 5.2]]
-    in2 = [[9.2, 2.3, 7.9], [4.6, 2.7, 7.3]]
-    cassert(in1, in2)
+    
+    for i in range(0, len(lom), 2):
+        cassert(lom[i], lom[i + 1])
 
 def test_equal():
-    def cassert(int1, int2):
+    def cassert(in1, in2):
         # --
         a = torch.tensor(in1)
         b = torch.tensor(in2)
@@ -113,20 +126,8 @@ def test_equal():
         r1 = t1.equal(t2)
         assert r == r1
 
-    # dim dif, val dif
-    in1 = [[0.1, 1.2], [2.2, 3.1], [4.9, 5.2]]
-    in2 = [[9.2, 2.3, 7.9], [4.6, 2.7, 7.3]]
-    cassert(in1, in2)
-
-    # dim same, val dif
-    in1 = [[2.2, 3.1], [4.9, 5.2]]
-    in2 = [[9.2, 2.3], [4.6, 2.7]]
-    cassert(in1, in2)
-
-    # dim same, val same
-    in1 = [[2.2, 3.1], [4.9, 5.2]]
-    in2 = [[2.2, 3.1], [4.9, 5.2]]
-    cassert(in1, in2)
+    for i in range(0, len(lom), 2):
+        cassert(lom[i], lom[i + 1])
     
 # ------------- MAIN -------------
 def main():
