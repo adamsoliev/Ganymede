@@ -27,6 +27,34 @@ class Tensor:
         elif self.dim == 2:
             return [len(self.data), len(self.data[0])]
     
+    def add(self, other):
+        if self.dim == 1:
+            assert 0
+
+        assert self.dim == 2
+        row1, col1 = self.size()
+        row2, col2 = other.size()
+        if row1 != row2 or col1 != col2: assert 0
+        result = [[0] * row1 for _ in range(col2)]
+        for i in range(row1):
+            for k in range(col1):
+                result[i][k] = self.data[i][k] + other.data[i][k]
+        return Tensor(result)
+
+    def sub(self, other):
+        if self.dim == 1:
+            assert 0
+
+        assert self.dim == 2
+        row1, col1 = self.size()
+        row2, col2 = other.size()
+        if row1 != row2 or col1 != col2: assert 0
+        result = [[0] * row1 for _ in range(col2)]
+        for i in range(row1):
+            for k in range(col1):
+                result[i][k] = self.data[i][k] - other.data[i][k]
+        return Tensor(result)
+
     def equal(self, other):
         if self.dim == 1:
             if (len(self.data) != len(other.data)): return False
@@ -114,6 +142,44 @@ def test_matmul():
     for i in range(0, len(lom), 2):
         cassert(lom[i], lom[i + 1])
 
+def test_add():
+    def cassert(in1, in2):
+        # --
+        a = torch.tensor(in1)
+        b = torch.tensor(in2)
+        r = a.add(b)
+        f = torch.flatten(r)
+        # --
+        t1 = tensor(in1)
+        t2 = tensor(in2)
+        r1 = t1.add(t2)
+        f1 = flatten(r1)
+
+        for i, val in enumerate(f):
+            assert round(val.item(), 4) == round(f1.data[i], 4)
+
+    for i in range(2, len(lom), 2):
+        cassert(lom[i], lom[i + 1])
+
+def test_sub():
+    def cassert(in1, in2):
+        # --
+        a = torch.tensor(in1)
+        b = torch.tensor(in2)
+        r = a.sub(b)
+        f = torch.flatten(r)
+        # --
+        t1 = tensor(in1)
+        t2 = tensor(in2)
+        r1 = t1.sub(t2)
+        f1 = flatten(r1)
+
+        for i, val in enumerate(f):
+            assert round(val.item(), 4) == round(f1.data[i], 4)
+
+    for i in range(2, len(lom), 2):
+        cassert(lom[i], lom[i + 1])
+
 def test_equal():
     def cassert(in1, in2):
         # --
@@ -132,6 +198,8 @@ def test_equal():
 # ------------- MAIN -------------
 def main():
     test_matmul()
+    test_add()
+    test_sub()
     test_equal()
 
 if __name__ == '__main__':
