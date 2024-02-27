@@ -76,6 +76,18 @@ class Tensor:
                 if self.data[i][k] != other.data[i][k]: return False
         return True
     
+    def mul(self, other):
+        assert isinstance(other, (int, float))
+        if self.dim == 1:
+            pass
+        assert self.dim == 2
+        row1, col1 = self.size()
+        result = [[0] * col1 for _ in range(row1)]
+        for i in range(row1):
+            for k in range(col1):
+               result[i][k] = self.data[i][k] * other
+        return Tensor(result)
+    
     def matmul(self, other):
         assert isinstance(other, Tensor)
 
@@ -97,6 +109,10 @@ class Tensor:
         return Tensor(result)
     
     def transpose(self):
+        if self.dim == 1:
+            assert 0
+
+        assert self.dim == 2
         row1, col1 = self.size()
         result = [[0] * row1 for _ in range(col1)]
         for i in range(row1):
@@ -195,6 +211,28 @@ def test_sub():
     for i in range(2, len(lom), 2):
         cassert(lom[i], lom[i + 1])
 
+def test_mul():
+    def cassert(in1, num):
+        # --
+        a = torch.tensor(in1)
+        r = a.mul(num)
+        # --
+        t1 = tensor(in1)
+        r1 = t1.mul(num)
+
+        for i, fv in enumerate(r):
+            for k, val in enumerate(fv):
+                assert round(val.item(), 4) == round(r1.data[i][k], 4)
+
+    in1 = [[0.1, 1.2], [2.2, 3.1], [4.9, 5.2]]
+    cassert(in1, 2.5)
+
+    in2 = [[0.1, 2.2, 4.9], [1.2, 3.1, 5.2]]
+    cassert(in2, -1.2)
+
+    in3 = [[0.0, 2.2, 4.9], [-1.2, 3.1, 5.2]]
+    cassert(in3, 10.3)
+
 def test_equal():
     def cassert(in1, in2):
         # --
@@ -230,6 +268,7 @@ def test_transpose():
 def main():
     test_add()
     test_sub()
+    test_mul()
     test_equal()
     test_matmul()
     test_transpose()
