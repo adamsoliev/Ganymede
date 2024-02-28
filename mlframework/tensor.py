@@ -26,7 +26,14 @@ class Tensor:
             return [len(self.data)]
         elif self.dim == 2:
             return [len(self.data), len(self.data[0])]
-    
+
+        """
+        Consider you have two matrices A and B of orders a1xa2 and b1xb2 respectively.
+
+        Matrix addition/subtraction on the two matrices will be defined iff a1=b1 and a2=b2
+        Matrix multiplication on them is defined iff a2=b1 for AB to be defined and 
+        b2=a1 for BA to be defined. AB will be of order a1*b2 and BA will be of order b1*a2
+        """
     def add(self, other):
         assert isinstance(other, Tensor)
 
