@@ -13,6 +13,7 @@ if interested in machine learning, the scikit-learn docs actually make for great
 """
 
 
+# https://bea.stollnitz.com/blog/fashion-pytorch
 """Training, evaluation, and prediction."""
 
 from pathlib import Path
@@ -99,8 +100,7 @@ def _fit(device: str, dataloader: DataLoader, model: nn.Module,
         item_count += len(x)
 
         # Printing progress.
-        if ((batch_index + 1) % print_every == 0) or ((batch_index + 1)
-                                                      == batch_count):
+        if ((batch_index + 1) % print_every == 0) or ((batch_index + 1) == batch_count):
             accuracy = correct_item_count / item_count
             average_loss = loss_sum / item_count
             print(f'[Batch {batch_index + 1:>3d} - {item_count:>5d} items] ' +
@@ -117,12 +117,23 @@ def _fit_one_batch(x: torch.Tensor, y: torch.Tensor, model: NeuralNetwork,
                    loss_fn: CrossEntropyLoss,
                    optimizer: Optimizer) -> Tuple[torch.Tensor, torch.Tensor]:
     """Trains a single minibatch (backpropagation algorithm)."""
-    y_prime = model(x)
-    loss = loss_fn(y_prime, y)
+    y_prime = model(x)          # forward pass to calc predicted value
+    loss = loss_fn(y_prime, y)  # calc loss
 
-    optimizer.zero_grad()
-    loss.backward()
-    optimizer.step()
+    optimizer.zero_grad()       # clean grads
+    loss.backward()             # backward pass to calc derivatives
+    optimizer.step()            # gradient descent step
+
+    """
+    You can think of NN as a function 'l' that takes in as input the data 'X', expected labels 'y',
+    and parameters (W & b) and outputs a loss
+        loss = l(X, y, W, b)            
+    Our goal is to find the parameters (W & b) that lead to the lowest possible loss. We do this by
+    iteratively improving our estimates of (W & b) according to the update formulas below until gradients 
+    are smaller than a pre-defined threshold
+        W := W - α(d(l)/d(W)), where α is learning rate
+        b := b - α(d(l)/d(b))
+    """
 
     return (y_prime, loss)
 
@@ -181,16 +192,12 @@ def training_phase(device: str):
     print('\n***Training***')
     for epoch in range(epochs):
         print(f'\nEpoch {epoch + 1}\n-------------------------------')
-        (train_loss, train_accuracy) = _fit(device, train_dataloader, model,
-                                            loss_fn, optimizer)
-        print(f'Train loss: {train_loss:>8f}, ' +
-              f'train accuracy: {train_accuracy * 100:>0.1f}%')
+        (train_loss, train_accuracy) = _fit(device, train_dataloader, model, loss_fn, optimizer)
+        print(f'Train loss: {train_loss:>8f}, ' + f'train accuracy: {train_accuracy * 100:>0.1f}%')
 
     print('\n***Evaluating***')
-    (test_loss, test_accuracy) = _evaluate(device, test_dataloader, model,
-                                           loss_fn)
-    print(f'Test loss: {test_loss:>8f}, ' +
-          f'test accuracy: {test_accuracy * 100:>0.1f}%')
+    (test_loss, test_accuracy) = _evaluate(device, test_dataloader, model, loss_fn)
+    print(f'Test loss: {test_loss:>8f}, ' + f'test accuracy: {test_accuracy * 100:>0.1f}%')
 
     Path(MODEL_DIRPATH).mkdir(exist_ok=True)
     path = Path(MODEL_DIRPATH, 'weights.pth')
@@ -236,13 +243,3 @@ def main() -> None:
 
 if __name__ == '__main__':
     main()
-    # W = torch.tensor([[1., 2.]], requires_grad=True)
-    # X = torch.tensor([[3.], [4.]])
-    # b = torch.tensor([5.], requires_grad=True)
-    # y = torch.tensor([[6.]]) # true value
-    # y_prime = torch.matmul(W, X) + b
-    # loss_fn = torch.nn.MSELoss()
-    # loss = loss_fn(y_prime, y)
-    # loss.backward()
-    # print("W: ", W.size(), W.grad)
-    # print("b: ", b.size(), b.grad)
