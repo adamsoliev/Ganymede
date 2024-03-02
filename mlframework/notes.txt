@@ -16,9 +16,9 @@
     POMDP; and when they act around people it can often be formulated as a game
 
     -- to actually solve it, 3-level hierarchy is used
-    task planning
-    motion planning 
-    control
+    task planning    - high level goal; e.g, kick a ball
+    motion planning  - step by step action to achieve above goal
+    control          - e.g., what torque to apply to actuators to complete one step in motion
 
     -- robotic perception (sensors outputs -> representation of env (inc. robot))
     given current state of env, robot makes observations  and takes action; to keep 
@@ -29,12 +29,36 @@
         -- localization and mapping
         * simple motion model can be derived from (x, y, 0) of robot; to be specific, 
         (x, y, 0) -> (v, w) velocities (translational, rotational) + normal distrubution
-        to accound for physical uncertainties
+        to account for physical uncertainties
         * for sensor model one can use landmark or range-scan model 
-        * to actually do localization, one can use either particle filtering or Kalman filter 
-        * when no map of env is available, SLAM can be used to do localization
+        * when map of env exists, localization is done using either particle filtering or Kalman filter 
+        * when map doesn't exist, SLAM can be used
+        * other types of perception: temperature, sound, etc; reactive agent as opposed to reasoning one
 
         -- ML in robotic perception
         * ML enables robot to learn sensor and motion models from data and discover a fitting
         internal representation
 
+    -- planning and control
+    
+        -- configuration space, where all the points that comprise the robot are represented 
+        as a single point in an abstract multidimensional space
+        
+        -- motion planning - finding a plan that takes a robot from one configuration to another without colliding 
+        with an obstacle
+
+            -- spaces of motion planning
+            * workspace or world W, where points are points in the everyday three-dimensional world
+            * space of configurations, C, where points q in C are d-dimensional, with d the robot’s 
+            number of degrees of freedom, and map to sets of points A(q) in W
+            * space of paths, which is a space of functions. Each point in this space maps to 
+            an entire curve through C-space. This space is ∞-dimensional
+
+            -- solutions to motion planning problem
+            * visibility graphs
+            * voronoi diagrams
+            * cell decomposition 
+            * randomized motion planning (PRM or its extension RRT or modified RRT*)
+
+        -- trajectory tracking control
+        -- optimal control
