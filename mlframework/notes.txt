@@ -1,30 +1,27 @@
-
-
-
-
 /* Robotics */
-    -- sensors
-    Range sensors (sonar, stereo vision, optical range, lidar, radar)
-    Location sensors (gps, marker-based)
-    Proprioceptive sensors (shaft, odometry, inertia, force and torque sensors)
-
-    -- motion: actuator (transmissions, gears, etc) -> effector (legs, etc) 
-
-    -- what problem robot is solving 
-    when robots act in isolation and know their environment, the problem they
-    are solving can be formulated as an MDP; when they are missing information it becomes a
-    POMDP; and when they act around people it can often be formulated as a game
+    -- overview 
+        * actuators (you apply force (e.g., torque) to actuator and through effector (e.g., leg) 
+        the actuator creates a movement)
+        * sensor (position, orientation, proximity, vision systems, inertial measurement units, and force/torque)
+        * control system (processor, memory and some sort of operating system)
+        * mechanical structure (e.g., frame, chassis)
+    
+    -- what problem robot is solving based on their operational context 
+        * Markov Decision Process (MDP) for isolated actions with full environmental knowledge
+        * Partially Observable Markov Decision Process (POMDP) for scenarios with incomplete information
+        * game theory for cases involving other agents
 
     -- to actually solve it, 3-level hierarchy is used
-    task planning    - high level goal; e.g, kick a ball
-    motion planning  - step by step action to achieve above goal
-    control          - e.g., what torque to apply to actuators to complete one step in motion
+        * task planning    - high level goal; e.g, kick a ball
+        * motion planning  - step by step action to achieve above goal
+        * control          - e.g., what torque to apply to actuators to complete one step in motion
 
-    -- robotic perception (sensors outputs -> representation of env (inc. robot))
-    given current state of env, robot makes observations  and takes action; to keep 
-    track of those, we need corresponding sensor and motion models. Since robot 
-    operates in nondeterministic env, both models and resulting state are wrapped 
-    with probability distrubution
+    -- task planning (inc. robotic perception (sensors inputs -> representation of env (inc. robot)))
+        * given current state of env, robot makes observations and takes action; by combining
+        action with current state of env, we get next state of env. To keep track of observations
+        and actions, we construct corresponding sensor and motion models. Since robot 
+        operates in nondeterministic env, both models and states of env are all wrapped 
+        with probability distrubution (you find most likely state as opposed to finding exact one)
 
         -- localization and mapping
         * simple motion model can be derived from (x, y, 0) of robot; to be specific, 
@@ -39,7 +36,7 @@
         * ML enables robot to learn sensor and motion models from data and discover a fitting
         internal representation
 
-    -- planning and control
+    -- motion planning
     
         -- configuration space, where all the points that comprise the robot are represented 
         as a single point in an abstract multidimensional space
@@ -60,11 +57,12 @@
             * cell decomposition 
             * randomized motion planning (PRM or its extension RRT or modified RRT*)
 
+    -- control
         -- trajectory tracking control
             -- find how much torque you need and compensate for error with following control laws
-                * P controller      (compensate for the error proportionally)
-                * PD controller     (P + compensate more if it is increasing)
-                * PID controller    (P + PD + compensate harder if you haven't made any progress in a long time)
+            * P controller      (compensate for the error proportionally)
+            * PD controller     (P + compensate more if it is increasing)
+            * PID controller    (P + PD + compensate harder if you haven't made any progress in a long time)
 
         -- optimal control - find a sequence of actions (torques really) directly that, when executed by the robot, 
         result in state-action pairs with low cumulative cost
