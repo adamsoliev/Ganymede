@@ -61,4 +61,21 @@
             * randomized motion planning (PRM or its extension RRT or modified RRT*)
 
         -- trajectory tracking control
-        -- optimal control
+            -- find how much torque you need and compensate for error with following control laws
+                * P controller      (compensate for the error proportionally)
+                * PD controller     (P + compensate more if it is increasing)
+                * PID controller    (P + PD + compensate harder if you haven't made any progress in a long time)
+
+        -- optimal control - find a sequence of actions (torques really) directly that, when executed by the robot, 
+        result in state-action pairs with low cumulative cost
+            * LQR
+            * iterative LQR
+    
+    -- RL in robotics
+        * model-based RL (essentially using physics-based sensor and motion models alongside RL)
+        * end-to-end learning (take in sensor data and output torque values to move actuators)
+        * sub-goal learning (learn sub-goals and then how to combine them)
+        * transfer learning (reusing info from prev learning episodes on other tasks)
+        * imitation learning (autonomous robot driving a car like a human)
+        * adversarial learning (train a model to differentiate robot's learned vs human policies (the classifier) 
+        and then train a new model to fool the the classifier)
