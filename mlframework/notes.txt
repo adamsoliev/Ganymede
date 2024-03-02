@@ -1,0 +1,40 @@
+
+
+
+
+/* Robotics */
+    -- sensors
+    Range sensors (sonar, stereo vision, optical range, lidar, radar)
+    Location sensors (gps, marker-based)
+    Proprioceptive sensors (shaft, odometry, inertia, force and torque sensors)
+
+    -- motion: actuator (transmissions, gears, etc) -> effector (legs, etc) 
+
+    -- what problem robot is solving 
+    when robots act in isolation and know their environment, the problem they
+    are solving can be formulated as an MDP; when they are missing information it becomes a
+    POMDP; and when they act around people it can often be formulated as a game
+
+    -- to actually solve it, 3-level hierarchy is used
+    task planning
+    motion planning 
+    control
+
+    -- robotic perception (sensors outputs -> representation of env (inc. robot))
+    given current state of env, robot makes observations  and takes action; to keep 
+    track of those, we need corresponding sensor and motion models. Since robot 
+    operates in nondeterministic env, both models and resulting state are wrapped 
+    with probability distrubution
+
+        -- localization and mapping
+        * simple motion model can be derived from (x, y, 0) of robot; to be specific, 
+        (x, y, 0) -> (v, w) velocities (translational, rotational) + normal distrubution
+        to accound for physical uncertainties
+        * for sensor model one can use landmark or range-scan model 
+        * to actually do localization, one can use either particle filtering or Kalman filter 
+        * when no map of env is available, SLAM can be used to do localization
+
+        -- ML in robotic perception
+        * ML enables robot to learn sensor and motion models from data and discover a fitting
+        internal representation
+
