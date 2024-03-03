@@ -12,5 +12,7 @@ processor/test/mem_instr
 */*.gdb_history
 */*.gdbinit
 */Digraph*
+*/*__pycache__
+*/fashion-mnist-pytorch/
 
 
