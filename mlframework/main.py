@@ -2,48 +2,55 @@
 
 # TODO: Manipulating tensor shapes 
 
-import torch                     # for all things PyTorch
-import torch.nn as nn            # for torch.nn.Module, the parent object for PyTorch models
-import torch.nn.functional as F  # for the activation function
+# %mathplotlib inline
 
-class LeNet(nn.Module):
+import torch
+# import matplotlib.pyplot as plt
+# import matplotlib.ticker as ticker
+# import math
+
+BATCH_SIZE = 16
+DIM_IN = 1000
+HIDDEN_SIZE = 100
+DIM_OUT = 10
+
+class TinyModel(torch.nn.Module):
+
     def __init__(self):
-        super(LeNet, self).__init__()
-        self.conv1 = nn.Conv2d(1, 6, 5)
-        self.conv2 = nn.Conv2d(6, 16, 5)
-        self.fc1 = nn.Linear(16 * 5 * 5, 120) # 5 * 5 image dimention
-        self.fc2 = nn.Linear(120, 84)
-        self.fc3 = nn.Linear(84, 10)
+        super(TinyModel, self).__init__()
+
+        self.layer1 = torch.nn.Linear(DIM_IN, HIDDEN_SIZE)
+        self.relu = torch.nn.ReLU()
+        self.layer2 = torch.nn.Linear(HIDDEN_SIZE, DIM_OUT)
 
     def forward(self, x):
-        x = F.max_pool2d(F.relu(self.conv1(x)), (2, 2))
-        x = F.max_pool2d(F.relu(self.conv2(x)), 2)
-        x = x.view(-1, self.num_flat_features(x))
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = self.fc3(x)
+        x = self.layer1(x)
+        x = self.relu(x)
+        x = self.layer2(x)
         return x
-    
-    def num_flat_features(self, x):
-        size = x.size()[1:]  # all dimensions except the batch dimension
-        num_features = 1
-        for s in size:
-            num_features *= s
-        return num_features
 
 def main():
-    net = LeNet()
-    print(net)
+    some_input = torch.randn(BATCH_SIZE, DIM_IN, requires_grad=False)
+    ideal_output = torch.randn(BATCH_SIZE, DIM_OUT, requires_grad=False)
 
-    input = torch.rand(1, 1, 32, 32)    # 32x32 black and white image
-    print('\nImage batch shape:')
-    print(input.shape)
+    model = TinyModel()
+    print(model.layer2.weight[0][0:10]) # just a small slice
+    print(model.layer2.weight.grad)
 
-    output = net(input)
-    print('\nRaw output:')
-    print(output)
-    print(output.shape)
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.001)
 
+    prediction = model(some_input)
+
+    loss = (ideal_output - prediction).pow(2).sum()
+    print(loss)
+
+    loss.backward()
+    print(model.layer2.weight[0][0:10])
+    print(model.layer2.weight.grad[0][0:10])
+
+    optimizer.step()
+    print(model.layer2.weight[0][0:10])
+    print(model.layer2.weight.grad[0][0:10])
 
 if __name__ == '__main__':
     main()
