@@ -6,8 +6,15 @@ import torch
 
 def main():
     lin = torch.nn.Linear(3,2) # 3 inputs and 2 output
+    # print(lin)
+    # print(lin.weight[0])
+    # print(lin.bias[0])
     x = torch.rand(1,3)
     y = lin(x) # forward pass
+
+    print(x[0].matmul(lin.weight[0]).sum().add(lin.bias[0]))
+    print(x[0].matmul(lin.weight[1]).sum().add(lin.bias[1]))
+
     print(y)
 
     """
@@ -28,13 +35,13 @@ def main():
         y = [o1, o2]
     """
 
-    # below is mimicking the above with exact numbers
-    input = torch.tensor([[0.8790, 0.9774, 0.2547]])
-    weights = torch.tensor([[0.1656, 0.4969, -0.4972], [-0.2035, -0.2579, -0.3780]])
-    biases = torch.tensor([0.3768, 0.3781])
+    # # below is mimicking the above with exact numbers
+    # input = torch.tensor([[0.8790, 0.9774, 0.2547]])
+    # weights = torch.tensor([[0.1656, 0.4969, -0.4972], [-0.2035, -0.2579, -0.3780]])
+    # biases = torch.tensor([0.3768, 0.3781])
 
-    print(input[0].matmul(weights[0]).sum().add(biases[0])) 
-    print(input[0].matmul(weights[1]).sum().add(biases[1])) 
+    # print(input[0].matmul(weights[0]).sum().add(biases[0])) 
+    # print(input[0].matmul(weights[1]).sum().add(biases[1])) 
 
 if __name__ == '__main__':
     main()
