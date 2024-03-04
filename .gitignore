@@ -14,5 +14,6 @@ processor/test/mem_instr
 */Digraph*
 */*__pycache__
 */fashion-mnist-pytorch/
+*/data
 
 
