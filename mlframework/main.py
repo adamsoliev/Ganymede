@@ -2,55 +2,39 @@
 
 # TODO: Manipulating tensor shapes 
 
-# %mathplotlib inline
-
 import torch
-# import matplotlib.pyplot as plt
-# import matplotlib.ticker as ticker
-# import math
-
-BATCH_SIZE = 16
-DIM_IN = 1000
-HIDDEN_SIZE = 100
-DIM_OUT = 10
-
-class TinyModel(torch.nn.Module):
-
-    def __init__(self):
-        super(TinyModel, self).__init__()
-
-        self.layer1 = torch.nn.Linear(DIM_IN, HIDDEN_SIZE)
-        self.relu = torch.nn.ReLU()
-        self.layer2 = torch.nn.Linear(HIDDEN_SIZE, DIM_OUT)
-
-    def forward(self, x):
-        x = self.layer1(x)
-        x = self.relu(x)
-        x = self.layer2(x)
-        return x
 
 def main():
-    some_input = torch.randn(BATCH_SIZE, DIM_IN, requires_grad=False)
-    ideal_output = torch.randn(BATCH_SIZE, DIM_OUT, requires_grad=False)
+    lin = torch.nn.Linear(3,2) # 3 inputs and 2 output
+    x = torch.rand(1,3)
+    y = lin(x) # forward pass
+    print(y)
 
-    model = TinyModel()
-    print(model.layer2.weight[0][0:10]) # just a small slice
-    print(model.layer2.weight.grad)
+    """
+    nn.Linear(3, 2) can as well be interpreted as 3 x 2 matrix of weights and vector of length 2 of biases
 
-    optimizer = torch.optim.SGD(model.parameters(), lr=0.001)
+    weights =           # input x output matrix
+    [[w01, w02, w03]    
+     [w11, w12, w13]]
 
-    prediction = model(some_input)
+    biases =            # for each output
+    [b1, b2]
 
-    loss = (ideal_output - prediction).pow(2).sum()
-    print(loss)
+    when you run forward pass
+    y = lin(x)
+        under the hood, this will happen
+            o1 = x1 * w01 + x2 * w02 + x3 * w03 + b1 
+            o2 = x1 * w11 + x2 * w12 + x3 * w13 + b2 
+        y = [o1, o2]
+    """
 
-    loss.backward()
-    print(model.layer2.weight[0][0:10])
-    print(model.layer2.weight.grad[0][0:10])
+    # below is mimicking the above with exact numbers
+    input = torch.tensor([[0.8790, 0.9774, 0.2547]])
+    weights = torch.tensor([[0.1656, 0.4969, -0.4972], [-0.2035, -0.2579, -0.3780]])
+    biases = torch.tensor([0.3768, 0.3781])
 
-    optimizer.step()
-    print(model.layer2.weight[0][0:10])
-    print(model.layer2.weight.grad[0][0:10])
+    print(input[0].matmul(weights[0]).sum().add(biases[0])) 
+    print(input[0].matmul(weights[1]).sum().add(biases[1])) 
 
 if __name__ == '__main__':
     main()
