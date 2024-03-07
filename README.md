@@ -1,5 +1,7 @@
 # Project Ganymede
 
+<img src="./references/arty_a7.jpg" width=50% height=50%>
+
 ## System Overview 
 
 1. [C Compiler targeted at RISC-V](compiler/README.md)
