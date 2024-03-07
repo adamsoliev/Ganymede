@@ -1,3 +1,7 @@
+Autograd
+https://github.com/hips/autograd
+https://github.com/joelgrus/autograd
+
 /* Pytorch */
 
 /* Robotics */

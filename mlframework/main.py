@@ -34,6 +34,25 @@ def draw_dot(root):
         dot.edge(str(id(n1)), str(id(n2)) + n2.op)
     return dot
 
+def elementwise_derivative(A, B, var):
+  """
+  Calculates element-wise derivative of matrix-matrix product.
+
+  Args:
+      A: First matrix.
+      B: Second matrix.
+      var: Variable with respect to which to differentiate.
+
+  Returns:
+      A matrix with the same shape as A * B, containing element-wise derivatives.
+  """
+  result = np.zeros_like(A.dot(B))
+  for i in range(A.shape[0]):
+    for j in range(A.shape[1]):
+      for k in range(B.shape[1]):
+        result[i, j] += A[i, k] * np.partial_derivatives(B[k, j], var)[0]
+  return result
+
 
 class Tensor:
     labelnum = 1
@@ -54,6 +73,8 @@ class Tensor:
             Tensor.labelnum += 1
             return name
         self.label = genlabel()
+        self._backward = lambda: None
+        self.grad = np.zeros_like(self.data)
     
     def item(self):
         assert len(self.data.shape) == 1    
@@ -61,18 +82,48 @@ class Tensor:
         return self.data[0]
     
     def sum(self):
-        return Tensor(self.data.sum(), (self, ), "sum")
+        result = Tensor(self.data.sum(), (self, ), "sum")
+        def _backward():
+            self.grad += np.ones_like(self.data) * result.grad
+        self._backward = _backward
+        return result
     
     def matmul(self, other):
         assert type(other) == Tensor
-        return Tensor(np.matmul(self.data, other.data), (self, other), "matmul")
+        result = Tensor(np.matmul(self.data, other.data), (self, other), "matmul")
+        def _backward():
+            pass
+            # self.grad += elementwise_derivative(self.data, other.data, 0)
+            # other.grad += elementwise_derivative(self.data, other.data, 1)
+        result._backward = _backward
+        return result
 
     def __add__(self, other):
         assert type(other) == Tensor
-        return Tensor(self.data + other.data, (self, other), "+")
+        result = Tensor(self.data + other.data, (self, other), "+")
+        def _backward():
+            self.grad += np.ones_like(self.data) * result.grad
+            other.grad += np.ones_like(self.data) * result.grad
+        result._backward = _backward
+        return result
 
     def __repr__(self):
         return f"Tensor: \n{self.data}"
+    
+    def backward(self):
+        topsorted = []
+        visited = set()
+        def helper_topsort(v):
+            if v not in visited:
+                visited.add(v)
+                for child in v.prev:
+                    helper_topsort(child)
+                topsorted.append(v)
+        helper_topsort(self)
+
+        self.grad = np.ones_like(self.data)
+        for node in reversed(topsorted):
+            node._backward()
     
 
 def main():
@@ -109,10 +160,16 @@ def main():
     te = tc + td
     tf = te.sum()
 
-    dot = draw_dot(tf)
-    dot.view()
+    # dot = draw_dot(tf)
+    # dot.view()
 
-    # tf.backward() 
+    tf.backward() 
+    print("ta: ", ta.grad)
+    print("tb: ", tb.grad)
+    print("tc: ", tc.grad)
+    print("td: ", td.grad)
+    print("te: ", te.grad)
+    print("tf: ", tf.grad)
 
     assert round(f.item(), 5) == round(tf.item(), 5)
     
