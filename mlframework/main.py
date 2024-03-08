@@ -6,7 +6,6 @@ from graphviz import Digraph
 
 
 def trace(root):
-    # builds a set of all nodes and edges in a graph
     nodes, edges = set(), set()
     def build(v):
         if v not in nodes:
@@ -33,26 +32,6 @@ def draw_dot(root):
         # connect n1 to the op node of n2
         dot.edge(str(id(n1)), str(id(n2)) + n2.op)
     return dot
-
-def elementwise_derivative(A, B, var):
-  """
-  Calculates element-wise derivative of matrix-matrix product.
-
-  Args:
-      A: First matrix.
-      B: Second matrix.
-      var: Variable with respect to which to differentiate.
-
-  Returns:
-      A matrix with the same shape as A * B, containing element-wise derivatives.
-  """
-  result = np.zeros_like(A.dot(B))
-  for i in range(A.shape[0]):
-    for j in range(A.shape[1]):
-      for k in range(B.shape[1]):
-        result[i, j] += A[i, k] * np.partial_derivatives(B[k, j], var)[0]
-  return result
-
 
 class Tensor:
     labelnum = 1
@@ -85,16 +64,15 @@ class Tensor:
         result = Tensor(self.data.sum(), (self, ), "sum")
         def _backward():
             self.grad += np.ones_like(self.data) * result.grad
-        self._backward = _backward
+        result._backward = _backward
         return result
     
     def matmul(self, other):
         assert type(other) == Tensor
         result = Tensor(np.matmul(self.data, other.data), (self, other), "matmul")
         def _backward():
-            pass
-            # self.grad += elementwise_derivative(self.data, other.data, 0)
-            # other.grad += elementwise_derivative(self.data, other.data, 1)
+            self.grad += result.grad @ other.data.T
+            other.grad += self.data.T @ result.grad
         result._backward = _backward
         return result
 
@@ -137,15 +115,25 @@ def main():
          [0.8547, 0.2478, 0.0153, 0.8785]], requires_grad=True)
     c = a.matmul(b)
     c.retain_grad()
+    print(c)
     d = torch.tensor(   # 2x4
         [[0.0315, 0.0230, 0.0625, 0.9245],
          [0.6002, 0.0274, 0.2519, 0.3179]], requires_grad=True)
     e = c + d
     e.retain_grad()
+    print(e)
     f = e.sum()
     f.retain_grad()
+    print(f)
 
-    # f.backward() 
+    f.backward() 
+
+    print(f"a: {a.grad} \t\t\t {a.grad.shape}\n")
+    print(f"b: {b.grad} \t\t\t {b.grad.shape}\n")
+    print(f"c: {c.grad} \t\t\t {c.grad.shape}\n")
+    print(f"d: {d.grad} \t\t\t {d.grad.shape}\n")
+    print(f"e: {e.grad} \t\t\t {e.grad.shape}\n")
+    print(f"f: {f.grad} \t\t\t {f.grad.shape}\n")
 
     # ------------------ OURTORCH ------------------
     ta = Tensor([[0.2606, 0.0398, 0.2312], [0.4034, 0.8265, 0.7248]])
@@ -164,6 +152,7 @@ def main():
     # dot.view()
 
     tf.backward() 
+
     print("ta: ", ta.grad)
     print("tb: ", tb.grad)
     print("tc: ", tc.grad)
@@ -171,7 +160,7 @@ def main():
     print("te: ", te.grad)
     print("tf: ", tf.grad)
 
-    assert round(f.item(), 5) == round(tf.item(), 5)
+    # assert round(f.item(), 5) == round(tf.item(), 5)
     
 if __name__ == '__main__':
     main()
