@@ -41,6 +41,13 @@ class Tensor:
         result._backward = _backward
         return result
     
+    def __neg__(self) -> 'Tensor':
+        result = Tensor(-self.data, {self, }, "neg")
+        def _backward() -> None:
+            self.grad += -result.grad
+        result._backward = _backward
+        return result
+    
     def matmul(self, other: 'Tensor') -> 'Tensor':
         result = Tensor(np.matmul(self.data, other.data), {self, other}, "matmul")
         def _backward() -> None:
