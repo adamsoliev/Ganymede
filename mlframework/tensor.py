@@ -42,7 +42,6 @@ class Tensor:
         return result
     
     def matmul(self, other: 'Tensor') -> 'Tensor':
-        assert type(other) == Tensor
         result = Tensor(np.matmul(self.data, other.data), {self, other}, "matmul")
         def _backward() -> None:
             self.grad += result.grad @ other.data.T
@@ -51,7 +50,6 @@ class Tensor:
         return result
 
     def __add__(self, other: 'Tensor') -> 'Tensor':
-        assert type(other) == Tensor
         result = Tensor(self.data + other.data, {self, other}, "+")
         def _backward() -> None:
             # self
@@ -76,6 +74,38 @@ class Tensor:
                     grad = grad.sum(axis=i, keepdims=True)
             other.grad += grad
             
+        result._backward = _backward
+        return result
+    
+    def __mul__(self, other: 'Tensor') -> 'Tensor':
+        result = Tensor(self.data * other.data, {self, other}, "*")
+        def _backward() -> None:
+            # self
+            grad = np.copy(result.grad)
+
+            grad = grad * other.data
+            ndims_added = grad.ndim - self.data.ndim
+            for _ in range(ndims_added):
+                grad = grad.sum(axis=0)
+            
+            for i, dim in enumerate(self.data.shape):
+                if dim == 1:
+                    grad = grad.sum(axis=i, keepdims=True)
+            self.grad += grad
+
+            # other
+            grad = np.copy(result.grad)
+
+            grad = grad * self.data
+            ndims_added = grad.ndim - other.data.ndim
+            for _ in range(ndims_added):
+                grad = grad.sum(axis=0)
+            
+            for i, dim in enumerate(other.data.shape):
+                if dim == 1:
+                    grad = grad.sum(axis=i, keepdims=True)
+            other.grad += grad
+
         result._backward = _backward
         return result
 

@@ -3,16 +3,15 @@ import torch
 
 from tensor import Tensor
 
-class TestTensorSum(unittest.TestCase):
+class TestTensor(unittest.TestCase):
     def test_simple_add(self):
         t1 = Tensor([1., 2., 3.])
         t2 = Tensor([4., 5., 6.])
         t3 = t1 + t2
+        t4 = t3.sum()
+        t4.backward()
 
         assert t3.data.tolist() == [5., 7., 9.]
-
-        t3.backward()
-
         assert t1.grad.data.tolist() == [1., 1., 1.]
         assert t2.grad.data.tolist() == [1., 1., 1.]
         assert t3.grad.data.tolist() == [1., 1., 1.]
@@ -21,27 +20,25 @@ class TestTensorSum(unittest.TestCase):
     #   1. assume missing dimentions have size one
     #   2. treat dimentions with size one expandable
     def test_broadcast_add(self):
-        t1 = Tensor([[3., 4., 5.], [4., 3., 6.]])
-        t2 = Tensor([9., 4., 1.])
+        t1 = Tensor([[3., 4., 5.], [4., 3., 6.]])       # (2,3)
+        t2 = Tensor([9., 4., 1.])                       # (3,)
         t3 = t1 + t2
+        t4 = t3.sum()
+        t4.backward()
 
         assert t3.data.tolist() == [[12.,  8.,  6.], [13.,  7.,  7.]]
-
-        t3.backward()
-
         assert t1.grad.data.tolist() == [[1., 1., 1.], [1., 1., 1.]]
         assert t2.grad.data.tolist() == [2., 2., 2.]
         assert t3.grad.data.tolist() == [[1., 1., 1.], [1., 1., 1.]]
     
     def test_broadcast_add1(self):
-        t1 = Tensor([[3., 4., 5.], [4., 3., 6.]])
-        t2 = Tensor([[9., 4., 1.]])
+        t1 = Tensor([[3., 4., 5.], [4., 3., 6.]])       # (2,3)
+        t2 = Tensor([[9., 4., 1.]])                     # (1,3)
         t3 = t1 + t2
+        t4 = t3.sum()
+        t4.backward()
 
         assert t3.data.tolist() == [[12.,  8.,  6.], [13.,  7.,  7.]]
-
-        t3.backward()
-
         assert t1.grad.data.tolist() == [[1., 1., 1.], [1., 1., 1.]]
         assert t2.grad.data.tolist() == [[2., 2., 2.]]
         assert t3.grad.data.tolist() == [[1., 1., 1.], [1., 1., 1.]]
@@ -91,3 +88,28 @@ class TestTensorSum(unittest.TestCase):
             assert round(d_.item(), 5) == round(td_, 5)
         for te_, e_ in zip(te.grad.flatten(), e.grad.flatten()):
             assert round(e_.item(), 5) == round(te_, 5)
+
+    def test_simple_mul(self):
+        t1 = Tensor([1., 2., 3.])
+        t2 = Tensor([4., 5., 6.])
+        t3 = t1 * t2
+        t4 = t3.sum()
+        t4.backward()
+
+        assert t3.data.tolist() == [4., 10., 18.]
+        assert t1.grad.data.tolist() == [4., 5., 6.]
+        assert t2.grad.data.tolist() == [1., 2., 3.]
+        assert t3.grad.data.tolist() == [1., 1., 1.]
+    
+    def test_broadcast_mul(self):
+        t1 = Tensor([[3., 4., 5.], [4., 3., 6.]])       # (2,3)
+        t2 = Tensor([9., 4., 1.])                       # (3,)
+        t3 = t1 * t2
+        t4 = t3.sum()
+        t4.backward()
+
+        assert t3.data.tolist() == [[27.,  16.,  5.], [36.,  12.,  6.]]
+        assert t1.grad.data.tolist() == [[9., 4., 1.], [9., 4., 1.]]
+        assert t2.grad.data.tolist() == [7., 7., 11.]
+        assert t3.grad.data.tolist() == [[1., 1., 1.], [1., 1., 1.]]
+    
