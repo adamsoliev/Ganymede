@@ -33,7 +33,20 @@ class TestTensorSum(unittest.TestCase):
         assert t2.grad.data.tolist() == [2., 2., 2.]
         assert t3.grad.data.tolist() == [[1., 1., 1.], [1., 1., 1.]]
     
-    def test_pytorch_add(self):
+    def test_broadcast_add1(self):
+        t1 = Tensor([[3., 4., 5.], [4., 3., 6.]])
+        t2 = Tensor([[9., 4., 1.]])
+        t3 = t1 + t2
+
+        assert t3.data.tolist() == [[12.,  8.,  6.], [13.,  7.,  7.]]
+
+        t3.backward()
+
+        assert t1.grad.data.tolist() == [[1., 1., 1.], [1., 1., 1.]]
+        assert t2.grad.data.tolist() == [[2., 2., 2.]]
+        assert t3.grad.data.tolist() == [[1., 1., 1.], [1., 1., 1.]]
+
+    def test_pytorch_compare_add(self):
         # pytorch
         a = torch.tensor([[0.2606, 0.0398, 0.2312], [0.4034, 0.8265, 0.7248]], requires_grad=True)
         b = torch.tensor(  
