@@ -54,8 +54,28 @@ class Tensor:
         assert type(other) == Tensor
         result = Tensor(self.data + other.data, {self, other}, "+")
         def _backward() -> None:
-            self.grad += np.ones_like(self.data) * result.grad
-            other.grad += np.ones_like(self.data) * result.grad
+            # self
+            grad = np.copy(result.grad)
+            ndims_added = grad.ndim - self.data.ndim
+            for _ in range(ndims_added):
+                grad = grad.sum(axis=0)
+            
+            for i, dim in enumerate(self.data.shape):
+                if dim == 1:
+                    grad = grad.sum(axis=i, keepdims=True)
+            self.grad += grad
+
+            # other
+            grad = np.copy(result.grad)
+            ndims_added = grad.ndim - other.data.ndim
+            for _ in range(ndims_added):
+                grad = grad.sum(axis=0)
+            
+            for i, dim in enumerate(other.data.shape):
+                if dim == 1:
+                    grad = grad.sum(axis=i, keepdims=True)
+            other.grad += grad
+            
         result._backward = _backward
         return result
 
