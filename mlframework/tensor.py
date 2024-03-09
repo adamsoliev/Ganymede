@@ -84,6 +84,9 @@ class Tensor:
         result._backward = _backward
         return result
     
+    def __sub__(self, other: 'Tensor') -> 'Tensor':
+        return self + -other
+    
     def __mul__(self, other: 'Tensor') -> 'Tensor':
         result = Tensor(self.data * other.data, {self, other}, "*")
         def _backward() -> None:
