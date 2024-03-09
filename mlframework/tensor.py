@@ -47,6 +47,13 @@ class Tensor:
             self.grad += (result.grad * (1 - result.data * result.data))
         result._backward = _backward
         return result
+    
+    def relu(self) -> 'Tensor':
+        result = Tensor(self.data * (self.data > 0), {self, }, "ReLu")
+        def _backward() -> None:
+            self.grad += result.grad * (result.data > 0)
+        result._backward = _backward
+        return result
 
     def __neg__(self) -> 'Tensor':
         result = Tensor(-self.data, {self, }, "neg")
