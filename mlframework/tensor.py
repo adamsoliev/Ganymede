@@ -44,7 +44,7 @@ class Tensor:
     def tanh(self) -> 'Tensor':
         result = Tensor(np.tanh(self.data), {self, }, "tanh")
         def _backward() -> None:
-            self.grad += (result.grad * (1 - self.data * self.data))
+            self.grad += (result.grad * (1 - result.data * result.data))
         result._backward = _backward
         return result
 

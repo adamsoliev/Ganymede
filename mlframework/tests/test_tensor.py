@@ -152,22 +152,18 @@ class TestTensor(unittest.TestCase):
     def test_tanh(self):
         def _helper(na: list):
             p1 = torch.tensor(na, requires_grad=True)
-            # p2 = torch.tensor(nb, requires_grad=True)
             p3 = p1.tanh(); p3.retain_grad()
             p4 = p3.sum(); p4.retain_grad()
             p4.backward()
 
             t1 = Tensor(na)
-            # t2 = Tensor(nb)
             t3 = t1.tanh()
             t4 = t3.sum()
             t4.backward()
 
             assert round(p4.item(), 5) == round(t4.item(), 5)
-            # for ta_, a_ in zip(t1.grad.flatten(), p1.grad.flatten()):     ???
-            #     assert round(a_.item(), 5) == round(ta_, 5)
-            # for tb_, b_ in zip(t2.grad.flatten(), p2.grad.flatten()):
-            #     assert round(b_.item(), 5) == round(tb_, 5)
+            for ta_, a_ in zip(t1.grad.flatten(), p1.grad.flatten()):
+                assert round(a_.item(), 5) == round(ta_, 5)
             for tc_, c_ in zip(t3.grad.flatten(), p3.grad.flatten()):
                 assert round(c_.item(), 5) == round(tc_, 5)
             for td_, d_ in zip(t4.grad.flatten(), p4.grad.flatten()):
