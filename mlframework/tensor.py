@@ -2,13 +2,15 @@
 
 import numpy as np
 from numpy.typing import NDArray
-from typing import Callable
+from typing import Callable, Union
+
+Tensorable = Union[float, list[float], NDArray[np.float64]]
 
 class Tensor:
     labelnum = 1
 
     def __init__(self, 
-                 data: NDArray[np.float64], 
+                 data: Tensorable,
                  children: set['Tensor'] = set(), 
                  op: str = "") -> None:
         if isinstance(data, np.ndarray):
