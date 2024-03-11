@@ -1,8 +1,34 @@
 /*
 Google Colab
-!nvcc -c main.cu -o main
+!nvcc -lcublas main.cu -o main
 !./main
 */
+
+#ifndef _COLORS_
+#define _COLORS_
+
+/* FOREGROUND */
+#define RST  "\x1B[0m"
+#define KRED  "\x1B[31m"
+#define KGRN  "\x1B[32m"
+#define KYEL  "\x1B[33m"
+#define KBLU  "\x1B[34m"
+#define KMAG  "\x1B[35m"
+#define KCYN  "\x1B[36m"
+#define KWHT  "\x1B[37m"
+
+#define FRED(x) KRED x RST
+#define FGRN(x) KGRN x RST
+#define FYEL(x) KYEL x RST
+#define FBLU(x) KBLU x RST
+#define FMAG(x) KMAG x RST
+#define FCYN(x) KCYN x RST
+#define FWHT(x) KWHT x RST
+
+#define BOLD(x) "\x1B[1m" x RST
+#define UNDL(x) "\x1B[4m" x RST
+
+#endif  /* _COLORS_ */
 
 #include <cstdio>
 #include <cstdlib>
@@ -19,6 +45,7 @@ Google Colab
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
+#include <iomanip>
 
 void cudaCheck(cudaError_t error, const char *file, int line) {
   if (error != cudaSuccess) {
@@ -49,7 +76,7 @@ bool verify_matrix(float *matRef, float *matOut, int N) {
   for (i = 0; i < N; i++) {
     diff = std::fabs(matRef[i] - matOut[i]);
     if (diff > 0.01) {
-      printf("Divergence! Should %5.2f, Is %5.2f (Diff %5.2f) at %d\n",
+      printf(FRED("Divergence! Should %5.2f, Is %5.2f (Diff %5.2f) at %d\n"),
              matRef[i], matOut[i], diff, i);
       return false;
     }
@@ -57,14 +84,35 @@ bool verify_matrix(float *matRef, float *matOut, int N) {
   return true;
 }
 
+void print_matrix(const float *A, int M, int N, std::ofstream &fs) {
+  int i;
+  fs << std::setprecision(2)
+     << std::fixed; // Set floating-point precision and fixed notation
+  fs << "[";
+  for (i = 0; i < M * N; i++) {
+    if ((i + 1) % N == 0)
+      fs << std::setw(5) << A[i]; // Set field width and write the value
+    else
+      fs << std::setw(5) << A[i] << ", ";
+    if ((i + 1) % N == 0) {
+      if (i + 1 < M * N)
+        fs << ";\n";
+    }
+  }
+  fs << "]\n";
+}
+
 void runCublasFP32(cublasHandle_t handle, int M, int N, int K, float alpha,
                    float *A, float *B, float beta, float *C) {
   // cuBLAS uses column-major order. So we change the order of our row-major A &
   // B, since (B^T*A^T)^T = (A*B)
   // This runs cuBLAS in full fp32 mode
-  cublasGemmEx(handle, CUBLAS_OP_N, CUBLAS_OP_N, N, M, K, &alpha, B, CUDA_R_32F,
-               N, A, CUDA_R_32F, K, &beta, C, CUDA_R_32F, N, CUBLAS_COMPUTE_32F,
-               CUBLAS_GEMM_DEFAULT_TENSOR_OP);
+  if (CUBLAS_STATUS_SUCCESS != cublasGemmEx(handle, CUBLAS_OP_N, CUBLAS_OP_N, N, M, K, &alpha, B, CUDA_R_16F,
+               N, A, CUDA_R_16F, K, &beta, C, CUDA_R_16F, N, CUBLAS_COMPUTE_16F,
+               CUBLAS_GEMM_DEFAULT_TENSOR_OP))  {
+                  printf("cublasGemmEx failed\n");
+                  exit(-1);
+               }
 }
 
 void run_kernel(int kernel_num, int M, int N, int K, float alpha, float *A,
@@ -114,6 +162,8 @@ void run_kernel(int kernel_num, int M, int N, int K, float alpha, float *A,
   }
 }
 
+const std::string errLogFile = "matrixValidationFailure.txt";
+
 int main(int argc, char **argv) {
     cublasHandle_t handle;
     if (cublasCreate(&handle)) {
@@ -161,12 +211,27 @@ int main(int argc, char **argv) {
 
     int kernel_num = 0;
 
-    int size = 1024;
+    int size = 10;
     m = n = k = size;
     run_kernel(0, m, n, k, alpha, dA, dB, beta, dC_ref, handle); // cuBLAS
     run_kernel(kernel_num, m, n, k, alpha, dA, dB, beta, dC, handle); // Executes the kernel, modifies the result matrix
     if (!verify_matrix(C_ref, C, m * n)) {
-      std::cout << "Failed to pass the correctness verification against NVIDIA cuBLAS." << std::endl;
+      std::cout << FRED("Failed to pass the correctness verification against NVIDIA cuBLAS.") << std::endl;
+      if (m <= 128) {
+        std::cout << " Logging faulty output into " << errLogFile << "\n";
+        std::ofstream fs;
+        fs.open(errLogFile);
+        fs << "A:\n";
+        print_matrix(A, m, n, fs);
+        fs << "B:\n";
+        print_matrix(B, m, n, fs);
+        fs << "C:\n";
+        print_matrix(C, m, n, fs);
+        fs << "Should:\n";
+        print_matrix(C_ref, m, n, fs);
+      }
+      exit(EXIT_FAILURE);
+
     }
 
     cudaEventRecord(beg);
@@ -179,4 +244,16 @@ int main(int argc, char **argv) {
     cudaEventElapsedTime(&elapsed_time, beg, end);
     elapsed_time /= 1000.; // Convert to seconds
     printf("Elapsed time: (%7.9f) s\n", elapsed_time);
+
+    free(A);
+    free(B);
+    free(C);
+    free(C_ref);
+    cudaFree(dA);
+    cudaFree(dB);
+    cudaFree(dC);
+    cudaFree(dC_ref);
+    cublasDestroy(handle);
+
+    return 0;
 }
