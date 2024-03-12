@@ -1,6 +1,42 @@
-Autograd
-https://github.com/hips/autograd
-https://github.com/joelgrus/autograd
+/* Linear */
+  matrixA * matrixB = matrixC requires 2N^3 - N^2
+    for each cell in matrixC, you need N muls + (N - 1) adds; (2N - 1) FLOPs
+    for N^2 cells, you need N^2 * (2N - 1) = 2N^3 - N^2
+
+  --------------------------------------------------
+  Name	      Unit	  Value
+  --------------------------------------------------
+  kiloFLOPS	  kFLOPS	10^3
+  megaFLOPS	  MFLOPS	10^6
+  gigaFLOPS	  GFLOPS	10^9
+  teraFLOPS	  TFLOPS	10^12
+  petaFLOPS	  PFLOPS	10^15
+  exaFLOPS	  EFLOPS	10^18
+  zettaFLOPS	ZFLOPS	10^21
+  yottaFLOPS	YFLOPS	10^24
+  ronnaFLOPS	RFLOPS	10^27
+  quettaFLOPS	QFLOPS	10^30
+  --------------------------------------------------
+
+  --------------------------------------------------
+  Value     Name            Equivalent to
+  --------------------------------------------------
+  10^1 s	  das	decasecond	10 seconds
+  10^2 s	  hs	hectosecond	1 minute, 40 seconds
+  10^3 s	  ks	kilosecond	16 minutes, 40 seconds
+  10^6 s	  Ms	megasecond	11 days, 13 hours, 46 minutes, 40 seconds
+  10^9 s	  Gs	gigasecond	31.7 years
+  10^−1 s	  ds	decisecond	
+  10^−2 s	  cs	centisecond	
+  10^−3 s	  ms	millisecond	
+  10^−6 s	  µs	microsecond	
+  10^−9 s	  ns	nanosecond	
+  10^−12 s	ps	picosecond
+  --------------------------------------------------
+
+/* Autograd */
+  https://github.com/hips/autograd
+  https://github.com/joelgrus/autograd
 
 /* Pytorch */
 
