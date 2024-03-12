@@ -1,4 +1,6 @@
+
 /*
+source: https://github.com/siboehm/SGEMM_CUDA
 Google Colab
 !nvcc -lcublas main.cu -o main
 !./main
@@ -108,8 +110,7 @@ void runCublasFP32(cublasHandle_t handle, int M, int N, int K, float alpha,
   // B, since (B^T*A^T)^T = (A*B)
   // This runs cuBLAS in full fp32 mode
   if (CUBLAS_STATUS_SUCCESS != cublasGemmEx(handle, CUBLAS_OP_N, CUBLAS_OP_N, N, M, K, &alpha, B, CUDA_R_16F,
-               N, A, CUDA_R_16F, K, &beta, C, CUDA_R_16F, N, CUBLAS_COMPUTE_16F,
-               CUBLAS_GEMM_DEFAULT_TENSOR_OP))  {
+               N, A, CUDA_R_16F, K, &beta, C, CUDA_R_16F, N, CUBLAS_COMPUTE_16F, CUBLAS_GEMM_DEFAULT_TENSOR_OP))  {
                   printf("cublasGemmEx failed\n");
                   exit(-1);
                }
@@ -215,6 +216,10 @@ int main(int argc, char **argv) {
     m = n = k = size;
     run_kernel(0, m, n, k, alpha, dA, dB, beta, dC_ref, handle); // cuBLAS
     run_kernel(kernel_num, m, n, k, alpha, dA, dB, beta, dC, handle); // Executes the kernel, modifies the result matrix
+    cudaCheck(cudaDeviceSynchronize());
+    cudaCheck(cudaGetLastError()); // Check for async errors during kernel run
+    cudaMemcpy(C, dC, sizeof(float) * m * n, cudaMemcpyDeviceToHost);
+    cudaMemcpy(C_ref, dC_ref, sizeof(float) * m * n, cudaMemcpyDeviceToHost);
     if (!verify_matrix(C_ref, C, m * n)) {
       std::cout << FRED("Failed to pass the correctness verification against NVIDIA cuBLAS.") << std::endl;
       if (m <= 128) {
@@ -231,7 +236,6 @@ int main(int argc, char **argv) {
         print_matrix(C_ref, m, n, fs);
       }
       exit(EXIT_FAILURE);
-
     }
 
     cudaEventRecord(beg);
