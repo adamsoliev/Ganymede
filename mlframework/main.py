@@ -26,7 +26,7 @@ def plot_decision_boundary(model: torch.nn.Module, X: torch.Tensor, y: torch.Ten
 
     # Make features
     X_to_pred_on = torch.from_numpy(np.column_stack((xx.ravel(), yy.ravel()))).float()
-    y_prob = model.forward(X_to_pred_on).squeeze()
+    y_prob = model(X_to_pred_on)
     y_pred = torch.round(y_prob)  # binary
 
     # Reshape preds and plot
@@ -38,23 +38,22 @@ def plot_decision_boundary(model: torch.nn.Module, X: torch.Tensor, y: torch.Ten
 
 def main() -> None:
     n_pts = 1000
-    X, y = datasets.make_circles(n_samples=n_pts, random_state=42, noise=0.04)
-    x_data = torch.FloatTensor(X)
+    x, y = datasets.make_circles(n_samples=n_pts, random_state=42, noise=0.04)
+    x_data = torch.FloatTensor(x)
     y_data = torch.FloatTensor(y.reshape(1000, 1))
 
-    torch.manual_seed(2)
     model = NN(2, 10, 1)
     loss_fn = nn.BCELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
-    epochs = 1000
-    losses = []
+    epochs = 2000
     for epoch in range(epochs):
-        y_pred = model.forward(x_data).squeeze()
-        loss = loss_fn(y_pred, y_data.squeeze())
-        print(f"epoch: {epoch}, loss: {loss.item()}")
+        y_pred = model(x_data)
+        loss = loss_fn(y_pred, y_data)
+
+        if epoch % 10 == 0:
+            print(f"epoch: {epoch}, loss: {loss.item()}")
         
-        losses.append(loss.item())
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
