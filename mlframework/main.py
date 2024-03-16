@@ -1,23 +1,24 @@
 #!/usr/bin/python3
 
 import torch
+from torch import Tensor
 import numpy as np
 from torch import nn
-from matplotlib import pyplot as plt
-from sklearn import datasets
+from matplotlib import pyplot as plt    # type: ignore
+from sklearn import datasets            # type: ignore
 
 class NN(nn.Module):
-    def __init__(self, input_size, H1, output_size):
+    def __init__(self, input_size: int, H1: int, output_size: int):
         super().__init__()
         self.linear = nn.Linear(input_size, H1)
         self.linear2 = nn.Linear(H1, output_size)
     
-    def forward(self, x):
+    def forward(self, x: 'Tensor') -> 'Tensor':
         x = torch.sigmoid(self.linear(x))
         x = torch.sigmoid(self.linear2(x))
         return x
     
-def plot_decision_boundary(model: torch.nn.Module, X: torch.Tensor, y: torch.Tensor):
+def plot_decision_boundary(model: torch.nn.Module, X: torch.Tensor, y: torch.Tensor) -> None:
     # Setup prediction boundaries and grid
     x_min, x_max = X[:, 0].min() - 0.1, X[:, 0].max() + 0.1
     y_min, y_max = X[:, 1].min() - 0.1, X[:, 1].max() + 0.1
