@@ -12,12 +12,12 @@ class NN(nn.Module):
     def __init__(self) -> None:
         super().__init__()
 
-        self.layer1 = nn.Linear(2, 5)
-        self.layer2 = nn.Linear(5, 1)
+        self.layer1 = nn.Linear(2, 20)
+        self.layer2 = nn.Linear(20, 1)
     
     def forward(self, x: 'Tensor') -> 'Tensor':
-        x = F.relu(self.layer1(x))
-        x = F.relu(self.layer2(x))
+        x = F.sigmoid(self.layer1(x))
+        x = F.sigmoid(self.layer2(x))
         return x
 
 def accuracy_fn(y_true, y_pred):
@@ -44,13 +44,14 @@ def plot_decision_boundary(model: torch.nn.Module, X: torch.Tensor, y: torch.Ten
     # Make predictions
     model.eval()
     with torch.inference_mode():
-        y_logits = model(X_to_pred_on)
+        y_prob = model(X_to_pred_on)
 
     # Test for multi-class or binary and adjust logits to prediction labels
     # if len(torch.unique(y)) > 2:
     #     y_pred = torch.softmax(y_logits, dim=1).argmax(dim=1)  # mutli-class
     # else:
-    y_pred = torch.round(y_logits)  # binary
+    y_pred = torch.round(y_prob)  # binary
+    # y_pred = y_pred.squeeze()
 
     # Reshape preds and plot
     y_pred = y_pred.reshape(xx.shape).detach().numpy()
@@ -58,25 +59,6 @@ def plot_decision_boundary(model: torch.nn.Module, X: torch.Tensor, y: torch.Ten
     plt.scatter(X[:, 0], X[:, 1], c=y, s=40, cmap=plt.cm.RdYlBu)
     plt.xlim(xx.min(), xx.max())
     plt.ylim(yy.min(), yy.max())
-
-
-# Plot linear data or training and test and predictions (optional)
-def plot_predictions( train_data, train_labels, test_data, test_labels, predictions=None):
-    """ Plots linear training data and test data and compares predictions.  """
-    plt.figure(figsize=(10, 7))
-
-    # Plot training data in blue
-    plt.scatter(train_data, train_labels, c="b", s=4, label="Training data")
-
-    # Plot test data in green
-    plt.scatter(test_data, test_labels, c="g", s=4, label="Testing data")
-
-    if predictions is not None:
-        # Plot the predictions in red (predictions were made on the test data)
-        plt.scatter(test_data, predictions, c="r", s=4, label="Predictions")
-
-    # Show the legend
-    plt.legend(prop={"size": 14})
 
 
 def main() -> None:
@@ -109,7 +91,7 @@ def main() -> None:
     device = "cude" if torch.cuda.is_available() else "cpu"
 
     ### DATA
-    data = np.genfromtxt('two_circles.txt', dtype=np.float64, comments='#')
+    data = np.genfromtxt('/home/adam/dev/ganymede/mlframework/two_circles.txt', dtype=np.float64, comments='#')
     x, y = data[:, [0,1]], data[:, 2]
     # plt.scatter(x=x[:, 0], y=x[:, 1], c=y, cmap=plt.cm.RdYlBu)
     # plt.show()
@@ -131,9 +113,9 @@ def main() -> None:
     loss_fn = nn.BCEWithLogitsLoss()
     optimizer = torch.optim.SGD(params=model.parameters(), lr=0.1)
 
-    torch.manual_seed(42)
+    # torch.manual_seed(42)
 
-    epochs = 100
+    epochs = 500
     for epoch in range(epochs):
         ### Training
         model.train()
@@ -169,7 +151,7 @@ def main() -> None:
             test_acc = accuracy_fn(y_true=y_test, y_pred=test_pred)
 
         # Print out what's happening every 10 epochs
-        if epoch % 10 == 0:
+        if epoch % 50 == 0:
             print(f"Epoch: {epoch} | Loss: {loss:.5f}, Accuracy: {acc:.2f}% | Test loss: {test_loss:.5f}, Test acc: {test_acc:.2f}%")
     
     # Plot decision boundaries for training and test sets
