@@ -9,30 +9,24 @@ from matplotlib import pyplot as plt
 from sklearn.model_selection import train_test_split
 
 class NN(nn.Module):
-    def __init__(self) -> None:
+    def __init__(self, input_size, H1, output_size):
         super().__init__()
-
-        self.layer1 = nn.Linear(2, 20)
-        self.layer2 = nn.Linear(20, 1)
+        self.linear = nn.Linear(input_size, H1)
+        self.linear2 = nn.Linear(H1, output_size)
     
-    def forward(self, x: 'Tensor') -> 'Tensor':
-        x = F.sigmoid(self.layer1(x))
-        x = F.sigmoid(self.layer2(x))
+    def forward(self, x):
+        x = torch.sigmoid(self.linear(x))
+        x = torch.sigmoid(self.linear2(x))
         return x
-
-def accuracy_fn(y_true, y_pred):
-    correct = torch.eq(y_true, y_pred).sum().item() 
-    acc = (correct / len(y_pred)) * 100 
-    return acc
+    
+    def predict(self, x):
+        pred = self.forward(x)
+        if pred >= 0.5:
+            return 1
+        else:
+            return 0
 
 def plot_decision_boundary(model: torch.nn.Module, X: torch.Tensor, y: torch.Tensor):
-    """Plots decision boundaries of model predicting on X in comparison to y.
-
-    Source - https://madewithml.com/courses/foundations/neural-networks/ (with modifications)
-    """
-    # Put everything to CPU (works better with NumPy + Matplotlib)
-    model.to("cpu")
-
     # Setup prediction boundaries and grid
     x_min, x_max = X[:, 0].min() - 0.1, X[:, 0].max() + 0.1
     y_min, y_max = X[:, 1].min() - 0.1, X[:, 1].max() + 0.1
@@ -40,18 +34,8 @@ def plot_decision_boundary(model: torch.nn.Module, X: torch.Tensor, y: torch.Ten
 
     # Make features
     X_to_pred_on = torch.from_numpy(np.column_stack((xx.ravel(), yy.ravel()))).float()
-
-    # Make predictions
-    model.eval()
-    with torch.inference_mode():
-        y_prob = model(X_to_pred_on)
-
-    # Test for multi-class or binary and adjust logits to prediction labels
-    # if len(torch.unique(y)) > 2:
-    #     y_pred = torch.softmax(y_logits, dim=1).argmax(dim=1)  # mutli-class
-    # else:
+    y_prob = model.forward(X_to_pred_on).squeeze()
     y_pred = torch.round(y_prob)  # binary
-    # y_pred = y_pred.squeeze()
 
     # Reshape preds and plot
     y_pred = y_pred.reshape(xx.shape).detach().numpy()
@@ -60,99 +44,31 @@ def plot_decision_boundary(model: torch.nn.Module, X: torch.Tensor, y: torch.Ten
     plt.xlim(xx.min(), xx.max())
     plt.ylim(yy.min(), yy.max())
 
-
 def main() -> None:
-    # model = NN()
-
-    # x = torch.randn(10)
-    # y = torch.randn(10)
-
-    # plt.scatter(x, y)
-    # plt.show()
-
-    # loss_fn = nn.SoftMarginLoss()
-    # optimizer = torch.optim.SGD(model.parameters(), lr=1e-1)
-
-    # model.train()
-    # for t in range(100000):
-    #     y_pred = model(x)
-    #     loss = loss_fn(y_pred, y)
-
-    #     if t % 100 == 0:
-    #         print(t, loss.item())
-
-    #     optimizer.zero_grad()
-    #     loss.backward()
-    #     optimizer.step()
-    
-    # print(model(x))
-    # print(y)
-
-    device = "cude" if torch.cuda.is_available() else "cpu"
-
-    ### DATA
     data = np.genfromtxt('/home/adam/dev/ganymede/mlframework/two_circles.txt', dtype=np.float64, comments='#')
     x, y = data[:, [0,1]], data[:, 2]
-    # plt.scatter(x=x[:, 0], y=x[:, 1], c=y, cmap=plt.cm.RdYlBu)
-    # plt.show()
 
-    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
-
-    x_train = torch.from_numpy(x_train).type(torch.float).to(device) 
-    x_test  = torch.from_numpy(x_test).type(torch.float).to(device)
-    y_train = torch.from_numpy(y_train).type(torch.float).to(device)
-    y_test  = torch.from_numpy(y_test).type(torch.float).to(device)
+    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.1, random_state=42)
+    x_train = torch.from_numpy(x_train).type(torch.float)
+    x_test  = torch.from_numpy(x_test).type(torch.float)
+    y_train = torch.from_numpy(y_train).type(torch.float)
+    y_test  = torch.from_numpy(y_test).type(torch.float)
  
-    model = NN()
-    # y_prob = model(x_train)
-    # y_pred = torch.round(y_prob)
-    # y_pred_label = torch.round(model(x_test))
-    # print(y_pred.shape)
-    # print(y_pred_label.shape)
+    model = NN(2, 10, 1)
+    loss_fn = nn.BCELoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
-    loss_fn = nn.BCEWithLogitsLoss()
-    optimizer = torch.optim.SGD(params=model.parameters(), lr=0.1)
-
-    # torch.manual_seed(42)
-
-    epochs = 500
-    for epoch in range(epochs):
-        ### Training
-        model.train()
-
-        # 1. Forward pass (model outputs raw logits)
-        y_prob = model(x_train) 
-        y_pred = torch.round(y_prob) 
-        y_pred = y_pred.squeeze() # remove extra dimention
-    
-        assert y_pred.shape == y_train.shape
-        loss = loss_fn(y_pred, y_train) 
-        acc = accuracy_fn(y_true=y_train, y_pred=y_pred) 
-
-        # 3. Optimizer zero grad
+    epochs = 1000
+    losses = []
+    for i in range(epochs):
+        y_pred = model.forward(x_train).squeeze()
+        loss = loss_fn(y_pred, y_train)
+        print(f"epoch: {i}, loss: {loss.item()}")
+        
+        losses.append(loss.item())
         optimizer.zero_grad()
-
-        # 4. Loss backwards
         loss.backward()
-
-        # 5. Optimizer step
         optimizer.step()
-
-        ### Testing
-        model.eval()
-        with torch.inference_mode():
-            # 1. Forward pass
-            test_prob = model(x_test)
-            test_pred = torch.round(test_prob)
-            test_pred = test_pred.squeeze()
-            # 2. Caculate loss/accuracy
-            assert test_pred.shape == y_test.shape
-            test_loss = loss_fn(test_pred, y_test)
-            test_acc = accuracy_fn(y_true=y_test, y_pred=test_pred)
-
-        # Print out what's happening every 10 epochs
-        if epoch % 50 == 0:
-            print(f"Epoch: {epoch} | Loss: {loss:.5f}, Accuracy: {acc:.2f}% | Test loss: {test_loss:.5f}, Test acc: {test_acc:.2f}%")
     
     # Plot decision boundaries for training and test sets
     plt.figure(figsize=(12, 6))
