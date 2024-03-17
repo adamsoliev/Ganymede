@@ -14,3 +14,12 @@ class Linear():
 
     def parameters(self) -> list['Tensor']:
         return [self.w, self.b]
+
+def sigmoid(x: 'Tensor') -> 'Tensor':
+    return Tensor(1/(1 + np.exp(-x.numpy())), {x, }, "sigmoid")
+
+# def main() -> None:
+#     pass
+
+# if __name__ == '__main__':
+#     main()
