@@ -146,7 +146,6 @@ class TestTensor(unittest.TestCase):
         na = [[3., 4., 5.], [4., 3., 6.]]; nb = [[9., 4., 1.]]  # (2,3) <-> (1,3)
         _helper(na, nb)
 
-
     def test_mul(self):
         def _helper(na: list, nb: list):
             p1 = torch.tensor(na, requires_grad=True)
@@ -182,7 +181,6 @@ class TestTensor(unittest.TestCase):
         na = [[3., 4., 5.], [4., 3., 6.]]; nb = [[9., 4., 1.]]  # (2,3) <-> (1,3)
         _helper(na, nb)
         
-
     def test_tanh(self):
         def _helper(na: list):
             p1 = torch.tensor(na, requires_grad=True)
@@ -214,7 +212,6 @@ class TestTensor(unittest.TestCase):
         na = [[3., 4., 5.], [4., 3., 6.]]
         _helper(na)
     
-
     def test_pytorch_compare(self):
         # pytorch
         a = torch.tensor([[0.2606, 0.0398, 0.2312], [0.4034, 0.8265, 0.7248]], requires_grad=True)
