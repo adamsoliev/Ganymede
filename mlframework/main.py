@@ -18,6 +18,7 @@ class NN(nn.Module):
         x = torch.sigmoid(self.linear2(x))
         return x
     
+# https://github.com/mrdbourke/pytorch-deep-learning
 def plot_decision_boundary(model: torch.nn.Module, X: torch.Tensor, y: torch.Tensor) -> None:
     # Setup prediction boundaries and grid
     x_min, x_max = X[:, 0].min() - 0.1, X[:, 0].max() + 0.1
@@ -26,8 +27,8 @@ def plot_decision_boundary(model: torch.nn.Module, X: torch.Tensor, y: torch.Ten
 
     # Make features
     X_to_pred_on = torch.from_numpy(np.column_stack((xx.ravel(), yy.ravel()))).float()
-    y_prob = model(X_to_pred_on)
-    y_pred = torch.round(y_prob)  # binary
+    y_logits = model(X_to_pred_on)
+    y_pred = torch.round(y_logits)  # binary
 
     # Reshape preds and plot
     y_pred = y_pred.reshape(xx.shape).detach().numpy()
@@ -48,8 +49,8 @@ def main() -> None:
 
     epochs = 2000
     for epoch in range(epochs):
-        y_pred = model(x_data)
-        loss = loss_fn(y_pred, y_data)
+        y_logits = model(x_data)
+        loss = loss_fn(y_logits, y_data)
 
         if epoch % 10 == 0:
             print(f"epoch: {epoch}, loss: {loss.item()}")
