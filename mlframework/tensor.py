@@ -4,7 +4,7 @@ import numpy as np
 from numpy.typing import NDArray
 from typing import Callable, Union
 
-Tensorable = Union[float, list[float], NDArray[np.float64]]
+Tensorable = Union[float, list[float], list[list[float]], NDArray[np.float64]]
 
 class Tensor:
     labelnum = 1
@@ -71,6 +71,9 @@ class Tensor:
             other.grad += self.data.T @ result.grad
         result._backward = _backward
         return result
+    
+    def T(self) -> 'Tensor':
+        return Tensor(self.data.T, {self, }, "T")
 
     def __add__(self, other: 'Tensor') -> 'Tensor':
         result = Tensor(self.data + other.data, {self, other}, "+")
