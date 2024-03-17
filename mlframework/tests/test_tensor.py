@@ -1,5 +1,6 @@
 import unittest
 import torch
+import numpy as np
 
 from tensor import Tensor
 
@@ -212,6 +213,37 @@ class TestTensor(unittest.TestCase):
         na = [[3., 4., 5.], [4., 3., 6.]]
         _helper(na)
     
+    def test_sigmoid(self):
+        def _helper(na: list):
+            p1 = torch.tensor(na, requires_grad=True)
+            p3 = p1.sigmoid(); p3.retain_grad()
+            p4 = p3.sum(); p4.retain_grad()
+            p4.backward()
+
+            t1 = Tensor(na)
+            t3 = t1.sigmoid()
+            t4 = t3.sum()
+            t4.backward()
+
+            assert round(p4.item(), 5) == round(t4.item(), 5)
+            for ta_, a_ in zip(t1.grad.flatten(), p1.grad.flatten()):
+                assert round(a_.item(), 5) == round(ta_, 5)
+            for tc_, c_ in zip(t3.grad.flatten(), p3.grad.flatten()):
+                assert round(c_.item(), 5) == round(tc_, 5)
+            for td_, d_ in zip(t4.grad.flatten(), p4.grad.flatten()):
+                assert round(d_.item(), 5) == round(td_, 5)
+
+        na = np.random.uniform(-1,1, (4,2))
+        _helper(na)
+        na = np.random.uniform(-1,1, (2,))
+        _helper(na)
+        na = np.random.uniform(-1,1, (10,20))
+        _helper(na)
+        na = np.random.uniform(-1,1, (10,20,2))
+        _helper(na)
+        na = np.random.uniform(-1,1, (4,9))
+        _helper(na)
+
     def test_pytorch_compare(self):
         # pytorch
         a = torch.tensor([[0.2606, 0.0398, 0.2312], [0.4034, 0.8265, 0.7248]], requires_grad=True)

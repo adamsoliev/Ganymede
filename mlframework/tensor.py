@@ -1,5 +1,3 @@
-#!/usr/bin/python3
-
 import numpy as np
 from numpy.typing import NDArray
 from typing import Callable, Union
@@ -48,6 +46,13 @@ class Tensor:
         result = Tensor(np.tanh(self.data), {self, }, "tanh")
         def _backward() -> None:
             self.grad += (result.grad * (1 - result.data * result.data))
+        result._backward = _backward
+        return result
+
+    def sigmoid(self) -> 'Tensor':
+        result = Tensor(1/(1 + np.exp(-self.numpy())), {self, }, "sigmoid")
+        def _backward() -> None:
+            self.grad += (result.grad * (result.data * (1 - result.data)))
         result._backward = _backward
         return result
     
