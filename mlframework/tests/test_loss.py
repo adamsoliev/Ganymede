@@ -1,8 +1,9 @@
 import unittest
 import torch
-
+import numpy as np
 from tensor import Tensor
-from loss import mse_loss
+from loss import mse_loss, bce_loss
+from nn import sigmoid
 
 class TestLoss(unittest.TestCase):
     def test_mse_loss(self):
@@ -36,3 +37,28 @@ class TestLoss(unittest.TestCase):
         y = [[6.]]
         _helper(W, X, b, y)
 
+    def test_bce_loss(self):
+        def _helper(ninput, ntarget):
+            pinput = torch.from_numpy(ninput); pinput.requires_grad=True
+            ptarget = torch.from_numpy(ninput); ptarget.requires_grad=True
+            loss_fn = torch.nn.BCELoss()
+            psig = torch.sigmoid(pinput); print(psig)
+            ploss = loss_fn(psig, ptarget)
+            ploss.backward()
+
+            tinput = Tensor(ninput)
+            ttarget = Tensor(ntarget)
+
+            tsig = sigmoid(tinput); print(tsig)
+            tloss = bce_loss(ttarget, tsig)
+            tloss.backward()
+
+            assert round(tloss.item(), 5) == round(ploss.item(), 5)
+            for w, tw in zip(tinput.grad.flatten(), pinput.grad.flatten()):
+                assert round(w.item(), 5) == round(tw.item(), 5)
+            for w, tw in zip(ttarget.grad.flatten(), ptarget.grad.flatten()):
+                assert round(w.item(), 5) == round(tw.item(), 5)
+
+        input = np.random.rand(3, 2)
+        target = np.array([[1., 0.], [1., 1.], [0., 1.]])
+        _helper(input, target)
