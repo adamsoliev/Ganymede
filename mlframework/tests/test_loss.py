@@ -3,6 +3,7 @@ import torch
 import numpy as np
 from tensor import Tensor
 from loss import mse_loss, binary_cross_entropy
+from nn import sigmoid
 
 class TestLoss(unittest.TestCase):
     def test_mse_loss(self):
@@ -52,3 +53,29 @@ class TestLoss(unittest.TestCase):
 
         tolerance = 1e-5
         assert np.allclose(loss_custom.item(), loss_pytorch.item(), atol=tolerance)
+    
+
+    def test_bce_loss_backprop(self):
+        input = torch.randn(3, 2, requires_grad=True)
+        target = torch.rand(3, 2, requires_grad=True)
+
+        m = torch.nn.Sigmoid()
+        loss_fn = torch.nn.BCELoss()
+        output = loss_fn(m(input), target)
+        output.backward()
+
+        # assert isinstance(target.detach().numpy(), np.ndarray)
+        # print("$$$ type: ", type(target.detach().numpy()))
+
+        input_tensor = Tensor(input.detach().numpy())
+        target_tensor = Tensor(target.detach().numpy())
+
+        tsig = sigmoid(input_tensor)
+        toutput = binary_cross_entropy(tsig, target_tensor)
+        toutput.backward()
+
+        assert round(output.item(), 5) == round(toutput.item(), 5)
+        # for w, tw in zip(W.grad.flatten(), tW.grad.flatten()):
+        #     assert round(w.item(), 5) == round(tw.item(), 5)
+        # for w, tw in zip(b.grad.flatten(), tb.grad.flatten()):
+        #     assert round(w.item(), 5) == round(tw.item(), 5)
