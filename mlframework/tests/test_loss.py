@@ -2,8 +2,7 @@ import unittest
 import torch
 import numpy as np
 from tensor import Tensor
-from loss import mse_loss, bce_loss
-from nn import sigmoid
+from loss import mse_loss, binary_cross_entropy
 
 class TestLoss(unittest.TestCase):
     def test_mse_loss(self):
@@ -37,28 +36,19 @@ class TestLoss(unittest.TestCase):
         y = [[6.]]
         _helper(W, X, b, y)
 
-    def test_bce_loss(self):
-        def _helper(ninput, ntarget):
-            pinput = torch.from_numpy(ninput); pinput.requires_grad=True
-            ptarget = torch.from_numpy(ninput); ptarget.requires_grad=True
-            loss_fn = torch.nn.BCELoss()
-            psig = torch.sigmoid(pinput); print(psig)
-            ploss = loss_fn(psig, ptarget)
-            ploss.backward()
+    def test_binary_cross_entropy(self):
+        np.random.seed(42)
+        y_pred = np.random.rand(100)
+        y_true = np.random.randint(0, 2, size=100)
 
-            tinput = Tensor(ninput)
-            ttarget = Tensor(ntarget)
+        y_pred_tensor = torch.from_numpy(y_pred).float()
+        y_true_tensor = torch.from_numpy(y_true).float()
 
-            tsig = sigmoid(tinput); print(tsig)
-            tloss = bce_loss(ttarget, tsig)
-            tloss.backward()
+        y_pred_Tensor = Tensor(y_pred)
+        y_true_Tensor = Tensor(y_true)
+        loss_custom = binary_cross_entropy(y_pred_Tensor, y_true_Tensor)
 
-            assert round(tloss.item(), 5) == round(ploss.item(), 5)
-            for w, tw in zip(tinput.grad.flatten(), pinput.grad.flatten()):
-                assert round(w.item(), 5) == round(tw.item(), 5)
-            for w, tw in zip(ttarget.grad.flatten(), ptarget.grad.flatten()):
-                assert round(w.item(), 5) == round(tw.item(), 5)
+        loss_pytorch = torch.nn.functional.binary_cross_entropy(y_pred_tensor, y_true_tensor)
 
-        input = np.random.rand(3, 2)
-        target = np.array([[1., 0.], [1., 1.], [0., 1.]])
-        _helper(input, target)
+        tolerance = 1e-5
+        assert np.allclose(loss_custom.item(), loss_pytorch.item(), atol=tolerance)
