@@ -20,6 +20,6 @@ def binary_cross_entropy(y_pred: 'Tensor', y_true: 'Tensor') -> 'Tensor':
     result = Tensor(np.mean(loss), {y_pred, y_true}, "bce_loss")
     def _backward() -> None:
         y_pred.grad += - (y_true.data / y_pred.data) + (1 - y_true.data) / (1 - y_pred.data)
-        y_true.grad += -(np.log(y_pred.data) - np.log(1 - y_pred.data))  # Analytical derivative is 0
+        # y_true.grad += (y_pred.data - y_true.data) / (y_pred.data * (1 - y_pred.data))  
     result._backward = _backward
     return result

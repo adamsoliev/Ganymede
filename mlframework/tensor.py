@@ -3,7 +3,7 @@ from numpy.typing import NDArray
 from typing import Callable, Union
 import copy
 
-Tensorable = Union[float, list[float], list[list[float]], NDArray[np.float64]]
+Tensorable = Union[float, np.float32, np.float64, list[float], list[list[float]], NDArray[np.float64]]
 
 class Tensor:
     labelnum = 1
@@ -14,7 +14,7 @@ class Tensor:
                  op: str = "") -> None:
         if isinstance(data, np.ndarray):
             self.data = data
-        elif isinstance(data, (int, float)):
+        elif isinstance(data, (int, float, np.float32, np.float64)):
             self.data = np.array([data], dtype=np.float64)
         else:
             assert isinstance(data, list)
