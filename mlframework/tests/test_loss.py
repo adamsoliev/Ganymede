@@ -79,4 +79,3 @@ class TestLoss(unittest.TestCase):
 
 # testloss = TestLoss()
 # testloss.test_bce_loss_backprop()
-    
