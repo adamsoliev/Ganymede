@@ -1,9 +1,7 @@
 import unittest
 import torch
-import numpy as np
 from tensor import Tensor
-from loss import mse_loss #, binary_cross_entropy
-from nn import sigmoid
+from loss import mse_loss
 
 class TestLoss(unittest.TestCase):
     def test_mse_loss(self):
@@ -36,47 +34,3 @@ class TestLoss(unittest.TestCase):
         b = [5.]
         y = [[6.]]
         _helper(W, X, b, y)
-
-    # def test_binary_cross_entropy(self):
-    #     np.random.seed(42)
-    #     y_pred = np.random.rand(100)
-    #     y_true = np.random.randint(0, 2, size=100)
-
-    #     y_pred_tensor = torch.from_numpy(y_pred).float()
-    #     y_true_tensor = torch.from_numpy(y_true).float()
-
-    #     y_pred_Tensor = Tensor(y_pred)
-    #     y_true_Tensor = Tensor(y_true)
-    #     loss_custom = binary_cross_entropy(y_pred_Tensor, y_true_Tensor)
-
-    #     loss_pytorch = torch.nn.functional.binary_cross_entropy(y_pred_tensor, y_true_tensor)
-
-    #     tolerance = 1e-5
-    #     assert np.allclose(loss_custom.item(), loss_pytorch.item(), atol=tolerance)
-    
-
-    # def test_bce_loss_backprop(self):
-    #     input = torch.rand(3, 2, requires_grad=True)
-    #     target = torch.rand(3, 2, requires_grad=False)
-
-    #     m = torch.nn.Sigmoid()
-    #     loss_fn = torch.nn.BCELoss()
-    #     output = loss_fn(m(input), target)
-    #     output.backward()
-        
-    #     input_tensor = Tensor(input.detach().numpy())
-    #     target_tensor = Tensor(target.detach().numpy())
-
-    #     tsig = sigmoid(input_tensor)
-    #     toutput = binary_cross_entropy(tsig, target_tensor)
-    #     toutput.backward()
-
-    #     assert round(output.item(), 5) == round(toutput.item(), 5)
-    #     for i, k in zip(input.grad.flatten(), input_tensor.grad.flatten()):
-    #         assert round(i.item(), 5) == round(k.item(), 5)
-            # print(round(i.item(), 5), round(k.item(), 5))
-        # for w, tw in zip(b.grad.flatten(), tb.grad.flatten()):
-        #     assert round(w.item(), 5) == round(tw.item(), 5)
-
-# testloss = TestLoss()
-# testloss.test_bce_loss_backprop()
