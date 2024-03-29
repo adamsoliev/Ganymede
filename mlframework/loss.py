@@ -12,14 +12,14 @@ def mse_loss(a_true: 'Tensor', b_pred: 'Tensor') -> 'Tensor':
     result._backward = _backward
     return result
 
-def binary_cross_entropy(y_pred: 'Tensor', y_true: 'Tensor') -> 'Tensor':
-    eps = 1e-12
-    y_pred.data = np.clip(y_pred.data, eps, 1 - eps)
+# def binary_cross_entropy(y_pred: 'Tensor', y_true: 'Tensor') -> 'Tensor':
+#     eps = 1e-12
+#     y_pred.data = np.clip(y_pred.data, eps, 1 - eps)
 
-    loss = - (y_true.data * np.log(y_pred.data) + (1 - y_true.data) * np.log(1 - y_pred.data))
-    result = Tensor(np.mean(loss), {y_pred, y_true}, "bce_loss")
-    def _backward() -> None:
-        y_pred.grad += - (y_true.data / y_pred.data) + (1 - y_true.data) / (1 - y_pred.data)
-        # y_true.grad += (y_pred.data - y_true.data) / (y_pred.data * (1 - y_pred.data))  
-    result._backward = _backward
-    return result
+#     loss = - (y_true.data * np.log(y_pred.data) + (1 - y_true.data) * np.log(1 - y_pred.data))
+#     result = Tensor(np.mean(loss), {y_pred, y_true}, "bce_loss")
+#     def _backward() -> None:
+#         y_pred.grad += result.grad * ((-y_true.data / y_pred.data) + (1 - y_true.data) / (1 - y_pred.data))
+#         # y_true.grad += (y_pred.data - y_true.data) / (y_pred.data * (1 - y_pred.data))  
+#     result._backward = _backward
+#     return result
