@@ -1,2 +1,2 @@
-mypy main.py 
-# pytest --verbose
+mypy tensor.py
+python3 tensor.py
