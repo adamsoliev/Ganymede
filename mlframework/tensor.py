@@ -29,7 +29,7 @@ class Tensor():
         return self.data
 
     def binary_crossentropy(self, y):
-        return Tensor(np.mean(-y.numpy() * np.log(self.data) - (1 - y.numpy()) * np.log(1 - self.data)))
+        return (-y*self.log() - (1-y)*(1-self).log()).mean()
     
     def log(self):
         assert np.all(self.data > 0)
@@ -39,12 +39,24 @@ class Tensor():
     def __neg__(self): 
         return Tensor(-self.data)
     def __add__(self, x):
+        if isinstance(x, int): x = Tensor(x)
         return Tensor(self.data + x.numpy())
     def __sub__(self, x):
+        if isinstance(x, int): x = Tensor(x)
         return self + -x
     def __mul__(self, x):
+        if isinstance(x, int): x = Tensor(x)
         return Tensor(self.data * x.numpy())
 
+    def __radd__(self, x):
+        if isinstance(x, int): x = Tensor(x)
+        return Tensor(x.numpy() + self.data)
+    def __rsub__(self, x):
+        if isinstance(x, int): x = Tensor(x)
+        return -self + x
+    def __rmul__(self, x):
+        if isinstance(x, int): x = Tensor(x)
+        return Tensor(x.numpy() * self.data)
 
 def test_bce():
     input = np.random.randn(3, 2)
