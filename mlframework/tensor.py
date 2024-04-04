@@ -21,21 +21,27 @@ class Tensor():
         self.data = data
 
     def __repr__(self): return f"Tensor {self.data}"
-
-    def sigmoid(self):
-        return Tensor(1 / (1 + np.exp(-self.data)))
     
     def numpy(self):
         return self.data
 
+    # *** functional ops ***
     def binary_crossentropy(self, y):
         return (-y*self.log() - (1-y)*(1-self).log()).mean()
+
+    # *** reduce ops ***
+    def mean(self):
+        return Tensor(np.mean(self.data))
     
+    # *** mlops (unary) ***
     def log(self):
         assert np.all(self.data > 0)
         return Tensor(np.log(self.data))
-    def mean(self):
-        return Tensor(np.mean(self.data))
+
+    def sigmoid(self):
+        return Tensor(1 / (1 + np.exp(-self.data)))
+
+    # *** op wrappers ***
     def __neg__(self): 
         return Tensor(-self.data)
     def __add__(self, x):
@@ -124,6 +130,7 @@ def main():
     test_bce()
     test_add_sub_mul()
     test_log()
+    test_mean()
 
 
 if __name__ == "__main__":
