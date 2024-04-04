@@ -18,6 +18,9 @@ from tinygrad import dtypes # type:ignore
 
 class Tensor():
     def __init__(self, data):
+        assert isinstance(data, (np.ndarray, int, float))
+        if isinstance(data, int): data = float(data)
+
         self.data = data
 
     def __repr__(self): return f"Tensor {self.data}"
@@ -37,9 +40,11 @@ class Tensor():
     def log(self):
         assert np.all(self.data > 0)
         return Tensor(np.log(self.data))
+    def exp(self):
+        return Tensor(np.exp(self.data))
 
     def sigmoid(self):
-        return Tensor(1 / (1 + np.exp(-self.data)))
+        return Tensor((1 / (1 + (-self).exp())).numpy())
 
     # *** op wrappers ***
     def __neg__(self): 
@@ -53,16 +58,22 @@ class Tensor():
     def __mul__(self, x):
         if isinstance(x, int): x = Tensor(x)
         return Tensor(self.data * x.numpy())
+    def __truediv__(self, x):
+        if isinstance(x, int): x = Tensor(x)
+        return Tensor(self.numpy() / x.numpy())
 
     def __radd__(self, x):
         if isinstance(x, int): x = Tensor(x)
-        return Tensor(x.numpy() + self.data)
+        return x + self
     def __rsub__(self, x):
         if isinstance(x, int): x = Tensor(x)
         return -self + x
     def __rmul__(self, x):
         if isinstance(x, int): x = Tensor(x)
-        return Tensor(x.numpy() * self.data)
+        return x * self
+    def __rtruediv__(self, x):
+        if isinstance(x, int): x = Tensor(x)
+        return x / self
 
 def test_bce():
     input = np.random.randn(3, 2)
