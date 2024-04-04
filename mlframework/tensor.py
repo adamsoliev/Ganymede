@@ -42,9 +42,8 @@ class Tensor():
         return Tensor(np.log(self.data))
     def exp(self):
         return Tensor(np.exp(self.data))
-
     def sigmoid(self):
-        return Tensor((1 / (1 + (-self).exp())).numpy())
+        return (1 / (1 + (-self).exp()))
 
     # *** op wrappers ***
     def __neg__(self): 
@@ -67,7 +66,7 @@ class Tensor():
         return x + self
     def __rsub__(self, x):
         if isinstance(x, int): x = Tensor(x)
-        return -self + x
+        return x - self
     def __rmul__(self, x):
         if isinstance(x, int): x = Tensor(x)
         return x * self
@@ -92,7 +91,7 @@ def test_bce():
     assert np.allclose(c.numpy(), _c.numpy(), atol=1e-6)
     assert np.allclose(loss.numpy(), _loss.numpy(), atol=1e-6)
 
-def test_add_sub_mul():
+def test_add_sub_mul_div():
     input = np.random.randn(3, 2)
     target = np.random.rand(3, 2)
 
@@ -101,16 +100,19 @@ def test_add_sub_mul():
     c = a + b
     d = a - b
     e = a * b
+    f = a / b
 
     _a = Tensor(input)
     _b = Tensor(target)
     _c = _a + _b
     _d = _a - _b
     _e = _a * _b
+    _f = _a / _b
 
     assert np.allclose(c.numpy(), _c.numpy(), atol=1e-6)
     assert np.allclose(d.numpy(), _d.numpy(), atol=1e-6)
     assert np.allclose(e.numpy(), _e.numpy(), atol=1e-6)
+    assert np.allclose(f.numpy(), _f.numpy(), atol=1e-6)
 
 def test_log():
     input = np.array([[1.2, 3.3, 5.6], 
@@ -139,7 +141,7 @@ def test_mean():
 def main():
     np.random.seed(23)
     test_bce()
-    test_add_sub_mul()
+    test_add_sub_mul_div()
     test_log()
     test_mean()
 
