@@ -3,6 +3,7 @@
 import numpy as np
 from tinygrad import Tensor as __Tensor # type:ignore
 from tinygrad import dtypes # type:ignore
+from utils import draw_dot, gen_label
 
 # Today's goal
 # input = np.random.randn(3, 2)
@@ -17,11 +18,15 @@ from tinygrad import dtypes # type:ignore
 # print(loss.numpy())
 
 class Tensor():
-    def __init__(self, data):
+    def __init__(self, data, children=set(), op=""):
         assert isinstance(data, (np.ndarray, int, float))
         if isinstance(data, int): data = float(data)
 
         self.data = data
+        self.prev = set(children)
+        self._backward = lambda: None
+        self.label = gen_label()
+        self.op = op
 
     def __repr__(self): return f"Tensor {self.data}"
     
@@ -34,32 +39,32 @@ class Tensor():
 
     # *** reduce ops ***
     def mean(self):
-        return Tensor(np.mean(self.data))
+        return Tensor(np.mean(self.data), {self, }, "mean")
     
     # *** mlops (unary) ***
     def log(self):
         assert np.all(self.data > 0)
-        return Tensor(np.log(self.data))
+        return Tensor(np.log(self.data), {self, }, "log")
     def exp(self):
-        return Tensor(np.exp(self.data))
+        return Tensor(np.exp(self.data), {self, }, "exp")
     def sigmoid(self):
-        return (1 / (1 + (-self).exp()))
+        return Tensor((1 / (1 + (-self).exp())).numpy(), {self, }, "sigmoid")
 
     # *** op wrappers ***
     def __neg__(self): 
-        return Tensor(-self.data)
+        return Tensor(-self.data, {self, }, "neg")
     def __add__(self, x):
         if isinstance(x, int): x = Tensor(x)
-        return Tensor(self.data + x.numpy())
+        return Tensor(self.data + x.numpy(), {self, x}, "add")
     def __sub__(self, x):
         if isinstance(x, int): x = Tensor(x)
         return self + -x
     def __mul__(self, x):
         if isinstance(x, int): x = Tensor(x)
-        return Tensor(self.data * x.numpy())
+        return Tensor(self.data * x.numpy(), {self, x}, "mul")
     def __truediv__(self, x):
         if isinstance(x, int): x = Tensor(x)
-        return Tensor(self.numpy() / x.numpy())
+        return Tensor(self.numpy() / x.numpy(), {self, x}, "div")
 
     def __radd__(self, x):
         if isinstance(x, int): x = Tensor(x)
@@ -73,6 +78,21 @@ class Tensor():
     def __rtruediv__(self, x):
         if isinstance(x, int): x = Tensor(x)
         return x / self
+    
+    def backward(self) -> None:
+        topsorted = []
+        visited = set()
+        def helper_topsort(v: 'Tensor') -> None:
+            if v not in visited:
+                visited.add(v)
+                for child in v.prev:
+                    helper_topsort(child)
+                topsorted.append(v)
+        helper_topsort(self)
+
+        # self.grad = np.ones_like(self.data)
+        for node in reversed(topsorted):
+            node._backward()
 
 def test_bce():
     input = np.random.randn(3, 2)
@@ -87,6 +107,9 @@ def test_bce():
     _b = Tensor(target)
     _c = _a.sigmoid()
     _loss = _c.binary_crossentropy(_b)
+
+    dot = draw_dot(_loss)
+    dot.view()
 
     assert np.allclose(c.numpy(), _c.numpy(), atol=1e-6)
     assert np.allclose(loss.numpy(), _loss.numpy(), atol=1e-6)
@@ -144,7 +167,6 @@ def main():
     test_add_sub_mul_div()
     test_log()
     test_mean()
-
 
 if __name__ == "__main__":
     main()
