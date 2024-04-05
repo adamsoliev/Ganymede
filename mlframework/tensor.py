@@ -5,6 +5,10 @@ from tinygrad import Tensor as __Tensor # type:ignore
 from tinygrad import dtypes # type:ignore
 from utils import draw_dot, gen_label
 
+from enum import Enum, auto
+class BinaryOps(Enum):
+    ADD = auto(); SUB = auto(); MUL = auto(); DIV = auto()
+
 # Today's goal
 # input = np.random.randn(3, 2)
 # target = np.random.rand(3, 2)
@@ -18,9 +22,10 @@ from utils import draw_dot, gen_label
 # print(loss.numpy())
 
 class Tensor():
-    def __init__(self, data, children=set(), op=""):
+    def __init__(self, data, children=set(), op=None):
         assert isinstance(data, (np.ndarray, int, float))
-        if isinstance(data, int): data = float(data)
+        if isinstance(data, (int, float)): 
+            data = np.array([float(data)])
 
         self.data = data
         self.prev = set(children)
@@ -53,31 +58,16 @@ class Tensor():
     # *** op wrappers ***
     def __neg__(self): 
         return Tensor(-self.data, {self, }, "neg")
-    def __add__(self, x):
-        if isinstance(x, int): x = Tensor(x)
-        return Tensor(self.data + x.numpy(), {self, x}, "add")
-    def __sub__(self, x):
-        if isinstance(x, int): x = Tensor(x)
-        return self + -x
-    def __mul__(self, x):
-        if isinstance(x, int): x = Tensor(x)
-        return Tensor(self.data * x.numpy(), {self, x}, "mul")
-    def __truediv__(self, x):
-        if isinstance(x, int): x = Tensor(x)
-        return Tensor(self.numpy() / x.numpy(), {self, x}, "div")
 
-    def __radd__(self, x):
-        if isinstance(x, int): x = Tensor(x)
-        return x + self
-    def __rsub__(self, x):
-        if isinstance(x, int): x = Tensor(x)
-        return x - self
-    def __rmul__(self, x):
-        if isinstance(x, int): x = Tensor(x)
-        return x * self
-    def __rtruediv__(self, x):
-        if isinstance(x, int): x = Tensor(x)
-        return x / self
+    def __add__(self, x): return e([self, x], BinaryOps.ADD)
+    def __sub__(self, x): return e([self, x], BinaryOps.SUB)
+    def __mul__(self, x): return e([self, x], BinaryOps.MUL)
+    def __truediv__(self, x): return e([self, x], BinaryOps.DIV)
+
+    def __radd__(self, x): return e([x, self], BinaryOps.ADD)
+    def __rsub__(self, x): return e([x, self], BinaryOps.SUB)
+    def __rmul__(self, x): return e([x, self], BinaryOps.MUL)
+    def __rtruediv__(self, x): return e([x, self], BinaryOps.DIV)
     
     def backward(self) -> None:
         topsorted = []
@@ -94,6 +84,21 @@ class Tensor():
         for node in reversed(topsorted):
             node._backward()
 
+
+def e(srcs, op):
+    if isinstance(op, BinaryOps):
+        assert isinstance(srcs, list) and len(srcs) == 2
+        left, right = srcs[0], srcs[1]
+        if isinstance(left, int): left = Tensor(left)
+        if isinstance(right, int): right = Tensor(right)
+        if (op == BinaryOps.ADD): return Tensor(left.numpy() + right.numpy(), {left, right}, op.name)
+        elif (op == BinaryOps.SUB): return Tensor(left.numpy() - right.numpy(), {left, right}, op.name)
+        elif (op == BinaryOps.MUL): return Tensor(left.numpy() * right.numpy(), {left, right}, op.name)
+        elif (op == BinaryOps.DIV): return Tensor(left.numpy() / right.numpy(), {left, right}, op.name)
+        else: assert 0
+    else:
+        assert 0
+
 def test_bce():
     input = np.random.randn(3, 2)
     target = np.random.rand(3, 2)
@@ -108,8 +113,8 @@ def test_bce():
     _c = _a.sigmoid()
     _loss = _c.binary_crossentropy(_b)
 
-    dot = draw_dot(_loss)
-    dot.view()
+    # dot = draw_dot(_loss)
+    # dot.view()
 
     assert np.allclose(c.numpy(), _c.numpy(), atol=1e-6)
     assert np.allclose(loss.numpy(), _loss.numpy(), atol=1e-6)
@@ -131,6 +136,26 @@ def test_add_sub_mul_div():
     _d = _a - _b
     _e = _a * _b
     _f = _a / _b
+
+    assert np.allclose(c.numpy(), _c.numpy(), atol=1e-6)
+    assert np.allclose(d.numpy(), _d.numpy(), atol=1e-6)
+    assert np.allclose(e.numpy(), _e.numpy(), atol=1e-6)
+    assert np.allclose(f.numpy(), _f.numpy(), atol=1e-6)
+
+def test_radd_rsub_rmul_rdiv():
+    input = np.random.rand(3, 2)
+
+    b = __Tensor(input, dtype=dtypes.float32)
+    c = 1 + b
+    d = 1 - b
+    e = 1 * b
+    f = 1 / b
+
+    _b = Tensor(input)
+    _c = 1 + _b
+    _d = 1 - _b
+    _e = 1 * _b
+    _f = 1 / _b
 
     assert np.allclose(c.numpy(), _c.numpy(), atol=1e-6)
     assert np.allclose(d.numpy(), _d.numpy(), atol=1e-6)
@@ -165,6 +190,7 @@ def main():
     np.random.seed(23)
     test_bce()
     test_add_sub_mul_div()
+    test_radd_rsub_rmul_rdiv()
     test_log()
     test_mean()
 
