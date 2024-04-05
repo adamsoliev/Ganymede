@@ -39,8 +39,7 @@ class Tensor():
 
     def __repr__(self): return f"Tensor {self.data}"
     
-    def numpy(self):
-        return self.data
+    def numpy(self): return self.data
 
     # *** functional ops ***
     def binary_crossentropy(self, y):
@@ -48,7 +47,6 @@ class Tensor():
 
     # *** reduce ops ***
     def mean(self): return e([self], ReduceOps.MEAN)
-        # return Tensor(np.mean(self.data), {self, }, "mean")
     
     # *** mlops (unary) ***
     def log(self): return e([self], UnaryOps.LOG)

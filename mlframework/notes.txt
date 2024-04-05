@@ -1,45 +1,4 @@
-
---- What is your north star and why is this important?
-Your north star could be a mission, market, problem space, thematic area, 
-technology trend, or something else that is guiding your exploration.
-
-Intelligent Disassembly Technology. In other words, collect end-of-life 
-electronic products and disassemble them into individual chemical solutions 
-so that those old devices can be used as raw materials to produce future devices.
-We'll start with highest ROI rare earth metals and eventually recycle every 
-element in the periodic table.
-
-Why part is obvious, so I'll skip it. Instead I'd use this opportunity to say 
-this might sound like an 'unsexy' idea, especially right now. It's not, at least
-in the mid and long-term. It is tremendous value-add to the world and is something
-that has to exist. It is also mission-oriented, which isolates it from 
-general talent competition.
-
---- What are some ideas you want to explore to pursue your north star?
-An assembly of intelligent robotic arms that take in electronic items 
-and produce individual chemical solutions
-
---- What expertise do you have that is related to your north star?
-I have a background in chemistry through olympiads and lab research,
-in technology through my 3 YOE as a software engineer at CME Group and  
-ML/robotics through my personal tinkering/projects (github.com/adamsoliev/ganymede).
-
---- If you succeed, how does the world look meaningfully different in 5-10 years? 
-How big could this get?
-"A record 62 million tonnes (Mt) of e-waste was produced in 2022, 
-Up 82% from 2010; On track to rise another 32%, to 82 million tonnes, in 2030; 
-Billions of dollars worth of strategically-valuable resources squandered, dumped; 
-Just 1% of rare earth element demand is met by e-waste recycling."[1] 
-The above will be reversed. 
-[1] https://ewastemonitor.info/the-global-e-waste-monitor-2024/
-
---- Share any other ideas that you considered or explored as a team, 
-no matter how crazy or unrefined
-allowing devices to give a sense of smell, niche chemistry software, 
-robots to compete in RoboCup, services around X platform
-
-
-/* Linear */
+/* Linear Algebra */
   matrixA * matrixB = matrixC requires 2N^3 - N^2
     for each cell in matrixC, you need N muls + (N - 1) adds; (2N - 1) FLOPs
     for N^2 cells, you need N^2 * (2N - 1) = 2N^3 - N^2
