@@ -2,12 +2,10 @@ import unittest
 
 import numpy as np
 from tinygrad import Tensor as tinyTensor # type:ignore
-from torch import Tensor as pyTensor
 from tinygrad import dtypes # type:ignore
-from utils import draw_dot, gen_label, prod
 from tensor import Tensor
 
-class TestTensor(unittest.TestCase):
+class TestTensor2D(unittest.TestCase):
     def test_bce(self):
         input = np.random.randn(3, 2)
         target = np.random.rand(3, 2)
@@ -137,3 +135,53 @@ class TestTensor(unittest.TestCase):
             assert np.allclose(_ag, _ag1, atol=1e-6)
 
         helper(1); helper(2); helper(3); helper(4)
+
+    def test_log_backward(self):
+        def helper(op):
+            np.random.seed(23)
+            input = np.random.rand(3, 2)
+            target = input / 2
+
+            a = tinyTensor(input, dtype=dtypes.float32, requires_grad=True)
+            b = tinyTensor(target, dtype=dtypes.float32, requires_grad=True)
+            if (op == 1):   c = a + b
+            elif (op == 2): c = a - b
+            elif (op == 3): c = a * b
+            else:           c = a / b
+            c.requires_grad=True
+            d = c.log(); d.requires_grad=True
+            e = d.sum(); e.requires_grad=True
+            e.backward()
+
+            _e = e.numpy(); _eg = e.grad.numpy()
+            _d = d.numpy(); _dg = d.grad.numpy()
+            _c = c.numpy(); _cg = c.grad.numpy()
+            _bg = b.grad.numpy()
+            _ag = a.grad.numpy()
+
+            a1 = Tensor(input)
+            b1 = Tensor(target)
+            if (op == 1):   c1 = a1 + b1
+            elif (op == 2): c1 = a1 - b1
+            elif (op == 3): c1 = a1 * b1
+            else:           c1 = a1 / b1
+            d1 = c1.log()
+            e1 = d1.sum()
+            e1.backward()
+
+            _e1 = e1.numpy(); _eg1 = e1.grad
+            _d1 = d1.numpy(); _dg1 = d1.grad
+            _c1 = c1.numpy(); _cg1 = c1.grad
+            _bg1 = b1.grad
+            _ag1 = a1.grad
+
+            assert np.allclose(_e, _e1, atol=1e-6)
+            assert np.allclose(_eg, _eg1, atol=1e-6)
+            assert np.allclose(_d, _d1, atol=1e-6)
+            assert np.allclose(_dg, _dg1, atol=1e-6)
+            assert np.allclose(_c, _c1, atol=1e-6)
+            assert np.allclose(_cg, _cg1, atol=1e-6)
+            assert np.allclose(_bg, _bg1, atol=1e-6)
+            assert np.allclose(_ag, _ag1, atol=1e-6)
+        helper(1); helper(2); helper(3); helper(4)
+    

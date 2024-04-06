@@ -6,7 +6,7 @@ from enum import Enum, auto
 
 class BinaryOps(Enum): ADD = auto(); SUB = auto(); MUL = auto(); DIV = auto()
 class UnaryOps(Enum): NEG = auto(); LOG = auto(); EXP = auto() 
-class ReduceOps(Enum): MEAN = auto()
+class ReduceOps(Enum): MEAN = auto(); SUM = auto()
 
 # Today's goal
 # input = np.random.randn(3, 2)
@@ -44,6 +44,7 @@ class Tensor():
 
     # *** reduce ops ***
     def mean(self): return e([self], ReduceOps.MEAN)
+    def sum(self): return e([self], ReduceOps.SUM)
     
     # *** mlops (unary) ***
     def log(self): return e([self], UnaryOps.LOG)
@@ -144,6 +145,12 @@ def e(srcs, op):
             result = Tensor(np.mean(left.numpy()), {left, }, op.name)
             def _backward():
                 left.grad += np.full((left.shape), result.grad) / prod(left.shape)
+            result._backward = _backward
+            return result
+        elif (op == ReduceOps.SUM): 
+            result = Tensor(np.sum(left.numpy()), {left, }, op.name)
+            def _backward():
+                left.grad += np.full((left.shape), result.grad)
             result._backward = _backward
             return result
         else: assert 0
