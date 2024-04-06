@@ -31,6 +31,7 @@ class Tensor():
         self._backward = lambda: None
         self.label = gen_label()
         self.op = op
+        self.grad = 0
 
     def __repr__(self): return f"Tensor {self.data}"
     
@@ -72,7 +73,7 @@ class Tensor():
                 topsorted.append(v)
         helper_topsort(self)
 
-        # self.grad = np.ones_like(self.data)
+        self.grad = np.ones_like(self.data)
         for node in reversed(topsorted):
             node._backward()
 
@@ -82,11 +83,25 @@ def e(srcs, op):
         assert isinstance(srcs, list) and len(srcs) == 1
         left = srcs[0]
         if isinstance(left, (float, int)): left = Tensor(np.array([left]))
-        if (op == UnaryOps.NEG): return Tensor(-left.numpy(), {left, }, op.name)
+        if (op == UnaryOps.NEG): 
+            result = Tensor(-left.numpy(), {left, }, op.name)
+            def _backward():
+                left.grad += -result.grad
+            result._backward = _backward
+            return result
         elif (op == UnaryOps.LOG): 
             assert np.all(left.numpy() > 0)
-            return Tensor(np.log(left.numpy()), {left, }, op.name)
-        elif (op == UnaryOps.EXP): return Tensor(np.exp(left.numpy()), {left, }, op.name)
+            result = Tensor(np.log(left.numpy()), {left, }, op.name)
+            def _backward():
+                left.grad += result.grad * (1 / left.numpy())
+            result._backward = _backward
+            return result
+        elif (op == UnaryOps.EXP): 
+            result = Tensor(np.exp(left.numpy()), {left, }, op.name)
+            def _backward():
+                left.grad += result.grad * result.numpy()
+            result._backward = _backward
+            return result
         else: assert 0
 
     elif isinstance(op, BinaryOps):
@@ -94,17 +109,42 @@ def e(srcs, op):
         left, right = srcs[0], srcs[1]
         if isinstance(left, (float, int)): left = Tensor(np.array([left]))
         if isinstance(right, (float, int)): right = Tensor(np.array([right]))
-        if (op == BinaryOps.ADD): return Tensor(left.numpy() + right.numpy(), {left, right}, op.name)
-        elif (op == BinaryOps.SUB): return Tensor(left.numpy() - right.numpy(), {left, right}, op.name)
-        elif (op == BinaryOps.MUL): return Tensor(left.numpy() * right.numpy(), {left, right}, op.name)
-        elif (op == BinaryOps.DIV): return Tensor(left.numpy() / right.numpy(), {left, right}, op.name)
+        if (op == BinaryOps.ADD): 
+            result = Tensor(left.numpy() + right.numpy(), {left, right}, op.name)
+            def _backward():
+                left.grad += result.grad; right.grad += result.grad 
+            result._backward = _backward
+            return result
+        elif (op == BinaryOps.SUB): 
+            result = Tensor(left.numpy() - right.numpy(), {left, right}, op.name)
+            def _backward():
+                left.grad += result.grad; right.grad += -result.grad
+            result._backward = _backward
+            return result
+        elif (op == BinaryOps.MUL): 
+            result = Tensor(left.numpy() * right.numpy(), {left, right}, op.name)
+            def _backward():
+                left.grad += result.grad * right.numpy(); right.grad += result.grad * left.numpy() 
+            result._backward = _backward
+            return result
+        elif (op == BinaryOps.DIV): 
+            result = Tensor(left.numpy() / right.numpy(), {left, right}, op.name)
+            def _backward():
+                left.grad += result.grad / right.numpy(); right.grad += result.grad * (-left.numpy() / (right.numpy() * right.numpy()))
+            result._backward = _backward
+            return result
         else: assert 0
 
     elif isinstance(op, ReduceOps):
         assert isinstance(srcs, list) and len(srcs) == 1
         left = srcs[0]
         if isinstance(left, (float, int)): left = Tensor(np.array([left]))
-        if (op == ReduceOps.MEAN): return Tensor(np.mean(left.numpy()), {left, }, op.name)
+        if (op == ReduceOps.MEAN): 
+            result = Tensor(np.mean(left.numpy()), {left, }, op.name)
+            def _backward():
+                left.grad += np.full((left.numpy().shape[0], left.numpy().shape[1]), result.grad) / (left.numpy().shape[0] * left.numpy().shape[1])
+            result._backward = _backward
+            return result
         else: assert 0
     else:
         assert 0
