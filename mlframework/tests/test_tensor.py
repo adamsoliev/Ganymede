@@ -4,7 +4,7 @@ import numpy as np
 from tinygrad import Tensor as tinyTensor # type:ignore
 from torch import Tensor as pyTensor
 from tinygrad import dtypes # type:ignore
-from utils import draw_dot, gen_label
+from utils import draw_dot, gen_label, prod
 from tensor import Tensor
 
 class TestTensor(unittest.TestCase):
@@ -93,7 +93,6 @@ class TestTensor(unittest.TestCase):
         _c = _a.mean()
 
         assert np.allclose(c.numpy(), _c.numpy(), atol=1e-6)
-    
 
     def test_add_sub_mul_div_mean_backward(self):
         def helper(op):
@@ -103,11 +102,10 @@ class TestTensor(unittest.TestCase):
 
             a = tinyTensor(input, dtype=dtypes.float32, requires_grad=True)
             b = tinyTensor(target, dtype=dtypes.float32, requires_grad=True)
-            if (op == 1): c = a + b
+            if (op == 1):   c = a + b
             elif (op == 2): c = a - b
             elif (op == 3): c = a * b
-            elif (op == 4): c = a / b
-            else: assert 0
+            else:           c = a / b
             c.requires_grad=True
             d = c.mean(); d.requires_grad=True
             d.backward()
@@ -119,11 +117,10 @@ class TestTensor(unittest.TestCase):
 
             a1 = Tensor(input)
             b1 = Tensor(target)
-            if (op == 1): c1 = a1 + b1
+            if (op == 1):   c1 = a1 + b1
             elif (op == 2): c1 = a1 - b1
             elif (op == 3): c1 = a1 * b1
-            elif (op == 4): c1 = a1 / b1
-            else: assert 0
+            else:           c1 = a1 / b1
             d1 = c1.mean()
             d1.backward()
 
@@ -140,6 +137,3 @@ class TestTensor(unittest.TestCase):
             assert np.allclose(_ag, _ag1, atol=1e-6)
 
         helper(1); helper(2); helper(3); helper(4)
-
-# a = TestTensor()
-# a.test_backward()

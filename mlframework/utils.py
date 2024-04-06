@@ -32,3 +32,7 @@ def draw_dot(root):
 def gen_label(name="T"):
     gen_label.cnt = getattr(gen_label, 'cnt', 0) + 1
     return f"{name}{gen_label.cnt}"
+
+import functools, operator
+def prod(x):
+    return functools.reduce(operator.mul, x, 1)

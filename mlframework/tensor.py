@@ -1,7 +1,7 @@
 # inspired by https://github.com/tinygrad/tinygrad/blob/master/tinygrad/tensor.py
 
 import numpy as np
-from utils import gen_label
+from utils import gen_label, prod
 from enum import Enum, auto
 
 class BinaryOps(Enum): ADD = auto(); SUB = auto(); MUL = auto(); DIV = auto()
@@ -32,6 +32,7 @@ class Tensor():
         self.label = gen_label()
         self.op = op
         self.grad = 0
+        self.shape = data.shape
 
     def __repr__(self): return f"Tensor {self.data}"
     
@@ -142,7 +143,7 @@ def e(srcs, op):
         if (op == ReduceOps.MEAN): 
             result = Tensor(np.mean(left.numpy()), {left, }, op.name)
             def _backward():
-                left.grad += np.full((left.numpy().shape[0], left.numpy().shape[1]), result.grad) / (left.numpy().shape[0] * left.numpy().shape[1])
+                left.grad += np.full((left.shape), result.grad) / prod(left.shape)
             result._backward = _backward
             return result
         else: assert 0
