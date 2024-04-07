@@ -56,7 +56,12 @@ class Tensor():
         return Tensor(np.transpose(self.data))
 
     def matmul(self, x):
-        return Tensor(np.matmul(self.numpy(), x.numpy()), {self, x}, "MATMUL") 
+        result = Tensor(np.matmul(self.numpy(), x.numpy()), {self, x}, "MATMUL") 
+        def _backward():
+            self.grad += result.grad @ x.numpy().T
+            x.grad += self.data.T @ result.grad 
+        result._backward = _backward
+        return result
     
     def backward(self) -> None:
         topsorted = []
