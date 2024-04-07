@@ -244,3 +244,4 @@ class TestTensor2D(unittest.TestCase):
             assert np.allclose(_bg, _bg1, atol=1e-6)
             assert np.allclose(_ag, _ag1, atol=1e-6)
         helper(1); helper(2); helper(3); helper(4)
+    

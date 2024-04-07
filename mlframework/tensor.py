@@ -8,18 +8,6 @@ class BinaryOps(Enum): ADD = auto(); SUB = auto(); MUL = auto(); DIV = auto()
 class UnaryOps(Enum): NEG = auto(); LOG = auto(); EXP = auto() 
 class ReduceOps(Enum): MEAN = auto(); SUM = auto()
 
-# Today's goal
-# input = np.random.randn(3, 2)
-# target = np.random.rand(3, 2)
-# a = Tensor(input, dtype=dtypes.float32)
-# b = Tensor(target, dtype=dtypes.float32)
-
-# c = a.sigmoid()
-# loss = c.binary_crossentropy(b)
-# loss.backward()
-
-# print(loss.numpy())
-
 class Tensor():
     def __init__(self, data, children=set(), op=""):
         assert isinstance(data, (np.ndarray, int, float))
