@@ -51,6 +51,12 @@ class Tensor():
     def __rsub__(self, x): return e([x, self], BinaryOps.SUB)
     def __rmul__(self, x): return e([x, self], BinaryOps.MUL)
     def __rtruediv__(self, x): return e([x, self], BinaryOps.DIV)
+
+    def T(self):
+        return Tensor(np.transpose(self.data))
+
+    def matmul(self, x):
+        return Tensor(np.matmul(self.numpy(), x.numpy()), {self, x}, "MATMUL") 
     
     def backward(self) -> None:
         topsorted = []
@@ -66,7 +72,6 @@ class Tensor():
         self.grad = np.ones_like(self.data)
         for node in reversed(topsorted):
             node._backward()
-
 
 def e(srcs, op):
     if isinstance(op, UnaryOps):
