@@ -246,23 +246,26 @@ class TestTensor2D(unittest.TestCase):
         helper(1); helper(2); helper(3); helper(4)
     
     def test_transpose(self):
-        input = np.random.rand(4,3)
-        a = tinyTensor(input, dtype=dtypes.float32); ta = a.T
-        _a = Tensor(input); _ta = _a.T()
-        assert np.allclose(ta.numpy(), _ta.numpy(), atol=1e-6)
+        def helper(input):
+            a = tinyTensor(input, dtype=dtypes.float32); ta = a.T
+            _a = Tensor(input); _ta = _a.T()
+            assert np.allclose(ta.numpy(), _ta.numpy(), atol=1e-6)
+
+        a = np.random.rand(4,3); helper(a)
+        a = np.random.rand(3,1); helper(a)
 
     def test_matmul(self):
-        input1 = np.random.rand(4, 3)
-        input2 = np.random.rand(3, 4)
-        a1 = tinyTensor(input1, dtype=dtypes.float32)
-        a2 = tinyTensor(input2, dtype=dtypes.float32)
-        a3 = a1.matmul(a2)
+        def helper(input1, input2):
+            a1 = tinyTensor(input1, dtype=dtypes.float32)
+            a2 = tinyTensor(input2, dtype=dtypes.float32)
+            a3 = a1.matmul(a2)
 
-        _a1 = Tensor(input1)
-        _a2 = Tensor(input2)
-        _a3 = _a1.matmul(_a2)
+            _a1 = Tensor(input1)
+            _a2 = Tensor(input2)
+            _a3 = _a1.matmul(_a2)
 
-        assert np.allclose(a3.numpy(), _a3.numpy(), atol=1e-6)
+            assert np.allclose(a3.numpy(), _a3.numpy(), atol=1e-6)
+
+        a = np.random.rand(4, 3); b = np.random.rand(3, 4); helper(a, b)
+        a = np.random.rand(4, 3); b = np.random.rand(3, 1); helper(a, b)
         
-# a = TestTensor2D()
-# a.test_transpose()
