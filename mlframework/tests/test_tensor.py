@@ -1,5 +1,10 @@
 import unittest
 
+import sys
+ 
+# setting path
+sys.path.append('../')
+
 import numpy as np
 from tinygrad import Tensor as tinyTensor # type:ignore
 from tinygrad import dtypes # type:ignore
@@ -269,3 +274,29 @@ class TestTensor2D(unittest.TestCase):
         a = np.random.rand(4, 3); b = np.random.rand(3, 4); helper(a, b)
         a = np.random.rand(4, 3); b = np.random.rand(3, 1); helper(a, b)
         
+    def test_matmul_backward(self):
+        def helper(input1, input2):
+            a = tinyTensor(input1, dtype=dtypes.float32, requires_grad=True)
+            b = tinyTensor(input2, dtype=dtypes.float32, requires_grad=True)
+            c = a.matmul(b)
+            d = c.sum()
+            d.backward()
+
+            _a = Tensor(input1)
+            _b = Tensor(input2)
+            _c = _a.matmul(_b)
+            _d = _c.sum()
+            _d.backward()
+
+            assert np.allclose(a.grad.numpy(), _a.grad, atol=1e-6)
+            assert np.allclose(b.grad.numpy(), _b.grad, atol=1e-6)
+            assert np.allclose(c.grad.numpy(), _c.grad, atol=1e-6)
+            assert np.allclose(d.grad.numpy(), _d.grad, atol=1e-6)
+            assert np.allclose(c.numpy(), _c.numpy(), atol=1e-6)
+            assert np.allclose(d.numpy(), _d.numpy(), atol=1e-6)
+
+        a = np.random.rand(3,2); b = np.random.rand(2,3); helper(a, b)
+        a = np.random.rand(3,2); b = np.random.rand(2,1); helper(a, b)
+
+a = TestTensor2D()
+a.test_matmul_backward()
