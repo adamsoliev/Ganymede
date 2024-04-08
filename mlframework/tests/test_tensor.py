@@ -109,11 +109,7 @@ class TestTensor2D(unittest.TestCase):
         assert np.allclose(c.numpy(), _c.numpy(), atol=1e-6)
 
     def test_add_sub_mul_div_mean_backward(self):
-        def helper(op):
-            np.random.seed(23)
-            input = np.random.randn(3, 2)
-            target = np.random.rand(3, 2)
-
+        def helper(op, input, target):
             a = tinyTensor(input, dtype=dtypes.float32, requires_grad=True)
             b = tinyTensor(target, dtype=dtypes.float32, requires_grad=True)
             if (op == 1):   c = a + b
@@ -150,7 +146,11 @@ class TestTensor2D(unittest.TestCase):
             assert np.allclose(_bg, _bg1, atol=1e-6)
             assert np.allclose(_ag, _ag1, atol=1e-6)
 
-        helper(1); helper(2); helper(3); helper(4)
+        a = np.random.randn(3, 2); b = np.random.rand(3, 2)
+        helper(1, a, b); helper(2, a, b); helper(3, a, b); helper(4, a, b)
+
+        a = np.random.randn(5,3,4,1); b = np.random.rand(  3,1,1)   # broadcast
+        helper(1, a, b); helper(2, a, b); helper(3, a, b); helper(4, a, b)
 
     def test_add_sub_mul_div_log_sum_backward(self):
         def helper(op):
@@ -297,6 +297,3 @@ class TestTensor2D(unittest.TestCase):
 
         a = np.random.rand(3,2); b = np.random.rand(2,3); helper(a, b)
         a = np.random.rand(3,2); b = np.random.rand(2,1); helper(a, b)
-
-a = TestTensor2D()
-a.test_matmul_backward()

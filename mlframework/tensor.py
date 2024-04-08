@@ -112,25 +112,70 @@ def e(srcs, op):
         if (op == BinaryOps.ADD): 
             result = Tensor(left.numpy() + right.numpy(), {left, right}, op.name)
             def _backward():
-                left.grad += result.grad; right.grad += result.grad 
+                def grad_helper(result, node): # broadcasting
+                    grad = np.copy(result.grad)
+                    ndims_added = grad.ndim - node.numpy().ndim
+                    for _ in range(ndims_added):
+                        grad = grad.sum(axis=0)
+                    for i, dim in enumerate(node.numpy().shape):
+                        if dim == 1:
+                            grad = grad.sum(axis=i, keepdims=True)
+                    return grad; 
+                left.grad += grad_helper(result, left)
+                right.grad += grad_helper(result, right)
             result._backward = _backward
             return result
         elif (op == BinaryOps.SUB): 
             result = Tensor(left.numpy() - right.numpy(), {left, right}, op.name)
             def _backward():
-                left.grad += result.grad; right.grad += -result.grad
+                def grad_helper(result, node): # broadcasting
+                    grad = np.copy(result.grad)
+                    ndims_added = grad.ndim - node.numpy().ndim
+                    for _ in range(ndims_added):
+                        grad = grad.sum(axis=0)
+                    for i, dim in enumerate(node.numpy().shape):
+                        if dim == 1:
+                            grad = grad.sum(axis=i, keepdims=True)
+                    return grad; 
+                left.grad += grad_helper(result, left)
+                right.grad += -grad_helper(result, right)
             result._backward = _backward
             return result
         elif (op == BinaryOps.MUL): 
             result = Tensor(left.numpy() * right.numpy(), {left, right}, op.name)
             def _backward():
-                left.grad += result.grad * right.numpy(); right.grad += result.grad * left.numpy() 
+                def grad_helper(result, node, other): # broadcasting
+                    grad = np.copy(result.grad)
+                    grad = grad * other.numpy()
+                    ndims_added = grad.ndim - node.numpy().ndim
+                    for _ in range(ndims_added):
+                        grad = grad.sum(axis=0)
+                    for i, dim in enumerate(node.numpy().shape):
+                        if dim == 1:
+                            grad = grad.sum(axis=i, keepdims=True)
+                    return grad; 
+                left.grad += grad_helper(result, left, right)
+                right.grad += grad_helper(result, right, left)
             result._backward = _backward
             return result
         elif (op == BinaryOps.DIV): 
             result = Tensor(left.numpy() / right.numpy(), {left, right}, op.name)
             def _backward():
-                left.grad += result.grad / right.numpy(); right.grad += result.grad * (-left.numpy() / (right.numpy() * right.numpy()))
+                def grad_helper(result, node, other, isNumerator): # broadcasting
+                    grad = np.copy(result.grad)
+                    if isNumerator:
+                        grad = grad / other.numpy()
+                    else:
+                        grad = grad * (-other.numpy() / (node.numpy() * node.numpy()))
+                    ndims_added = grad.ndim - node.numpy().ndim
+                    for _ in range(ndims_added):
+                        grad = grad.sum(axis=0)
+                    for i, dim in enumerate(node.numpy().shape):
+                        if dim == 1:
+                            grad = grad.sum(axis=i, keepdims=True)
+                    return grad; 
+                left.grad += grad_helper(result, left, right, True)
+                right.grad += grad_helper(result, right, left, False)
             result._backward = _backward
             return result
         else: assert 0
