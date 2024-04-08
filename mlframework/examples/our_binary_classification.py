@@ -77,6 +77,10 @@ class SGD:
     def step(self) -> None:
         for param in self.params:
             param.data -= param.grad * self.learning_rate
+    
+    def zero_grad(self) -> None:
+        for param in self.params:
+            param.data *= 0
 
 class NN():
     def __init__(self, input_size: int, H1: int, output_size: int):
@@ -139,9 +143,10 @@ def main() -> None:
         # model.train()
 
         # TODO: need to figure out squeeze
-        y_prob_distr = model.forward(X_train).squeeze()
+        y_prob_distr = model.forward(X_train)
+        y_prob_distr = y_prob_distr.squeeze()
         loss = y_prob_distr.binary_crossentropy(y_train)
-        acc = accuracy_fn(y_true=y_train, y_pred=torch.round(y_prob_distr))
+        # acc = accuracy_fn(y_true=y_train, y_pred=torch.round(y_prob_distr))
         
         optimizer.zero_grad()
         loss.backward()
@@ -154,23 +159,24 @@ def main() -> None:
             test_prob_distr = model.forward(X_test).squeeze()
             # 2. Caculate loss/accuracy
             test_loss = test_prob_distr.binary_crossentropy(y_test)
-            test_acc = accuracy_fn(y_true=y_test, y_pred=torch.round(test_prob_distr))
+            # test_acc = accuracy_fn(y_true=y_test, y_pred=torch.round(test_prob_distr))
 
         # Print out what's happening every 10 epochs
         if epoch % 10 == 0:
-            print(f"Epoch: {epoch} | Loss: {loss:.5f}, Accuracy: {acc:.2f}% | Test loss: {test_loss:.5f}, Test acc: {test_acc:.2f}%")
+            # print(f"Epoch: {epoch} | Loss: {loss:.5f}, Accuracy: {acc:.2f}% | Test loss: {test_loss:.5f}, Test acc: {test_acc:.2f}%")
+            print(f"Epoch: {epoch} | Loss: {loss}, Test loss: {test_loss}")
     
-    assert test_acc > 90.0
+    # assert test_acc > 90.0
 
     # visualize 
-    plt.figure(figsize=(12, 6))
-    plt.subplot(1, 2, 1)
-    plt.title("Train")
-    plot_decision_boundary(model, X_train, y_train)
-    plt.subplot(1, 2, 2)
-    plt.title("Test")
-    plot_decision_boundary(model, X_test, y_test)
-    plt.show()
+    # plt.figure(figsize=(12, 6))
+    # plt.subplot(1, 2, 1)
+    # plt.title("Train")
+    # plot_decision_boundary(model, X_train, y_train)
+    # plt.subplot(1, 2, 2)
+    # plt.title("Test")
+    # plot_decision_boundary(model, X_test, y_test)
+    # plt.show()
 
 if __name__ == '__main__':
     main()

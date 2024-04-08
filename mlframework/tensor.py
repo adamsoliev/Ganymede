@@ -63,6 +63,12 @@ class Tensor():
         result._backward = _backward
         return result
     
+    def squeeze(self):
+        return self.reshape(tuple(dim for dim in self.shape if dim != 1))
+    
+    def reshape(self, shape):
+        return Tensor(self.numpy().reshape(shape))
+    
     def backward(self) -> None:
         topsorted = []
         visited = set()
