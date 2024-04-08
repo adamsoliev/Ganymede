@@ -13,7 +13,7 @@ from utils import prod
 
 # Hyperparameters
 HL = 20
-EPOCHS = 2000
+EPOCHS = 10
 LR = 0.001
 
 def plot_decision_boundary(model: torch.nn.Module, X: torch.Tensor, y: torch.Tensor):
@@ -76,11 +76,11 @@ class SGD:
     
     def step(self) -> None:
         for param in self.params:
-            param.data -= param.grad * self.learning_rate
+            param.grad -= param.grad * self.learning_rate
     
     def zero_grad(self) -> None:
         for param in self.params:
-            param.data *= 0
+            param.grad = 0
 
 class NN():
     def __init__(self, input_size: int, H1: int, output_size: int):
@@ -143,8 +143,7 @@ def main() -> None:
         # model.train()
 
         # TODO: need to figure out squeeze
-        y_prob_distr = model.forward(X_train)
-        y_prob_distr = y_prob_distr.squeeze()
+        y_prob_distr = model.forward(X_train).squeeze()
         loss = y_prob_distr.binary_crossentropy(y_train)
         # acc = accuracy_fn(y_true=y_train, y_pred=torch.round(y_prob_distr))
         
@@ -152,14 +151,18 @@ def main() -> None:
         loss.backward()
         optimizer.step()
 
+        print("\nParameters:")
+        for p in model.parameters():
+            print(p)
+
         # Testing
         # model.eval()
-        with torch.inference_mode():
-            # 1. Forward pass
-            test_prob_distr = model.forward(X_test).squeeze()
-            # 2. Caculate loss/accuracy
-            test_loss = test_prob_distr.binary_crossentropy(y_test)
-            # test_acc = accuracy_fn(y_true=y_test, y_pred=torch.round(test_prob_distr))
+        # with torch.inference_mode():
+        # 1. Forward pass
+        test_prob_distr = model.forward(X_test).squeeze()
+        # 2. Caculate loss/accuracy
+        test_loss = test_prob_distr.binary_crossentropy(y_test)
+        # test_acc = accuracy_fn(y_true=y_test, y_pred=torch.round(test_prob_distr))
 
         # Print out what's happening every 10 epochs
         if epoch % 10 == 0:

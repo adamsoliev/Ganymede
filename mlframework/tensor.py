@@ -53,7 +53,11 @@ class Tensor():
     def __rtruediv__(self, x): return e([x, self], BinaryOps.DIV)
 
     def T(self):
-        return Tensor(np.transpose(self.data))
+        result = Tensor(np.transpose(self.data), {self, }, "T")
+        def _backward():
+            self.grad += result.grad
+        result._backward = _backward
+        return result
 
     def matmul(self, x):
         result = Tensor(np.matmul(self.numpy(), x.numpy()), {self, x}, "MATMUL") 
@@ -67,7 +71,11 @@ class Tensor():
         return self.reshape(tuple(dim for dim in self.shape if dim != 1))
     
     def reshape(self, shape):
-        return Tensor(self.numpy().reshape(shape))
+        result = Tensor(self.numpy().reshape(shape), {self, }, "RESHAPE")
+        def _backward():
+            self.grad += result.grad
+        result._backward = _backward
+        return result
     
     def backward(self) -> None:
         topsorted = []
