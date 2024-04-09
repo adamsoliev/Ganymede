@@ -1,6 +1,7 @@
 # inspired by https://github.com/tinygrad/tinygrad/blob/master/tinygrad/tensor.py
 
 import numpy as np
+import math
 from utils import gen_label, prod
 from enum import Enum, auto
 
@@ -43,7 +44,13 @@ class Tensor():
     def log(self): return e([self], UnaryOps.LOG)
     def exp(self): return e([self], UnaryOps.EXP)
     # https://stackoverflow.com/questions/40726490/overflow-error-in-pythons-numpy-exp-function
-    def sigmoid(self): return 1 / (1 + (-self).exp())
+    def sigmoid(self): 
+        data = 1 / (1 + np.exp2(self.numpy() * (-1/math.log(2))))
+        result = Tensor(data, {self, }, "SIGMOID")
+        def _backward():
+            self.grad += (result.numpy() * (1 - result.numpy())) * result.grad
+        result._backward = _backward
+        return result
 
     # *** op wrappers ***
     def __neg__(self): return e([self], UnaryOps.NEG)
@@ -117,7 +124,7 @@ def e(srcs, op):
             result._backward = _backward
             return result
         elif (op == UnaryOps.EXP): 
-            result = Tensor(np.exp(left.numpy()), {left, }, op.name)
+            result = Tensor(np.exp2(left.numpy() * (1/math.log(2))), {left, }, op.name)
             def _backward():
                 left.grad += result.grad * result.numpy()
             result._backward = _backward

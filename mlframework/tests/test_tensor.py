@@ -117,17 +117,24 @@ class TestTensor2D(unittest.TestCase):
 
     def test_sigmoid(self):
         def helper(input):
-            a = tinyTensor(input, dtype=dtypes.float32)
+            a = tinyTensor(input, dtype=dtypes.float32, requires_grad=True)
             c = a.sigmoid()
+            d = c.sum()
+            d.backward()
 
             _a = Tensor(input)
             _c = _a.sigmoid()
+            _d = _c.sum()
+            _d.backward()
 
+            assert np.allclose(a.grad.numpy(), _a.grad, atol=1e-6)
             assert (c.numpy() >= 0).all() and (_c.numpy() >= 0).all()
             assert np.allclose(c.numpy(), _c.numpy(), atol=1e-6)
+            assert np.allclose(d.numpy(), _d.numpy(), atol=1e-6)
 
-        a = np.random.randn(5, 3)
-        helper(a)
+        a = np.random.randn(3); helper(a)
+        a = np.random.randn(5, 3); helper(a)
+        a = np.random.randn(5, 3, 4); helper(a)
 
     def test_add_sub_mul_div_mean_backward__normal_and_broadcast(self):
         def helper(op, input, target):
@@ -364,6 +371,4 @@ class TestTensor2D(unittest.TestCase):
 
         # a = np.random.randn(5,3,4,1); b = np.random.rand(  3,1,1)   # broadcast
         # helper(1, a, b); helper(2, a, b); helper(3, a, b); helper(4, a, b)
-    
-# a = TestTensor2D()
-# a.test_add_sub_mul_div_T_mean_backward()
+ 
