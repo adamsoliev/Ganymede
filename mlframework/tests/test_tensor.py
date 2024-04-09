@@ -98,15 +98,36 @@ class TestTensor2D(unittest.TestCase):
         assert np.allclose(c.numpy(), _c.numpy(), atol=1e-6)
 
     def test_exp(self):
-        input = np.random.randn(5, 3)
+        def helper(input):
+            a = tinyTensor(input, dtype=dtypes.float32)
+            c = a.exp()
 
-        a = tinyTensor(input, dtype=dtypes.float32)
-        c = a.exp()
+            _a = Tensor(input)
+            _c = _a.exp()
 
-        _a = Tensor(input)
-        _c = _a.exp()
+            assert np.allclose(c.numpy(), _c.numpy(), atol=1e-6)
+        a = np.random.randn(5, 3)
+        helper(a)
+        b = np.zeros((3,2))
+        helper(b)
+        c = np.ones((3,2))
+        helper(c)
+        d = np.array([[-2329837429., -29298374272224], [10298734200000., 1009889274923498.]])
+        helper(d)
 
-        assert np.allclose(c.numpy(), _c.numpy(), atol=1e-6)
+    def test_sigmoid(self):
+        def helper(input):
+            a = tinyTensor(input, dtype=dtypes.float32)
+            c = a.sigmoid()
+
+            _a = Tensor(input)
+            _c = _a.sigmoid()
+
+            assert (c.numpy() >= 0).all() and (_c.numpy() >= 0).all()
+            assert np.allclose(c.numpy(), _c.numpy(), atol=1e-6)
+
+        a = np.random.randn(5, 3)
+        helper(a)
 
     def test_add_sub_mul_div_mean_backward__normal_and_broadcast(self):
         def helper(op, input, target):

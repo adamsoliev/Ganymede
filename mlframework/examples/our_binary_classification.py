@@ -144,7 +144,7 @@ def main() -> None:
 
         if epoch % 10 == 0:
             # print(f"Epoch: {epoch} | Loss: {loss:.5f}, Accuracy: {acc:.2f}% | Test loss: {test_loss:.5f}, Test acc: {test_acc:.2f}%")
-            print(f"Epoch: {epoch} | Loss: {loss:.5f}, Test loss: {test_loss}")
+            print(f"Epoch: {epoch} | Loss: {loss:.5f}, Test loss: {test_loss:.5f}")
     
     # assert test_acc > 90.0
 

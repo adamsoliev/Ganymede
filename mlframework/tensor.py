@@ -42,6 +42,7 @@ class Tensor():
     # *** mlops (unary) ***
     def log(self): return e([self], UnaryOps.LOG)
     def exp(self): return e([self], UnaryOps.EXP)
+    # https://stackoverflow.com/questions/40726490/overflow-error-in-pythons-numpy-exp-function
     def sigmoid(self): return 1 / (1 + (-self).exp())
 
     # *** op wrappers ***
