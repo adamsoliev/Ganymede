@@ -299,3 +299,50 @@ class TestTensor2D(unittest.TestCase):
 
         a = np.random.rand(3,2); b = np.random.rand(2,3); helper(a, b)
         a = np.random.rand(3,2); b = np.random.rand(2,1); helper(a, b)
+
+    def test_add_sub_mul_div_T_mean_backward(self):
+        def helper(op, input, target):
+            a = tinyTensor(input, dtype=dtypes.float32, requires_grad=True)
+            b = tinyTensor(target, dtype=dtypes.float32, requires_grad=True)
+            if (op == 1):   c = a + b.T
+            elif (op == 2): c = a - b.T
+            elif (op == 3): c = a * b.T
+            else:           c = a / b.T
+            c.requires_grad=True
+            d = c.mean(); d.requires_grad=True
+            d.backward()
+
+            _d = d.numpy(); _dg = d.grad.numpy()
+            _c = c.numpy(); _cg = c.grad.numpy()
+            _bg = b.grad.numpy()
+            _ag = a.grad.numpy()
+
+            a1 = Tensor(input)
+            b1 = Tensor(target)
+            if (op == 1):   c1 = a1 + b1.T()
+            elif (op == 2): c1 = a1 - b1.T()
+            elif (op == 3): c1 = a1 * b1.T()
+            else:           c1 = a1 / b1.T()
+            d1 = c1.mean()
+            d1.backward()
+
+            _d1 = d1.numpy(); _dg1 = d1.grad
+            _c1 = c1.numpy(); _cg1 = c1.grad
+            _bg1 = b1.grad
+            _ag1 = a1.grad
+
+            assert np.allclose(_d, _d1, atol=1e-6)
+            assert np.allclose(_dg, _dg1, atol=1e-6)
+            assert np.allclose(_c, _c1, atol=1e-6)
+            assert np.allclose(_cg, _cg1, atol=1e-6)
+            assert np.allclose(_bg, _bg1, atol=1e-6)
+            assert np.allclose(_ag, _ag1, atol=1e-6)
+
+        a = np.random.randn(3, 2); b = np.random.rand(2, 1)
+        helper(1, a, b); helper(2, a, b); helper(3, a, b); helper(4, a, b)
+
+        # a = np.random.randn(5,3,4,1); b = np.random.rand(  3,1,1)   # broadcast
+        # helper(1, a, b); helper(2, a, b); helper(3, a, b); helper(4, a, b)
+    
+# a = TestTensor2D()
+# a.test_add_sub_mul_div_T_mean_backward()

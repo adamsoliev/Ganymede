@@ -10,11 +10,12 @@ from matplotlib import pyplot as plt    # type: ignore
 from sklearn import datasets            # type: ignore
 from sklearn.model_selection import train_test_split
 from utils import prod
+import math
 
 # Hyperparameters
 HL = 20
-EPOCHS = 10
-LR = 0.001
+EPOCHS = 1000
+LR = 0.01
 
 def plot_decision_boundary(model: torch.nn.Module, X: torch.Tensor, y: torch.Tensor):
     """Plots decision boundaries of model predicting on X in comparison to y.
@@ -47,7 +48,6 @@ def plot_decision_boundary(model: torch.nn.Module, X: torch.Tensor, y: torch.Ten
     plt.xlim(xx.min(), xx.max())
     plt.ylim(yy.min(), yy.max())
 
-import math
 
 class Linear():
     def __init__(self, nin: int, nout: int) -> None:
@@ -76,7 +76,7 @@ class SGD:
     
     def step(self) -> None:
         for param in self.params:
-            param.grad -= param.grad * self.learning_rate
+            param.data -= param.grad * self.learning_rate
     
     def zero_grad(self) -> None:
         for param in self.params:
@@ -142,7 +142,6 @@ def main() -> None:
     for epoch in range(epochs):
         # model.train()
 
-        # TODO: need to figure out squeeze
         y_prob_distr = model.forward(X_train).squeeze()
         loss = y_prob_distr.binary_crossentropy(y_train)
         # acc = accuracy_fn(y_true=y_train, y_pred=torch.round(y_prob_distr))
@@ -150,10 +149,6 @@ def main() -> None:
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-
-        print("\nParameters:")
-        for p in model.parameters():
-            print(p)
 
         # Testing
         # model.eval()
@@ -167,7 +162,7 @@ def main() -> None:
         # Print out what's happening every 10 epochs
         if epoch % 10 == 0:
             # print(f"Epoch: {epoch} | Loss: {loss:.5f}, Accuracy: {acc:.2f}% | Test loss: {test_loss:.5f}, Test acc: {test_acc:.2f}%")
-            print(f"Epoch: {epoch} | Loss: {loss}, Test loss: {test_loss}")
+            print(f"Epoch: {epoch} | Loss: {loss:.5f}, Test loss: {test_loss}")
     
     # assert test_acc > 90.0
 

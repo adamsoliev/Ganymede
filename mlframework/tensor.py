@@ -12,8 +12,9 @@ class Tensor():
     def __init__(self, data, children=set(), op=""):
         assert isinstance(data, (np.ndarray, int, float))
         if isinstance(data, (int, float)): 
-            data = np.array([float(data)])
+            data = np.array([float(data)], dtype=np.float32)
 
+        data.astype(np.float32)
         self.data = data
         self.prev = set(children)
         self._backward = lambda: None
@@ -23,6 +24,10 @@ class Tensor():
         self.shape = data.shape
 
     def __repr__(self): return f"Tensor {self.data}"
+
+    def __format__(self, format_spec):
+        assert isinstance(self.data, np.ndarray)
+        return format(self.data.item(), format_spec)  
     
     def numpy(self): return self.data
 
@@ -55,7 +60,7 @@ class Tensor():
     def T(self):
         result = Tensor(np.transpose(self.data), {self, }, "T")
         def _backward():
-            self.grad += result.grad
+            self.grad += np.transpose(result.grad)
         result._backward = _backward
         return result
 
@@ -88,7 +93,7 @@ class Tensor():
                 topsorted.append(v)
         helper_topsort(self)
 
-        self.grad = np.ones_like(self.data)
+        self.grad = np.ones_like(self.data, dtype=np.float32)
         for node in reversed(topsorted):
             node._backward()
 
