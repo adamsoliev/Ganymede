@@ -102,24 +102,18 @@ class NN():
             params.append(_)
         return params
 
-# Calculate accuracy (a classification metric)
 def accuracy_fn(y_true, y_pred):
     correct = torch.eq(y_true, y_pred).sum().item() # torch.eq() calculates where two tensors are equal
     acc = (correct / len(y_pred)) * 100 
     return acc
 
 def main() -> None:
-    # create circles
     n_pts = 1000
-    # (1000, 2) (1000,)
     X, y = datasets.make_circles(n_samples=n_pts, random_state=42, noise=0.04)
 
     # plt.scatter(x=X[:, 0], y=X[:, 1], c=y, cmap=plt.cm.RdYlBu)
     # plt.show()
 
-    # create tensors
-
-    # # Split data into train and test sets
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, 
                                                         random_state=42) # make the random split reproducible
     X_train = Tensor(X_train)
@@ -128,20 +122,13 @@ def main() -> None:
     y_test = Tensor(y_test)
 
     # usual stuff
-    # device = "cuda" if torch.cuda.is_available() else "cpu"
     model = NN(2, HL, 1)
     # loss_fn = nn.BCELoss()
     optimizer = SGD(model.parameters(), lr=LR)
 
     epochs = EPOCHS
 
-    # move data to device
-    # X_train, y_train = X_train.to(device), y_train.to(device)
-    # X_test, y_test = X_test.to(device), y_test.to(device)
-
     for epoch in range(epochs):
-        # model.train()
-
         y_prob_distr = model.forward(X_train).squeeze()
         loss = y_prob_distr.binary_crossentropy(y_train)
         # acc = accuracy_fn(y_true=y_train, y_pred=torch.round(y_prob_distr))
@@ -151,15 +138,10 @@ def main() -> None:
         optimizer.step()
 
         # Testing
-        # model.eval()
-        # with torch.inference_mode():
-        # 1. Forward pass
         test_prob_distr = model.forward(X_test).squeeze()
-        # 2. Caculate loss/accuracy
         test_loss = test_prob_distr.binary_crossentropy(y_test)
         # test_acc = accuracy_fn(y_true=y_test, y_pred=torch.round(test_prob_distr))
 
-        # Print out what's happening every 10 epochs
         if epoch % 10 == 0:
             # print(f"Epoch: {epoch} | Loss: {loss:.5f}, Accuracy: {acc:.2f}% | Test loss: {test_loss:.5f}, Test acc: {test_acc:.2f}%")
             print(f"Epoch: {epoch} | Loss: {loss:.5f}, Test loss: {test_loss}")
