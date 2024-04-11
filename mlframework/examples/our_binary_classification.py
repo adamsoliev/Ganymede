@@ -13,8 +13,8 @@ from utils import prod
 import math
 
 # Hyperparameters
-HL = 20
-EPOCHS = 1000
+HL = 10
+EPOCHS = 7000
 LR = 0.01
 
 def plot_decision_boundary(model: torch.nn.Module, X: torch.Tensor, y: torch.Tensor):
@@ -103,7 +103,7 @@ class NN():
         return params
 
 def accuracy_fn(y_true, y_pred):
-    correct = torch.eq(y_true, y_pred).sum().item() # torch.eq() calculates where two tensors are equal
+    correct = np.equal(y_true, y_pred).sum() # torch.eq() calculates where two tensors are equal
     acc = (correct / len(y_pred)) * 100 
     return acc
 
@@ -121,6 +121,10 @@ def main() -> None:
     y_train = Tensor(y_train)
     y_test = Tensor(y_test)
 
+    # print("TRAIN\n", X_train.numpy()[:20,:], "\n", X_train.shape)
+    # print("TEST\n", X_test.numpy()[:20,:], "\n", X_test.shape)
+    # print(y_test)
+
     # usual stuff
     model = NN(2, HL, 1)
     # loss_fn = nn.BCELoss()
@@ -131,7 +135,7 @@ def main() -> None:
     for epoch in range(epochs):
         y_prob_distr = model.forward(X_train).squeeze()
         loss = y_prob_distr.binary_crossentropy(y_train)
-        # acc = accuracy_fn(y_true=y_train, y_pred=torch.round(y_prob_distr))
+        acc = accuracy_fn(y_true=y_train.numpy(), y_pred=np.round(y_prob_distr.numpy()))
         
         optimizer.zero_grad()
         loss.backward()
@@ -140,13 +144,12 @@ def main() -> None:
         # Testing
         test_prob_distr = model.forward(X_test).squeeze()
         test_loss = test_prob_distr.binary_crossentropy(y_test)
-        # test_acc = accuracy_fn(y_true=y_test, y_pred=torch.round(test_prob_distr))
+        test_acc = accuracy_fn(y_true=y_test.numpy(), y_pred=np.round(test_prob_distr.numpy()))
 
-        if epoch % 10 == 0:
-            # print(f"Epoch: {epoch} | Loss: {loss:.5f}, Accuracy: {acc:.2f}% | Test loss: {test_loss:.5f}, Test acc: {test_acc:.2f}%")
-            print(f"Epoch: {epoch} | Loss: {loss:.5f}, Test loss: {test_loss:.5f}")
+        if epoch % 100 == 0:
+            print(f"Epoch: {epoch} | Loss: {loss:.5f}, Accuracy: {acc:.2f}% | Test loss: {test_loss:.5f}, Test acc: {test_acc:.2f}%")
     
-    # assert test_acc > 90.0
+    assert test_acc > 90.0
 
     # visualize 
     # plt.figure(figsize=(12, 6))
