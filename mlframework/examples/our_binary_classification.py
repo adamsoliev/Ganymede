@@ -14,7 +14,7 @@ import math
 
 # Hyperparameters
 HL = 10
-EPOCHS = 7000
+EPOCHS = 2000
 LR = 0.01
 
 def plot_decision_boundary(model: torch.nn.Module, X: torch.Tensor, y: torch.Tensor):
@@ -67,7 +67,7 @@ class Linear():
         return x.matmul(self.w.T()) + self.b
 
     def parameters(self) -> list['Tensor']:
-        return [self.w, self.b]
+        return [self.w]
 
 class SGD:
     def __init__(self, params: list['Tensor'], lr: float = 0.01) -> None:
@@ -95,24 +95,18 @@ class NN():
         return x
     
     def parameters(self):
-        params = []
-        for _ in self.linear.parameters():
-            params.append(_)
-        for _ in self.linear2.parameters():
-            params.append(_)
-        return params
+        return [self.linear.w, self.linear2.w]
 
 def accuracy_fn(y_true, y_pred):
     correct = np.equal(y_true, y_pred).sum() # torch.eq() calculates where two tensors are equal
     acc = (correct / len(y_pred)) * 100 
     return acc
 
+# from utils import draw_dot
+
 def main() -> None:
     n_pts = 1000
     X, y = datasets.make_circles(n_samples=n_pts, random_state=42, noise=0.04)
-
-    # plt.scatter(x=X[:, 0], y=X[:, 1], c=y, cmap=plt.cm.RdYlBu)
-    # plt.show()
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, 
                                                         random_state=42) # make the random split reproducible
@@ -121,13 +115,8 @@ def main() -> None:
     y_train = Tensor(y_train)
     y_test = Tensor(y_test)
 
-    # print("TRAIN\n", X_train.numpy()[:20,:], "\n", X_train.shape)
-    # print("TEST\n", X_test.numpy()[:20,:], "\n", X_test.shape)
-    # print(y_test)
-
     # usual stuff
     model = NN(2, HL, 1)
-    # loss_fn = nn.BCELoss()
     optimizer = SGD(model.parameters(), lr=LR)
 
     epochs = EPOCHS
@@ -141,13 +130,15 @@ def main() -> None:
         loss.backward()
         optimizer.step()
 
+        # dot = draw_dot(loss)
+        # dot.view()
+
         # Testing
         test_prob_distr = model.forward(X_test).squeeze()
         test_loss = test_prob_distr.binary_crossentropy(y_test)
         test_acc = accuracy_fn(y_true=y_test.numpy(), y_pred=np.round(test_prob_distr.numpy()))
 
-        if epoch % 100 == 0:
-            print(f"Epoch: {epoch} | Loss: {loss:.5f}, Accuracy: {acc:.2f}% | Test loss: {test_loss:.5f}, Test acc: {test_acc:.2f}%")
+        print(f"Epoch: {epoch} | Loss: {loss:.5f}, Accuracy: {acc:.2f}% | Test loss: {test_loss:.5f}, Test acc: {test_acc:.2f}%")
     
     assert test_acc > 90.0
 

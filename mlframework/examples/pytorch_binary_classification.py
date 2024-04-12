@@ -12,7 +12,7 @@ from sklearn.model_selection import train_test_split
 
 # Hyperparameters
 HL = 20
-EPOCHS = 2000
+EPOCHS = 3000
 LR = 0.001
 
 def plot_decision_boundary(model: torch.nn.Module, X: torch.Tensor, y: torch.Tensor):
@@ -117,7 +117,7 @@ def main() -> None:
             test_acc = accuracy_fn(y_true=y_test, y_pred=torch.round(test_prob_distr))
 
         # Print out what's happening every 10 epochs
-        if epoch % 10 == 0:
+        if epoch % 100 == 0:
             print(f"Epoch: {epoch} | Loss: {loss:.5f}, Accuracy: {acc:.2f}% | Test loss: {test_loss:.5f}, Test acc: {test_acc:.2f}%")
     
     assert test_acc > 90.0

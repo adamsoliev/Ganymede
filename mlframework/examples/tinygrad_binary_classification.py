@@ -118,8 +118,8 @@ def main() -> None:
         test_acc = accuracy_fn(y_true=y_test, y_pred=Tensor.round(test_prob_distr))
 
         # Print out what's happening every 10 epochs
-        if epoch % 100 == 0:
-            print(f"Epoch: {epoch} | Loss: {loss.numpy()}, Accuracy: {acc} | Test loss: {test_loss.numpy()}, Test acc: {test_acc}")
+        # if epoch % 100 == 0:
+        print(f"Epoch: {epoch} | Loss: {loss.numpy()}, Accuracy: {acc} | Test loss: {test_loss.numpy()}, Test acc: {test_acc}")
     
     # assert test_acc > 90.0
 
@@ -133,5 +133,44 @@ def main() -> None:
     plot_decision_boundary(model, X_test, y_test)
     plt.show()
 
+from our_binary_classification import Linear as ourLinear, Tensor as ourTensor
+
 if __name__ == '__main__':
-    main()
+    # main()
+    data1 = np.random.rand(5, 2, 1)
+    data2 = np.random.rand(5, 2, 1)
+
+    # tinyLinear = Linear(2, 5)
+    tinyTensor1 = Tensor(data1, dtype=dtypes.float32, requires_grad=True)
+    tinyTensor2 = Tensor(data2, dtype=dtypes.float32, requires_grad=True)
+    tinyTensor3 = tinyTensor1 * tinyTensor2 * tinyTensor2
+    tinyTensor3.squeeze()
+    tinyTensor3.sum().backward()
+    # print(tinyTensor1.grad.numpy())
+
+    a = ourTensor(data1)
+    b = ourTensor(data2)
+    c = a * b * b
+    c.squeeze()
+    c.sum().backward()
+    # print(a.grad)
+    assert np.allclose(tinyTensor1.grad.numpy(), a.grad, 1e-6)
+
+
+    # tinyResult = tinyLinear(tinyTensor)
+    # tinySigmoidResult = tinyResult.sigmoid()
+    # tinyMean = tinySigmoidResult.mean()
+    # tinyMean.backward()
+
+    # linear = ourLinear(2, 5); linear.w = ourTensor(tinyLinear.weight.numpy()); linear.b = ourTensor(tinyLinear.bias.numpy())
+    # tensor = ourTensor(data)
+    # result = linear(tensor)
+    # sigmoidResult = result.sigmoid()
+    # mean = sigmoidResult.mean()
+    # mean.backward()
+
+    # print(tinyLinear.weight.numpy())
+
+    # assert np.allclose(tinyResult.numpy(), result.numpy(), atol=1e-6)
+    # assert np.allclose(tinySigmoidResult.numpy(), sigmoidResult.numpy(), atol=1e-6)
+    # assert np.allclose(tinyMean.numpy(), mean.numpy(), atol=1e-6)
