@@ -371,4 +371,20 @@ class TestTensor2D(unittest.TestCase):
 
         # a = np.random.randn(5,3,4,1); b = np.random.rand(  3,1,1)   # broadcast
         # helper(1, a, b); helper(2, a, b); helper(3, a, b); helper(4, a, b)
- 
+
+    def test_mul_squeeze_sum_backward(self):
+        data1 = np.random.rand(5, 2, 1)
+        data2 = np.random.rand(5, 2, 1)
+
+        tinyTensor1 = tinyTensor(data1, dtype=dtypes.float32, requires_grad=True)
+        tinyTensor2 = tinyTensor(data2, dtype=dtypes.float32, requires_grad=True)
+        tinyTensor3 = tinyTensor1 * tinyTensor2 * tinyTensor2
+        tinyTensor3.squeeze()
+        tinyTensor3.sum().backward()
+
+        a = Tensor(data1)
+        b = Tensor(data2)
+        c = a * b * b
+        c.squeeze()
+        c.sum().backward()
+        assert np.allclose(tinyTensor1.grad.numpy(), a.grad, 1e-6)
